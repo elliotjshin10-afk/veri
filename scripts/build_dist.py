@@ -15,7 +15,10 @@ SITE, DIST = ROOT / "site", ROOT / "dist"
 
 # index.html plus every asset it fetches or imports.
 RUNTIME = ["index.html", "scorer.js", "index_compact.json",
-           "model_dest.json", "model_pair.json"]
+           "model_dest.json", "model_pair.json",
+           # Fetched at run time so a nightly ledger commit updates the live
+           # page without rebuilding the site.
+           "ledger.json"]
 
 
 def main() -> None:

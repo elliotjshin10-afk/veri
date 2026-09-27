@@ -1,0 +1,31 @@
+# Netlify config lives here rather than in the dashboard so it is reviewable
+# and cannot silently drift from what the repo expects.
+#
+# The build deliberately does NOT rebuild the site. site/index.html and
+# site/index_compact.json are committed already; regenerating them needs
+# address_index.json and the backtest reports, which are large derived files
+# the public repo does not carry - so `make dist` succeeded locally and failed
+# on every Netlify build. This copies the committed output instead.
+#
+# build_dist.py is stdlib-only, so there is nothing to install and the deploy
+# takes seconds. The ledger, which is the one thing that changes nightly, is
+# fetched by the page at run time.
+[build]
+  command = "python3 scripts/build_dist.py"
+  publish = "dist"
+
+[build.environment]
+  PYTHON_VERSION = "3.11"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# The models and the compact index are content-addressed by their build; the
+# ledger must never be cached or the page shows yesterday's head.
+[[headers]]
+  for = "/ledger.json"
+  [headers.values]
+    Cache-Control = "public, max-age=60, must-revalidate"
