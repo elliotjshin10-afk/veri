@@ -1,0 +1,606 @@
+<title>Veridis Pre-Send Risk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --ground:#F4F6F8; --surface:#FFFFFF; --surface-2:#FAFBFC;
+  --line:#DCE3EA; --line-strong:#C3CEDA;
+  --ink:#0E1419; --ink-2:#44525E; --ink-3:#70808D;
+  --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --good-bg:rgba(12,163,12,.10); --warn-bg:rgba(250,178,25,.16); --crit-bg:rgba(208,59,59,.10);
+  --accent:#2a78d6;
+  --shadow:0 1px 2px rgba(16,26,36,.06),0 8px 24px -12px rgba(16,26,36,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ground:#090E13; --surface:#121A21; --surface-2:#0F171D;
+    --line:#233039; --line-strong:#33444F;
+    --ink:#E7EEF4; --ink-2:#A3B2BE; --ink-3:#778895;
+    --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
+    --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+    --good-bg:rgba(12,163,12,.16); --warn-bg:rgba(250,178,25,.14); --crit-bg:rgba(208,59,59,.18);
+    --accent:#3987e5;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 28px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ground:#090E13; --surface:#121A21; --surface-2:#0F171D;
+  --line:#233039; --line-strong:#33444F;
+  --ink:#E7EEF4; --ink-2:#A3B2BE; --ink-3:#778895;
+  --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --good-bg:rgba(12,163,12,.16); --warn-bg:rgba(250,178,25,.14); --crit-bg:rgba(208,59,59,.18);
+  --accent:#3987e5;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 28px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1120px; margin:0 auto; padding-block:0 72px; padding-left:20px; padding-right:20px}
+h1,h2,h3{font-family:Archivo,"IBM Plex Sans",sans-serif; text-wrap:balance; margin:0}
+h1{font-size:clamp(28px,4.2vw,44px); font-weight:700; letter-spacing:-.02em; line-height:1.1}
+h2{font-size:clamp(19px,2.4vw,24px); font-weight:600; letter-spacing:-.01em}
+h3{font-size:15px; font-weight:600}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-variant-numeric:tabular-nums}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-3); font-weight:500}
+.muted{color:var(--ink-2)}
+.small{font-size:13px}
+a{color:var(--accent)}
+
+/* ---------- masthead ---------- */
+header.top{
+  border-bottom:1px solid var(--line); background:var(--surface);
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:20;
+}
+.top-in{max-width:1120px;margin:0 auto;padding:12px 20px;display:flex;
+  align-items:center;gap:14px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:9px;font-family:Archivo;font-weight:700;
+  letter-spacing:-.01em;font-size:17px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--crit);
+  box-shadow:0 0 0 3px var(--crit-bg)}
+.top .tag{font-size:12px;color:var(--ink-3);border-left:1px solid var(--line);padding-left:14px}
+.spacer{flex:1}
+.ghost{font:inherit;font-size:13px;color:var(--ink-2);background:transparent;
+  border:1px solid var(--line);border-radius:7px;padding:6px 11px;cursor:pointer}
+.ghost:hover{border-color:var(--line-strong);color:var(--ink)}
+
+/* ---------- hero ---------- */
+.hero{padding-block:48px 34px; display:grid; gap:20px; max-width:760px}
+.lede{font-size:clamp(16px,1.9vw,19px); color:var(--ink-2); line-height:1.55}
+.lede b{color:var(--ink); font-weight:600}
+
+/* ---------- stat strip ---------- */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:44px}
+.stat{background:var(--surface);padding:16px 18px}
+.stat .v{font-family:Archivo;font-weight:700;font-size:clamp(22px,2.8vw,30px);
+  letter-spacing:-.02em;line-height:1.15;font-variant-numeric:tabular-nums}
+.stat .k{font-size:12px;color:var(--ink-3);margin-top:3px}
+@media(max-width:720px){.strip{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- section ---------- */
+section{margin-bottom:56px}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-sub{color:var(--ink-2);max-width:68ch;margin:0 0 22px}
+
+/* ---------- replay ---------- */
+.replay{border:1px solid var(--line);border-radius:14px;background:var(--surface);
+  overflow:hidden;box-shadow:var(--shadow)}
+.replay-bar{display:flex;align-items:center;gap:12px;padding:13px 16px;
+  border-bottom:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap}
+.btn{font:inherit;font-weight:600;font-size:13px;color:#fff;background:var(--accent);
+  border:0;border-radius:8px;padding:8px 15px;cursor:pointer;display:inline-flex;
+  align-items:center;gap:7px}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:default;filter:none}
+.step-dots{display:flex;gap:6px;align-items:center}
+.sdot{width:26px;height:5px;border-radius:3px;background:var(--line-strong);
+  border:0;padding:0;cursor:pointer}
+.sdot[aria-current="true"]{background:var(--accent)}
+.sdot.flagged{background:var(--crit)}
+.panes{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+@media(max-width:820px){.panes{grid-template-columns:1fr}}
+.pane{background:var(--surface);padding:20px}
+.pane-h{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.pane-h .who{font-size:13px;font-weight:600}
+.pane-h .src{font-size:11px;color:var(--ink-3)}
+.verdict{display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:13px;
+  padding:5px 11px;border-radius:999px}
+.v-clean{background:var(--good-bg);color:var(--good)}
+.v-crit{background:var(--crit-bg);color:var(--crit)}
+.v-warn{background:var(--warn-bg);color:#8a5d00}
+:root[data-theme="dark"] .v-warn,
+:root:not([data-theme="light"]) .v-warn{color:var(--warn)}
+.big-score{font-family:Archivo;font-weight:700;font-size:46px;letter-spacing:-.03em;
+  line-height:1;font-variant-numeric:tabular-nums}
+.meter{height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin:12px 0 4px}
+.meter span{display:block;height:100%;border-radius:4px;transition:width .45s ease}
+.reasons{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:9px}
+.reasons li{display:flex;gap:9px;font-size:13.5px;line-height:1.45;align-items:flex-start}
+.reasons li::before{content:"";flex:none;width:5px;height:5px;border-radius:50%;
+  background:var(--crit);margin-top:8px}
+.nothing{color:var(--ink-3);font-size:13.5px;font-style:italic}
+.tx-meta{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--ink-3);display:flex;gap:14px;flex-wrap:wrap}
+.transfer-line{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:2px}
+.transfer-line .amt{font-family:Archivo;font-weight:700;font-size:26px;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.addr{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-2);
+  text-decoration:none;border-bottom:1px dotted var(--line-strong);word-break:break-all}
+.addr:hover{color:var(--accent)}
+
+/* timeline chart */
+.tl{padding:18px 20px 8px;border-top:1px solid var(--line);background:var(--surface-2)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-bottom:10px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;
+  vertical-align:middle}
+.replay-foot{padding:16px 20px;border-top:1px solid var(--line);
+  display:flex;gap:26px;align-items:baseline;flex-wrap:wrap}
+.replay-foot .n{font-family:Archivo;font-weight:700;font-size:24px;color:var(--crit);
+  font-variant-numeric:tabular-nums}
+
+/* ---------- ablation ---------- */
+.abl{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:22px;
+  box-shadow:var(--shadow)}
+.bar-row{display:grid;grid-template-columns:minmax(150px,210px) 1fr auto;gap:14px;
+  align-items:center;padding:11px 0}
+.bar-row + .bar-row{border-top:1px solid var(--line)}
+.bar-label{font-size:13.5px;font-weight:500}
+.bar-label small{display:block;color:var(--ink-3);font-weight:400;font-size:11.5px}
+.track{height:20px;background:var(--surface-2);border-radius:4px;overflow:hidden;
+  border:1px solid var(--line)}
+.fill{height:100%;border-radius:3px 4px 4px 3px}
+.bar-val{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;
+  font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
+@media(max-width:620px){.bar-row{grid-template-columns:1fr auto}.track{grid-column:1/-1}}
+
+/* ---------- generic cards / tables ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+td.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right}
+tr:last-child td{border-bottom:0}
+.tbl-wrap{overflow-x:auto}
+.kv{display:grid;grid-template-columns:1fr auto;gap:8px 14px;font-size:13.5px}
+.kv dt{color:var(--ink-2)}
+.kv dd{margin:0;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
+  text-align:right;font-weight:500}
+.note{border-left:2px solid var(--line-strong);padding:2px 0 2px 16px;color:var(--ink-2);
+  font-size:13.5px;max-width:72ch}
+.chip{display:inline-block;font-size:11px;font-family:"IBM Plex Mono",monospace;
+  padding:2px 7px;border-radius:5px;background:var(--surface-2);border:1px solid var(--line);
+  color:var(--ink-2)}
+footer{border-top:1px solid var(--line);padding-top:22px;color:var(--ink-3);font-size:12.5px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="logo"><span class="dot"></span> Veridis</div>
+    <div class="tag">Pre-send risk for irreversible payments</div>
+    <div class="spacer"></div>
+    <button class="ghost" id="themeBtn" type="button">Theme</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">Tron &middot; TRC-20 USDT &middot; held-out evaluation</div>
+    <h1 id="headline"></h1>
+    <p class="lede">Stablecoins are becoming normal money for normal people, and they have
+      none of the fraud protection normal money has. Blocklists fail by construction &mdash;
+      when the victim sends, there is nothing reported against the destination yet, so
+      there is nothing to match on. <b>We score the sender's behaviour instead</b>, so the
+      warning arrives before the transfer rather than after the listing.</p>
+  </div>
+
+  <div class="strip" id="strip"></div>
+
+  <section id="replay-sec">
+    <div class="sec-head"><h2>One real victim, replayed</h2>
+      <span class="eyebrow">held-out test set</span></div>
+    <p class="sec-sub">Every address, amount and transaction below is real and on-chain.
+      Step through the transfers and watch the two systems disagree. The blocklist column is
+      not a strawman &mdash; it flips only on the date this address actually appeared on a
+      public list.</p>
+    <div class="replay">
+      <div class="replay-bar">
+        <button class="btn" id="playBtn" type="button">&#9654;&nbsp; Play replay</button>
+        <div class="step-dots" id="dots"></div>
+        <div class="spacer"></div>
+        <div class="small muted" id="stepLabel"></div>
+      </div>
+      <div class="panes">
+        <div class="pane">
+          <div class="pane-h">
+            <div><div class="who">Blocklist / sanctions screening</div>
+              <div class="src">public lists, as of the transfer date</div></div>
+          </div>
+          <div id="blockPane"></div>
+        </div>
+        <div class="pane">
+          <div class="pane-h">
+            <div><div class="who">Veridis pre-send score</div>
+              <div class="src">sender behaviour, computed as-of the transfer</div></div>
+          </div>
+          <div id="scorePane"></div>
+        </div>
+      </div>
+      <div class="tl">
+        <div class="legend">
+          <span><i style="background:var(--series-1)"></i>Veridis score</span>
+          <span><i style="background:var(--series-2)"></i>Blocklist verdict</span>
+          <span><i style="background:var(--crit)"></i>High-risk threshold</span>
+        </div>
+        <div id="chart"></div>
+      </div>
+      <div class="replay-foot">
+        <div><div class="n" id="protected"></div>
+          <div class="small muted">moved after our first flag</div></div>
+        <div><div class="n" style="color:var(--ink)" id="total"></div>
+          <div class="small muted">total sent to this address</div></div>
+        <div><div class="n" style="color:var(--ink)" id="listedGap"></div>
+          <div class="small muted" id="listedNote"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>What each system can actually see</h2></div>
+    <p class="sec-sub">The same model, retrained four times, each allowed a different view of
+      the transfer. <b>Destination-only</b> is the ceiling for anything that works by knowing
+      something about the recipient &mdash; a blocklist, sanctions screening, or off-chain scam
+      intelligence. <b>Sender-side only</b> knows nothing whatsoever about the destination.</p>
+    <div class="abl" id="abl"></div>
+    <p class="note" style="margin-top:18px" id="unseenNote"></p>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Where this sits</h2></div>
+    <p class="sec-sub">Recipient-side fraud prevention asks <i>is this address known-bad?</i>
+      That question is well served and consolidating &mdash; Chainalysis acquired Alterya, the
+      leading off-chain scam-intelligence vendor, in January 2025. We ask a different
+      question, and it is answerable with no information about the recipient at all.</p>
+    <div class="grid2">
+      <div class="card">
+        <div class="eyebrow" style="margin-bottom:10px">Recipient-side</div>
+        <h3 style="margin-bottom:8px">Is this address known-bad?</h3>
+        <p class="small muted" style="margin:0 0 14px">Blocklists, sanctions screening, and
+          off-chain scam intelligence that monitors web, social and chat channels to identify
+          scammer infrastructure, plus KYC signals from the exchange.</p>
+        <dl class="kv">
+          <dt>Needs the scam to be observed</dt><dd>yes</dd>
+          <dt>Needs off-chain data partnerships</dt><dd>yes</dd>
+          <dt>Touches PII / KYC</dt><dd>yes</dd>
+          <dt>Works on an unreported address</dt><dd>no</dd>
+        </dl>
+      </div>
+      <div class="card" style="border-color:var(--accent)">
+        <div class="eyebrow" style="margin-bottom:10px;color:var(--accent)">Sender-side &mdash; Veridis</div>
+        <h3 style="margin-bottom:8px">Is this person being scammed?</h3>
+        <p class="small muted" style="margin:0 0 14px">The victim's own behaviour, read from
+          public chain data: a break from their baseline, convergence on a counterparty they
+          have no relationship with, money arriving and leaving, a balance draining.</p>
+        <dl class="kv">
+          <dt>Needs the scam to be observed</dt><dd>no</dd>
+          <dt>Needs off-chain data partnerships</dt><dd>no</dd>
+          <dt>Touches PII / KYC</dt><dd>none</dd>
+          <dt>Works on an unreported address</dt><dd><b id="worksUnreported">yes</b></dd>
+        </dl>
+      </div>
+    </div>
+    <p class="note" style="margin-top:18px">These are complements, not substitutes. A wallet
+      wants both: the recipient check catches known infrastructure, and the sender check
+      covers the window before anything is known &mdash; which, in the replay above, was the
+      entire window in which the money moved.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Model performance</h2>
+      <span class="eyebrow">temporal + grouped split</span></div>
+    <p class="sec-sub">Trained on scams reported before a cutoff, tested on scams reported
+      after, grouped so no scam operation appears on both sides. Controls are
+      nearest-neighbour matched on sender age, activity and typical transfer size, and
+      metrics are reported at the achieved ratio.</p>
+    <div class="grid2">
+      <div class="card"><h3 style="margin-bottom:12px">Detection</h3><dl class="kv" id="perf"></dl></div>
+      <div class="card"><h3 style="margin-bottom:12px">Early detection</h3>
+        <p class="small muted" style="margin:0 0 12px">Share of victim relationships flagged at
+          or before their k-th transfer, at the 1% false-positive budget.</p>
+        <div class="tbl-wrap"><table id="earlyTbl"></table></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <h3 style="margin-bottom:6px">Signal by feature family</h3>
+      <p class="small muted" style="margin:0 0 14px">If the signal were destination-only we
+        would have rebuilt a blocklist with extra steps.</p>
+      <div id="famBars"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>What we would not claim</h2></div>
+    <div class="card">
+      <ul style="margin:0;padding-left:18px;display:grid;gap:10px" class="small" id="limits"></ul>
+    </div>
+  </section>
+
+  <footer>
+    <div>Generated <span id="gen"></span> from held-out model output. Labels from Tether's
+      on-chain TRC-20 freeze list and OFAC SDN; chain data from TronGrid. No PII, no KYC,
+      no licensed blocklist data.</div>
+  </footer>
+</div>
+
+<script>
+const D = /*__DATA__*/{};
+const $ = (s)=>document.querySelector(s);
+const fmtUsd = (n)=>"$"+Math.round(n).toLocaleString("en-US");
+const pct = (x,d=1)=>(100*x).toFixed(d)+"%";
+
+/* theme toggle */
+$("#themeBtn").addEventListener("click",()=>{
+  const r=document.documentElement;
+  const cur=r.getAttribute("data-theme");
+  const dark=cur?cur==="dark":matchMedia("(prefers-color-scheme: dark)").matches;
+  r.setAttribute("data-theme",dark?"light":"dark");
+  draw();
+});
+
+$("#headline").textContent = D.headline;
+
+/* ---------- stat strip ---------- */
+const rep=D.replay, steps=rep.steps;
+const firstFlag=rep.first_flag_k;
+$("#strip").innerHTML=[
+  [pct(D.metrics.fpr,2),"false-positive rate on matched controls"],
+  [D.metrics.lift.toFixed(1)+"×","PR-AUC lift over base rate"],
+  [pct(D.sender_side,0),"of signal from sender behaviour"],
+  [D.latency_p95_ms!=null?D.latency_p95_ms.toFixed(1)+" ms":"\u2014","p95 scoring latency"],
+].map(([v,k])=>`<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
+
+/* ---------- replay ---------- */
+let idx=0, timer=null;
+const dots=$("#dots");
+dots.innerHTML=steps.map((s,i)=>
+  `<button class="sdot${s.band==="high_risk"?" flagged":""}" data-i="${i}"
+     aria-current="${i===0}" title="Transfer ${s.k}"
+     aria-label="Go to transfer ${s.k}"></button>`).join("");
+dots.addEventListener("click",e=>{
+  const b=e.target.closest(".sdot"); if(!b)return; stop(); idx=+b.dataset.i; render();
+});
+
+function render(){
+  const s=steps[idx];
+  [...dots.children].forEach((d,i)=>d.setAttribute("aria-current",String(i===idx)));
+  $("#stepLabel").textContent=`Transfer ${s.k} of ${steps.length} · ${s.when}`;
+
+  $("#blockPane").innerHTML=`
+    <div class="transfer-line"><span class="amt">${fmtUsd(s.amount)}</span>
+      <span class="small muted">USDT · ${s.when}</span></div>
+    <div style="margin:18px 0 0"><span class="verdict ${s.blocklist==="listed"?"v-crit":"v-clean"}">
+      ${s.blocklist==="listed"?"LISTED":"NO MATCH"}</span></div>
+    <p class="small muted" style="margin:14px 0 0">
+      ${s.blocklist==="listed"
+        ? "This address is now on a public list. The transfers above already settled."
+        : "No sanctions hit, no scam report, no illicit history. Nothing to flag on."}</p>
+    <div class="tx-meta">
+      <span>destination age <b class="mono">${s.dest_age_days}d</b></span>
+      <span>public reports <b class="mono">0</b></span>
+    </div>`;
+
+  const cls=s.band==="high_risk"?"v-crit":s.band==="caution"?"v-warn":"v-clean";
+  const col=s.band==="high_risk"?"var(--crit)":s.band==="caution"?"var(--warn)":"var(--good)";
+  const reasons=s.reasons.length
+    ? `<ul class="reasons">${s.reasons.map(r=>`<li>${r}</li>`).join("")}</ul>`
+    : `<p class="nothing">No elevated signals.</p>`;
+  $("#scorePane").innerHTML=`
+    <div style="display:flex;align-items:flex-end;gap:14px">
+      <div class="big-score" style="color:${col}">${s.score.toFixed(2)}</div>
+      <span class="verdict ${cls}" style="margin-bottom:8px">
+        ${s.band.replace("_"," ").toUpperCase()}</span></div>
+    <div class="meter"><span style="width:${Math.max(3,s.score*100)}%;background:${col}"></span></div>
+    ${reasons}
+    <div class="tx-meta">
+      <span>${s.dest_senders_7d} senders / 7d</span>
+      <a class="addr" href="https://tronscan.org/#/transaction/${s.tx}" target="_blank"
+         rel="noopener">verify tx on Tronscan ↗</a>
+    </div>`;
+  draw();
+}
+
+function stop(){ if(timer){clearInterval(timer);timer=null;} $("#playBtn").innerHTML="&#9654;&nbsp; Play replay"; }
+$("#playBtn").addEventListener("click",()=>{
+  if(timer){stop();return;}
+  if(idx>=steps.length-1) idx=-1;
+  $("#playBtn").innerHTML="&#10073;&#10073;&nbsp; Pause";
+  timer=setInterval(()=>{
+    if(idx>=steps.length-1){stop();return;}
+    idx++; render();
+  },1250);
+  if(idx<0){idx=0;render();}
+});
+
+/* ---------- score timeline (SVG, drawn to one scale) ---------- */
+function draw(){
+  const el=$("#chart"); const W=el.clientWidth||720, H=132;
+  const padL=34,padR=14,padT=12,padB=26;
+  const n=steps.length;
+  const x=i=> padL + (n<2?0:i*(W-padL-padR)/(n-1));
+  const y=v=> padT + (1-v)*(H-padT-padB);
+  const cs=getComputedStyle(document.documentElement);
+  const c1=cs.getPropertyValue("--series-1").trim();
+  const c2=cs.getPropertyValue("--series-2").trim();
+  const crit=cs.getPropertyValue("--crit").trim();
+  const ink3=cs.getPropertyValue("--ink-3").trim();
+  const line=cs.getPropertyValue("--line").trim();
+  const thr=D.replay.thresholds.high_risk;
+  const thrY=y(Math.min(1,Math.max(0,thr)));
+
+  let g="";
+  [0,0.5,1].forEach(v=>{
+    g+=`<line x1="${padL}" x2="${W-padR}" y1="${y(v)}" y2="${y(v)}" stroke="${line}" stroke-width="1"/>`;
+    g+=`<text x="${padL-7}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="${ink3}"
+        font-family="IBM Plex Mono, monospace">${v.toFixed(1)}</text>`;
+  });
+  g+=`<line x1="${padL}" x2="${W-padR}" y1="${thrY}" y2="${thrY}" stroke="${crit}"
+      stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  // blocklist verdict: flat at 0 until listed
+  const bl=steps.map((s,i)=>`${x(i)},${y(s.blocklist==="listed"?1:0)}`).join(" ");
+  g+=`<polyline points="${bl}" fill="none" stroke="${c2}" stroke-width="2"
+      stroke-linejoin="round"/>`;
+  const lastListed=steps[steps.length-1].blocklist==="listed";
+  g+=`<text x="${W-padR}" y="${y(lastListed?1:0)-13}" text-anchor="end" font-size="10.5"
+      fill="${c2}" font-family="IBM Plex Mono, monospace">${lastListed?"listed":"no match, every transfer"}</text>`;
+  g+=`<text x="${W-padR}" y="${thrY-7}" text-anchor="end" font-size="10.5" fill="${crit}"
+      font-family="IBM Plex Mono, monospace">high-risk threshold</text>`;
+  // Whole trajectory, faint: the page at rest should already show the shape,
+  // not an empty plot waiting for someone to press play.
+  const allPts=steps.map((s,i)=>`${x(i)},${y(Math.min(1,s.score))}`).join(" ");
+  g+=`<polyline points="${allPts}" fill="none" stroke="${c1}" stroke-width="2"
+      stroke-linejoin="round" stroke-linecap="round" opacity="0.4"/>`;
+  // Traversed portion, solid.
+  const pts=steps.slice(0,idx+1).map((s,i)=>`${x(i)},${y(Math.min(1,s.score))}`).join(" ");
+  g+=`<polyline points="${pts}" fill="none" stroke="${c1}" stroke-width="2.5"
+      stroke-linejoin="round" stroke-linecap="round"/>`;
+  steps.forEach((s,i)=>{
+    if(i>idx)return;
+    const r=i===idx?5.5:3.5;
+    g+=`<circle cx="${x(i)}" cy="${y(Math.min(1,s.score))}" r="${r}" fill="${c1}"
+        stroke="var(--surface)" stroke-width="2"/>`;
+  });
+  steps.forEach((s,i)=>{
+    g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="10"
+        fill="${i===idx?cs.getPropertyValue("--ink").trim():ink3}"
+        font-family="IBM Plex Mono, monospace">${s.k}</text>`;
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
+    role="img" aria-label="Veridis score by transfer against a flat blocklist verdict">${g}</svg>`;
+}
+addEventListener("resize",draw);
+
+/* footer numbers */
+$("#protected").textContent=fmtUsd(rep.protected_usd);
+$("#total").textContent=fmtUsd(rep.total_usd);
+if(rep.listed_at){
+  const firstT=new Date(steps[0].when.replace(" ","T")+"Z");
+  const listed=new Date(rep.listed_at.replace(" ","T")+"Z");
+  const days=Math.round((listed-firstT)/86400000);
+  $("#listedGap").textContent=(days>=365?(days/365).toFixed(1)+" yr":days+" days");
+  $("#listedNote").textContent="after the first transfer, before any public listing";
+}else{
+  $("#listedGap").textContent="never";
+  $("#listedNote").textContent="this address was never publicly listed";
+}
+
+/* ---------- ablation ---------- */
+const arms=[
+  ["destination_only","Destination only","what a blocklist or recipient-side intelligence can see"],
+  ["sender_behaviour_only","Sender behaviour only","the victim's own pattern, nothing about the counterparty"],
+  ["sender_side_only","Sender side only","sender behaviour + the relationship, no destination"],
+  ["full","Everything","both halves combined"],
+];
+const avail=arms.filter(a=>D.ablation[a[0]]);
+const maxLift=Math.max(...avail.map(a=>D.ablation[a[0]].lift),1);
+$("#abl").innerHTML=avail.map(([key,label,sub])=>{
+  const a=D.ablation[key];
+  const w=Math.max(2,100*a.lift/maxLift);
+  const col=key==="destination_only"?"var(--series-2)":
+            key==="full"?"var(--series-3)":"var(--series-1)";
+  return `<div class="bar-row">
+    <div class="bar-label">${label}<small>${sub} · ${a.n_features} features</small></div>
+    <div class="track"><div class="fill" style="width:${w}%;background:${col}"></div></div>
+    <div class="bar-val">${a.lift.toFixed(1)}×</div></div>`;
+}).join("")+`<p class="small muted" style="margin:14px 0 0">
+  Bars show PR-AUC lift over the test-set base rate. Higher is better.</p>`;
+
+if(D.unseen && D.unseen.pr_auc){
+  $("#unseenNote").innerHTML=`<b>The sharpest version of the claim.</b> Restricted to transfers
+    whose destination had no prior inbound activity at all &mdash; an address effectively
+    invisible to anything that works by knowing something about the recipient &mdash; the
+    sender-side model still reaches PR-AUC ${D.unseen.pr_auc.toFixed(3)} against a
+    ${D.unseen.base_rate.toFixed(3)} base rate
+    (${D.unseen.lift.toFixed(1)}× lift, n=${D.unseen.n}).`;
+}else{
+  $("#unseenNote").innerHTML=`<b>Unseen-destination test.</b> ${(D.unseen&&D.unseen.note)||"not enough fresh-destination events in the held-out set to report this separately."}`;
+  $("#worksUnreported").textContent="by design";
+}
+
+/* ---------- performance ---------- */
+$("#perf").innerHTML=[
+  ["PR-AUC",D.metrics.pr_auc.toFixed(3)],
+  ["Base rate (test)",D.metrics.base_rate.toFixed(3)],
+  ["Lift over base rate",D.metrics.lift.toFixed(1)+"×"],
+  ["False-positive rate",pct(D.metrics.fpr,2)],
+  ["Precision at operating point",D.metrics.precision.toFixed(3)],
+  ["Control:victim ratio achieved",D.achieved_ratio.toFixed(1)+":1"],
+  ["Dollars after first flag",fmtUsd(D.dollars.protected_usd)+" of "+fmtUsd(D.dollars.total_usd)],
+].map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
+
+$("#earlyTbl").innerHTML=`<thead><tr><th>k</th><th>Detection</th><th>Victims</th></tr></thead>
+<tbody>${D.early.map(r=>`<tr><td class="mono">${r.k}</td>
+  <td class="num">${pct(r.rate)}</td>
+  <td class="num">${r.flagged}/${r.victims}</td></tr>`).join("")}</tbody>`;
+
+const famOrder=["destination","sender","relationship","context"];
+const famMax=Math.max(...famOrder.map(f=>D.families[f]||0));
+$("#famBars").innerHTML=famOrder.filter(f=>D.families[f]!==undefined).map(f=>{
+  const v=D.families[f];
+  const col=f==="destination"?"var(--series-2)":f==="context"?"var(--ink-3)":"var(--series-1)";
+  return `<div class="bar-row">
+    <div class="bar-label" style="text-transform:capitalize">${f}</div>
+    <div class="track"><div class="fill" style="width:${Math.max(2,100*v/famMax)}%;background:${col}"></div></div>
+    <div class="bar-val">${pct(v,1)}</div></div>`;
+}).join("");
+
+/* ---------- limits ---------- */
+const nv=D.early.length?D.early[0].victims:0;
+const lim=[];
+// Surface whatever the pipeline itself flagged, verbatim - a caveat the run
+// raised should not be something only the author sees.
+(D.warnings||[]).forEach(w=>lim.push(
+  `<b>The pipeline flagged this run:</b> ${w}`));
+if(D.first_send){
+  lim.push(`<b>The control pool over-represents repeat payments.</b> Unmatched, controls
+    carried far more prior sends to the same destination than victims did, which inflates
+    "have you paid this address before". Matching is now exact on that, and the
+    first-send-only slice &mdash; where the feature is constant and the model must use
+    behaviour alone &mdash; reaches ROC-AUC ${D.first_send.metrics.roc_auc.toFixed(3)}
+    on ${D.first_send.n_positive} victims against only ${D.first_send.n_negative} controls.
+    More legitimate first-time sends is the single highest-value thing to collect next.`);
+}
+$("#limits").innerHTML=lim.concat([
+  `<b>The held-out set is ${nv} victim relationships.</b> Confidence intervals are wide.
+   What is trustworthy at this scale is the direction &mdash; the feature-family split and the
+   ablation &mdash; not the third decimal place of any rate.`,
+  `<b>Dataset size is capped by a free-tier API quota, not by the method.</b> Labels
+   (${D.dataset.labels.toLocaleString()} addresses) and victim identification
+   (${D.dataset.victims_identified.toLocaleString()} wallets) are cheap and ran at full scale;
+   fetching a full history per victim is what throttles.`,
+  `<b>Labels are Tether freezes, which cover many fraud types</b> &mdash; not only
+   pig-butchering. Sub-typing them is the first thing more data buys.`,
+  `<b>The escalation ratio did not separate victims from controls</b> (univariate AUC 0.47),
+   contrary to our own prior. We kept the negative result and the investigation that produced
+   it rather than dropping the feature quietly.`,
+  `<b>Probabilities currently run hot</b> in the top band (0.66 predicted against 0.45
+   observed), so a customer tuning on the probability needs the reliability table, not just
+   the score.`,
+]).map(t=>`<li>${t}</li>`).join("");
+
+$("#gen").textContent=D.generated;
+render();
+</script>

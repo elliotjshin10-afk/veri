@@ -1,0 +1,1313 @@
+<title>Veridis Pre-Send Risk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --ground:#F4F6F8; --surface:#FFFFFF; --surface-2:#FAFBFC;
+  --line:#DCE3EA; --line-strong:#C3CEDA;
+  --ink:#0E1419; --ink-2:#44525E; --ink-3:#70808D;
+  --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --good-bg:rgba(12,163,12,.10); --warn-bg:rgba(250,178,25,.16); --crit-bg:rgba(208,59,59,.10);
+  --accent:#2a78d6;
+  --shadow:0 1px 2px rgba(16,26,36,.06),0 8px 24px -12px rgba(16,26,36,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ground:#090E13; --surface:#121A21; --surface-2:#0F171D;
+    --line:#233039; --line-strong:#33444F;
+    --ink:#E7EEF4; --ink-2:#A3B2BE; --ink-3:#778895;
+    --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
+    --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+    --good-bg:rgba(12,163,12,.16); --warn-bg:rgba(250,178,25,.14); --crit-bg:rgba(208,59,59,.18);
+    --accent:#3987e5;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 28px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ground:#090E13; --surface:#121A21; --surface-2:#0F171D;
+  --line:#233039; --line-strong:#33444F;
+  --ink:#E7EEF4; --ink-2:#A3B2BE; --ink-3:#778895;
+  --series-1:#3987e5; --series-2:#d95926; --series-3:#199e70;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --good-bg:rgba(12,163,12,.16); --warn-bg:rgba(250,178,25,.14); --crit-bg:rgba(208,59,59,.18);
+  --accent:#3987e5;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 28px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1120px; margin:0 auto; padding-block:0 72px; padding-left:20px; padding-right:20px}
+h1,h2,h3{font-family:Archivo,"IBM Plex Sans",sans-serif; text-wrap:balance; margin:0}
+h1{font-size:clamp(28px,4.2vw,44px); font-weight:700; letter-spacing:-.02em; line-height:1.1}
+h2{font-size:clamp(19px,2.4vw,24px); font-weight:600; letter-spacing:-.01em}
+h3{font-size:15px; font-weight:600}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-variant-numeric:tabular-nums}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-3); font-weight:500}
+.muted{color:var(--ink-2)}
+.small{font-size:13px}
+a{color:var(--accent)}
+
+/* ---------- masthead ---------- */
+header.top{
+  border-bottom:1px solid var(--line); background:var(--surface);
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:20;
+}
+.top-in{max-width:1120px;margin:0 auto;padding:12px 20px;display:flex;
+  align-items:center;gap:14px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:9px;font-family:Archivo;font-weight:700;
+  letter-spacing:-.01em;font-size:17px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--crit);
+  box-shadow:0 0 0 3px var(--crit-bg)}
+.top .tag{font-size:12px;color:var(--ink-3);border-left:1px solid var(--line);padding-left:14px}
+.spacer{flex:1}
+.ghost{font:inherit;font-size:13px;color:var(--ink-2);background:transparent;
+  border:1px solid var(--line);border-radius:7px;padding:6px 11px;cursor:pointer}
+.ghost:hover{border-color:var(--line-strong);color:var(--ink)}
+
+/* ---------- hero ---------- */
+.hero{padding-block:48px 34px; display:grid; gap:20px; max-width:760px}
+.lede{font-size:clamp(16px,1.9vw,19px); color:var(--ink-2); line-height:1.55}
+.lede b{color:var(--ink); font-weight:600}
+
+/* ---------- stat strip ---------- */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:44px}
+.stat{background:var(--surface);padding:16px 18px}
+.stat .v{font-family:Archivo;font-weight:700;font-size:clamp(22px,2.8vw,30px);
+  letter-spacing:-.02em;line-height:1.15;font-variant-numeric:tabular-nums}
+.stat .k{font-size:12px;color:var(--ink-3);margin-top:3px}
+@media(max-width:720px){.strip{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- section ---------- */
+section{margin-bottom:56px}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px;flex-wrap:wrap}
+.sec-sub{color:var(--ink-2);max-width:68ch;margin:0 0 22px}
+
+/* ---------- replay ---------- */
+.replay{border:1px solid var(--line);border-radius:14px;background:var(--surface);
+  overflow:hidden;box-shadow:var(--shadow)}
+.replay-bar{display:flex;align-items:center;gap:12px;padding:13px 16px;
+  border-bottom:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap}
+.btn{font:inherit;font-weight:600;font-size:13px;color:#fff;background:var(--accent);
+  border:0;border-radius:8px;padding:8px 15px;cursor:pointer;display:inline-flex;
+  align-items:center;gap:7px}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:default;filter:none}
+.step-dots{display:flex;gap:6px;align-items:center}
+.sdot{width:26px;height:5px;border-radius:3px;background:var(--line-strong);
+  border:0;padding:0;cursor:pointer}
+.sdot[aria-current="true"]{background:var(--accent)}
+.sdot.flagged{background:var(--crit)}
+.panes{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+@media(max-width:820px){.panes{grid-template-columns:1fr}}
+.pane{background:var(--surface);padding:20px}
+.pane-h{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.pane-h .who{font-size:13px;font-weight:600}
+.pane-h .src{font-size:11px;color:var(--ink-3)}
+.verdict{display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:13px;
+  padding:5px 11px;border-radius:999px}
+.v-clean{background:var(--good-bg);color:var(--good)}
+.v-crit{background:var(--crit-bg);color:var(--crit)}
+.v-warn{background:var(--warn-bg);color:#8a5d00}
+:root[data-theme="dark"] .v-warn,
+:root:not([data-theme="light"]) .v-warn{color:var(--warn)}
+.big-score{font-family:Archivo;font-weight:700;font-size:46px;letter-spacing:-.03em;
+  line-height:1;font-variant-numeric:tabular-nums}
+.meter{height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin:12px 0 4px}
+.meter span{display:block;height:100%;border-radius:4px;transition:width .45s ease}
+.reasons{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:9px}
+.reasons li{display:flex;gap:9px;font-size:13.5px;line-height:1.45;align-items:flex-start}
+.reasons li::before{content:"";flex:none;width:5px;height:5px;border-radius:50%;
+  background:var(--crit);margin-top:8px}
+.nothing{color:var(--ink-3);font-size:13.5px;font-style:italic}
+.tx-meta{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--ink-3);display:flex;gap:14px;flex-wrap:wrap}
+.transfer-line{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:2px}
+.transfer-line .amt{font-family:Archivo;font-weight:700;font-size:26px;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.addr{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-2);
+  text-decoration:none;border-bottom:1px dotted var(--line-strong);word-break:break-all}
+.addr:hover{color:var(--accent)}
+
+/* timeline chart */
+.tl{padding:18px 20px 8px;border-top:1px solid var(--line);background:var(--surface-2)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-bottom:10px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;
+  vertical-align:middle}
+.replay-foot{padding:16px 20px;border-top:1px solid var(--line);
+  display:flex;gap:26px;align-items:baseline;flex-wrap:wrap}
+.replay-foot .n{font-family:Archivo;font-weight:700;font-size:24px;color:var(--crit);
+  font-variant-numeric:tabular-nums}
+
+/* ---------- ablation ---------- */
+.abl{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:22px;
+  box-shadow:var(--shadow)}
+.bar-row{display:grid;grid-template-columns:minmax(150px,210px) 1fr auto;gap:14px;
+  align-items:center;padding:11px 0}
+.bar-row + .bar-row{border-top:1px solid var(--line)}
+.bar-label{font-size:13.5px;font-weight:500}
+.bar-label small{display:block;color:var(--ink-3);font-weight:400;font-size:11.5px}
+.track{height:20px;background:var(--surface-2);border-radius:4px;overflow:hidden;
+  border:1px solid var(--line)}
+.fill{height:100%;border-radius:3px 4px 4px 3px}
+.bar-val{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;
+  font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
+@media(max-width:620px){.bar-row{grid-template-columns:1fr auto}.track{grid-column:1/-1}}
+
+/* ---------- generic cards / tables ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+td.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right}
+tr:last-child td{border-bottom:0}
+.tbl-wrap{overflow-x:auto}
+.kv{display:grid;grid-template-columns:1fr auto;gap:8px 14px;font-size:13.5px}
+.kv dt{color:var(--ink-2)}
+.kv dd{margin:0;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
+  text-align:right;font-weight:500}
+.note{border-left:2px solid var(--line-strong);padding:2px 0 2px 16px;color:var(--ink-2);
+  font-size:13.5px;max-width:72ch}
+.chip{display:inline-block;font-size:11px;font-family:"IBM Plex Mono",monospace;
+  padding:2px 7px;border-radius:5px;background:var(--surface-2);border:1px solid var(--line);
+  color:var(--ink-2)}
+footer{border-top:1px solid var(--line);padding-top:22px;color:var(--ink-3);font-size:12.5px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* ---------- product demo ---------- */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.tab{font:inherit;font-size:13px;font-weight:500;color:var(--ink-2);background:var(--surface);
+  border:1px solid var(--line);border-radius:8px;padding:8px 13px;cursor:pointer;
+  display:flex;align-items:center;gap:8px}
+.tab:hover{border-color:var(--line-strong);color:var(--ink)}
+.tab[aria-selected="true"]{border-color:var(--accent);color:var(--ink);
+  box-shadow:inset 0 0 0 1px var(--accent)}
+.tab .truth{font-size:10px;font-family:"IBM Plex Mono",monospace;letter-spacing:.06em;
+  text-transform:uppercase;padding:2px 6px;border-radius:4px}
+.truth-scam{background:var(--crit-bg);color:var(--crit)}
+.truth-legit{background:var(--good-bg);color:var(--good)}
+.demo-grid{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:18px;align-items:start}
+@media(max-width:860px){.demo-grid{grid-template-columns:1fr}}
+
+/* wallet mock */
+.wallet{border:1px solid var(--line);border-radius:16px;background:var(--surface);
+  box-shadow:var(--shadow);overflow:hidden;position:relative;min-height:430px}
+.wallet-top{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;
+  align-items:center;justify-content:space-between;background:var(--surface-2)}
+.wallet-top .name{font-size:12px;font-weight:600;color:var(--ink-2)}
+.wallet-body{padding:20px 18px;display:grid;gap:16px}
+.field{display:grid;gap:5px}
+.field label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+  font-weight:600}
+.field .val{font-family:"IBM Plex Mono",monospace;font-size:12.5px;word-break:break-all;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+.amount-row{display:flex;align-items:baseline;gap:8px}
+.amount-row .a{font-family:Archivo;font-weight:700;font-size:34px;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.send{width:100%;font:inherit;font-weight:600;font-size:15px;color:#fff;background:var(--accent);
+  border:0;border-radius:10px;padding:13px;cursor:pointer}
+.send:hover{filter:brightness(1.08)}
+.send.done{background:var(--good)}
+.send:disabled{opacity:.6;cursor:default}
+.wallet-note{font-size:11.5px;color:var(--ink-3);text-align:center}
+
+/* interstitial */
+.sheet{position:absolute;inset:0;background:var(--surface);display:flex;flex-direction:column;
+  padding:20px 18px;gap:14px;animation:rise .22s ease}
+@keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.sheet{animation:none}}
+.sheet-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
+  font-size:20px;font-weight:700}
+.sheet h4{margin:0;font-family:Archivo;font-size:19px;font-weight:700;letter-spacing:-.01em}
+.sheet .why{font-size:13px;color:var(--ink-2);margin:0}
+.sheet ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.sheet li{display:flex;gap:8px;font-size:13px;line-height:1.4;align-items:flex-start}
+.sheet li .dotmark{flex:none;width:5px;height:5px;border-radius:50%;margin-top:7px;
+  display:block}
+.sheet .actions{margin-top:auto;display:grid;gap:8px}
+.act{font:inherit;font-weight:600;font-size:14px;border-radius:10px;padding:12px;cursor:pointer;
+  border:1px solid var(--line)}
+.act-primary{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.act-ghost{background:transparent;color:var(--ink-2)}
+.act-ghost:hover{color:var(--ink);border-color:var(--line-strong)}
+
+/* api panel */
+.api{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+.api-h{display:flex;align-items:center;gap:10px;padding:11px 15px;border-bottom:1px solid var(--line);
+  background:var(--surface-2);flex-wrap:wrap}
+.method{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;padding:3px 7px;
+  border-radius:5px;background:var(--accent);color:#fff}
+.api-h .path{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-2)}
+.lat{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3)}
+pre{margin:0;padding:15px;font-family:"IBM Plex Mono",monospace;font-size:12px;line-height:1.55;
+  overflow-x:auto;color:var(--ink-2);background:var(--surface)}
+pre .k{color:var(--ink-3)}
+pre .s{color:var(--series-3)}
+pre .n{color:var(--series-1)}
+pre b{color:var(--ink);font-weight:600}
+.api-split{border-top:1px solid var(--line)}
+.api-label{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  padding:9px 15px 0;font-weight:600}
+
+/* operating point */
+.dial{display:grid;grid-template-columns:1fr minmax(240px,300px);gap:24px;align-items:center}
+@media(max-width:820px){.dial{grid-template-columns:1fr}}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.dial-out{display:grid;gap:12px}
+.dial-out .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding-bottom:9px;border-bottom:1px solid var(--line)}
+.dial-out .row:last-child{border-bottom:0}
+.dial-out .lbl{font-size:12.5px;color:var(--ink-2)}
+.dial-out .num{font-family:Archivo;font-weight:700;font-size:21px;font-variant-numeric:tabular-nums}
+.policy{display:grid;gap:10px;margin-top:18px}
+.policy-row{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:start;
+  padding:11px 0;border-top:1px solid var(--line)}
+.policy-row .band{font-size:11px;font-family:"IBM Plex Mono",monospace;font-weight:600;
+  padding:3px 8px;border-radius:5px;text-align:center;letter-spacing:.04em}
+
+/* ---------- view switching ---------- */
+.view{display:none}
+.view.on{display:block}
+body.home-mode{background:var(--surface)}
+
+/* ---------- calm landing ---------- */
+.home{min-height:74vh;display:grid;align-content:center;justify-items:center;
+  text-align:center;gap:0;padding-block:64px 40px}
+.home .mark{display:flex;align-items:center;gap:10px;font-family:Archivo;font-weight:700;
+  font-size:19px;letter-spacing:-.01em;margin-bottom:38px;color:var(--ink-2)}
+.home h1{font-size:clamp(26px,3.6vw,38px);font-weight:600;letter-spacing:-.02em;
+  max-width:16ch;line-height:1.18}
+.home .sub{color:var(--ink-3);margin:16px 0 40px;max-width:46ch;font-size:15px}
+.askbox{display:flex;gap:9px;width:min(560px,100%);flex-wrap:wrap}
+.askbox input{flex:1 1 260px;font:inherit;font-family:"IBM Plex Mono",monospace;font-size:13.5px;
+  color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);
+  border-radius:11px;padding:14px 15px}
+.askbox input::placeholder{color:var(--ink-3);font-family:"IBM Plex Sans",sans-serif}
+.askbox input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+.askbox button{font:inherit;font-weight:600;font-size:15px;color:var(--ground);
+  background:var(--ink);border:0;border-radius:11px;padding:14px 24px;cursor:pointer}
+.askbox button:hover{filter:brightness(1.15)}
+.hint{margin-top:16px;font-size:13px;color:var(--ink-3);min-height:20px}
+.hint.err{color:var(--crit)}
+.examples{margin-top:44px;width:min(640px,100%)}
+.examples .cap{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
+  margin-bottom:12px;font-weight:600}
+.ex-list{display:grid;gap:7px}
+.ex{display:flex;align-items:center;gap:12px;text-align:left;width:100%;font:inherit;
+  background:transparent;border:1px solid var(--line);border-radius:10px;padding:11px 13px;
+  cursor:pointer;color:var(--ink)}
+.ex:hover{border-color:var(--line-strong);background:var(--surface-2)}
+.ex .ttl{flex:1;font-size:13.5px}
+.ex .amt{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-3);
+  font-variant-numeric:tabular-nums}
+.quietlink{margin-top:40px;font-size:13px;color:var(--ink-3);background:none;border:0;
+  cursor:pointer;text-decoration:underline;text-underline-offset:3px;font:inherit}
+.quietlink:hover{color:var(--ink-2)}
+
+/* ---------- checking ---------- */
+.checking{min-height:74vh;display:grid;place-content:center;justify-items:center;gap:20px;
+  text-align:center}
+.pulse{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);
+  border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.pulse{animation:none;border-top-color:var(--line-strong)}}
+.checking .what{font-size:14px;color:var(--ink-2)}
+.checking .addr-line{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3);
+  word-break:break-all;max-width:44ch}
+
+/* ---------- result ---------- */
+.result{max-width:640px;margin:0 auto;padding-block:40px 32px}
+.backbar{display:flex;align-items:center;gap:14px;margin-bottom:34px}
+.back{font:inherit;font-size:13.5px;color:var(--ink-2);background:none;border:0;cursor:pointer;
+  padding:0;display:inline-flex;align-items:center;gap:6px}
+.back:hover{color:var(--ink)}
+.rhead{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.rbadge{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;
+  font-size:23px;font-weight:700;flex:none}
+.rtitle{font-family:Archivo;font-weight:700;font-size:clamp(24px,3.2vw,32px);letter-spacing:-.02em;
+  line-height:1.15}
+.rsummary{color:var(--ink-2);margin:0 0 26px;font-size:15px;line-height:1.55}
+.paycard{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);
+  padding:16px 18px;display:grid;gap:12px;margin-bottom:26px}
+.payrow{display:flex;justify-content:space-between;gap:14px;align-items:baseline;font-size:13.5px}
+.payrow .lbl{color:var(--ink-3)}
+.payrow .v{font-family:"IBM Plex Mono",monospace;word-break:break-all;text-align:right}
+.whyhead{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
+  font-weight:600;margin-bottom:12px}
+.whylist{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:11px}
+.whylist li{display:flex;gap:11px;align-items:flex-start;font-size:14.5px;line-height:1.45}
+.whylist .dotmark{flex:none;width:6px;height:6px;border-radius:50%;margin-top:8px;display:block}
+.verifynote{font-size:12.5px;color:var(--ink-3);margin:0 0 26px}
+.ractions{display:grid;gap:9px;margin-bottom:28px}
+.scoreline{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-3);
+  border-top:1px solid var(--line);padding-top:16px;flex-wrap:wrap}
+.scoreline .mono{color:var(--ink-2)}
+
+/* ---------- research result ---------- */
+.factgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  margin-bottom:26px}
+.fact{background:var(--surface);padding:13px 15px}
+.fact .fv{font-family:Archivo;font-weight:700;font-size:19px;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums}
+.fact .fk{font-size:11.5px;color:var(--ink-3);margin-top:3px}
+.listed{border:1px solid var(--crit);background:var(--crit-bg);border-radius:10px;
+  padding:13px 15px;margin-bottom:22px;font-size:13.5px}
+.listed b{color:var(--crit)}
+.indexnote{font-size:12.5px;color:var(--ink-3);margin:0 0 26px}
+
+/* ---------- analysis ---------- */
+.analysis-head{padding-block:34px 10px}
+</style>
+
+<!-- ============ 1. HOME: one calm question ============ -->
+<div class="view on" id="view-home">
+  <div class="wrap">
+    <div class="home">
+      <div class="mark"><span class="dot"></span> Veridis</div>
+      <h1>Check an address before you send.</h1>
+      <p class="sub">Stablecoin transfers cannot be reversed. Paste where the money is
+        going and we will tell you whether it looks like a scam &mdash; and why.</p>
+
+      <form class="askbox" id="askForm">
+        <input id="addrInput" type="text" spellcheck="false" autocomplete="off"
+          placeholder="Paste a Tron address" aria-label="Destination address">
+        <button type="submit">Check</button>
+      </form>
+      <div class="hint" id="hint"></div>
+      <div class="small" style="color:var(--ink-3);margin-top:2px" id="idxCount"></div>
+
+      <div class="examples">
+        <div class="cap">Or try a real one from our held-out data</div>
+        <div class="ex-list" id="exList"></div>
+      </div>
+
+      <button class="quietlink" id="toAnalysis" type="button">How this works &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 2. CHECKING ============ -->
+<div class="view" id="view-checking">
+  <div class="wrap">
+    <div class="checking">
+      <div class="pulse"></div>
+      <div class="what">Reading this address&rsquo;s history on-chain&hellip;</div>
+      <div class="addr-line" id="checkingAddr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 3. RESULT ============ -->
+<div class="view" id="view-result">
+  <div class="wrap">
+    <div class="result">
+      <div class="backbar">
+        <button class="back" id="backHome" type="button">&larr; Check another address</button>
+      </div>
+      <div class="rhead">
+        <div class="rbadge" id="rBadge"></div>
+        <div class="rtitle" id="rTitle"></div>
+      </div>
+      <p class="rsummary" id="rSummary"></p>
+
+      <div class="paycard" id="payCard"></div>
+
+      <div id="whyBlock">
+        <div class="whyhead">Why</div>
+        <ul class="whylist" id="whyList"></ul>
+        <p class="verifynote">Every one of these is checkable on a block explorer before you
+          decide. We never hold funds and never block a transfer ourselves.</p>
+      </div>
+
+      <div class="ractions" id="rActions"></div>
+
+      <div class="scoreline">
+        <span>score <b class="mono" id="rScore"></b></span>
+        <span>&middot;</span>
+        <span>band <b class="mono" id="rBand"></b></span>
+        <span>&middot;</span>
+        <span><b class="mono" id="rLat"></b> to answer</span>
+        <span class="spacer"></span>
+        <button class="quietlink" id="toAnalysis2" type="button"
+          style="margin:0">See the full analysis &rarr;</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 3b. RESEARCH: what is this address? ============ -->
+<div class="view" id="view-research">
+  <div class="wrap">
+    <div class="result">
+      <div class="backbar">
+        <button class="back" id="backHome3" type="button">&larr; Check another address</button>
+      </div>
+      <div class="rhead">
+        <div class="rbadge" id="gBadge"></div>
+        <div class="rtitle" id="gTitle"></div>
+      </div>
+      <p class="rsummary" id="gSummary"></p>
+      <div id="gListed"></div>
+      <div class="factgrid" id="gFacts"></div>
+      <div class="whyhead">What this address does</div>
+      <ul class="whylist" id="gNotes"></ul>
+      <p class="indexnote" id="gVerify"></p>
+      <div class="note" id="gNext"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 4. ANALYSIS (everything else, on request) ============ -->
+<div class="view" id="view-analysis">
+  <header class="top">
+    <div class="top-in">
+      <div class="logo"><span class="dot"></span> Veridis</div>
+      <div class="tag">Pre-send risk API for irreversible payments</div>
+      <div class="spacer"></div>
+      <button class="ghost" id="backHome2" type="button">&larr; Back</button>
+      <button class="ghost" id="themeBtn" type="button">Theme</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="analysis-head">
+      <div class="eyebrow">Tron &middot; TRC-20 USDT &middot; live model, held-out data</div>
+      <h2 style="font-size:clamp(23px,3vw,30px);margin:10px 0 14px">How the check works,
+        and what it is worth</h2>
+      <p class="sec-sub" style="max-width:70ch">A wallet calls one endpoint before an
+        irreversible transfer settles. We return a score, a band and reasons; the wallet
+        decides whether to warn, add friction, or let it through. Everything below is the
+        real model on real held-out transfers.</p>
+    </div>
+
+    <section id="dial-sec">
+      <div class="sec-head"><h2>The dial a wallet turns</h2></div>
+      <p class="sec-sub">Risk teams do not buy a score, they buy an operating point. Set the
+        false-positive budget you can live with and the rest follows. Every number is
+        measured on the held-out set, not modelled.</p>
+      <div class="card">
+        <div class="dial">
+          <div>
+            <label for="fprRange" class="eyebrow" style="display:block;margin-bottom:10px">
+              False-positive budget</label>
+            <input type="range" id="fprRange" min="0" max="8" step="1" value="3"
+              aria-describedby="dialNote">
+            <div style="display:flex;justify-content:space-between;font-size:11px;
+              color:var(--ink-3);font-family:'IBM Plex Mono',monospace;margin-top:6px">
+              <span>0.1%</span><span>strict</span><span>permissive</span><span>12%</span></div>
+            <p class="small muted" id="dialNote" style="margin:16px 0 0"></p>
+          </div>
+          <div class="dial-out" id="dialOut"></div>
+        </div>
+        <div class="policy" id="policy"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>What this looks like on real traffic</h2>
+        <span class="eyebrow">the number that decides it</span></div>
+      <p class="sec-sub">Every other figure on this page is measured on a matched
+        population where roughly one event in seven is a victim transfer. No wallet looks
+        like that. Recall and false-positive rate do not move with prevalence &mdash; they
+        are conditional on the true class &mdash; but <b>precision does</b>, and it is the
+        thing a customer actually feels.</p>
+      <div class="card">
+        <div class="tbl-wrap"><table id="prevTbl"></table></div>
+        <p class="note" style="margin-top:16px" id="prevNote"></p>
+      </div>
+      <div class="card" style="margin-top:18px">
+        <h3 style="margin-bottom:6px">So is it worth firing?</h3>
+        <p class="small muted" style="margin:0 0 14px">Precision is the wrong lens. At a
+          realistic prevalence most alerts are false &mdash; but a false alert costs a few
+          seconds of friction and a true one stops an irreversible five-figure loss. The
+          decision number is dollars protected per false alert; you supply the price of
+          friction.</p>
+        <div class="tbl-wrap"><table id="econTbl"></table></div>
+        <p class="note" style="margin-top:16px" id="econNote"></p>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>What a flag is worth</h2></div>
+      <p class="sec-sub">Nobody buys recall. A wallet trades money kept against customers
+        interrupted, so this is the curve that matters. No cost per interruption is assumed
+        &mdash; that price is the customer's &mdash; so it is reported as dollars protected
+        per interruption and you can put your own number on friction.</p>
+      <div class="card"><div class="tbl-wrap"><table id="costTbl"></table></div>
+        <p class="small muted" style="margin:14px 0 0">Measured on the held-out set.
+          Dollars protected counts money that moved at or after our first flag on a victim
+          relationship &mdash; money a blocking interstitial had the chance to stop.</p></div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Does the model know what it knows?</h2></div>
+      <p class="sec-sub">A score is only usable as a probability if it means what it says.
+        Expected calibration error is the average gap between predicted and observed
+        frequency across the score range.</p>
+      <div class="grid2">
+        <div class="card"><h3 style="margin-bottom:12px">Calibration</h3>
+          <dl class="kv" id="calKv"></dl>
+          <div class="tbl-wrap" style="margin-top:14px"><table id="relTbl"></table></div></div>
+        <div class="card"><h3 style="margin-bottom:6px">Stability out of period</h3>
+          <p class="small muted" style="margin:0 0 14px">Population stability index between
+            the train and test periods. Below 0.1 is stable, above 0.25 a material shift.</p>
+          <div id="psiBars"></div>
+          <p class="note" style="margin-top:16px" id="psiNote"></p></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>What the wallet integrates</h2></div>
+      <p class="sec-sub">One call, answered from indexed chain data. The response below is
+        the one the API returned for the case you just checked.</p>
+      <div class="api">
+        <div class="api-h">
+          <span class="method">POST</span><span class="path">/score</span>
+          <span class="lat" id="latBadge"></span>
+        </div>
+        <div class="api-label">Request</div>
+        <pre id="reqJson"></pre>
+        <div class="api-split"></div>
+        <div class="api-label">Response</div>
+        <pre id="resJson"></pre>
+      </div>
+    </section>
+
+    <section id="replay-sec">
+      <div class="sec-head"><h2>Why it fires before anyone has reported anything</h2>
+        <span class="eyebrow">one victim, replayed</span></div>
+      <p class="sec-sub">One real victim, transfer by transfer. The blocklist column is not a
+        strawman &mdash; it flips only on the date this address actually appeared on a public
+        list. Every address and hash is verifiable on Tronscan.</p>
+      <div class="replay">
+        <div class="replay-bar">
+          <button class="btn" id="playBtn" type="button">&#9654;&nbsp; Play replay</button>
+          <div class="step-dots" id="dots"></div>
+          <div class="spacer"></div>
+          <div class="small muted" id="stepLabel"></div>
+        </div>
+        <div class="panes">
+          <div class="pane">
+            <div class="pane-h"><div><div class="who">Blocklist / sanctions screening</div>
+              <div class="src">public lists, as of the transfer date</div></div></div>
+            <div id="blockPane"></div>
+          </div>
+          <div class="pane">
+            <div class="pane-h"><div><div class="who">Veridis pre-send score</div>
+              <div class="src">sender behaviour, computed as-of the transfer</div></div></div>
+            <div id="scorePane"></div>
+          </div>
+        </div>
+        <div class="tl">
+          <div class="legend">
+            <span><i style="background:var(--series-1)"></i>Veridis score</span>
+            <span><i style="background:var(--series-2)"></i>Blocklist verdict</span>
+            <span><i style="background:var(--crit)"></i>High-risk threshold</span>
+          </div>
+          <div id="chart"></div>
+        </div>
+        <div class="replay-foot">
+          <div><div class="n" id="protected"></div>
+            <div class="small muted">moved after our first flag</div></div>
+          <div><div class="n" style="color:var(--ink)" id="total"></div>
+            <div class="small muted">total sent to this address</div></div>
+          <div><div class="n" style="color:var(--ink)" id="listedGap"></div>
+            <div class="small muted" id="listedNote"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>What each system can actually see</h2></div>
+      <p class="sec-sub">The same model, retrained four times, each allowed a different view
+        of the transfer. <b>Destination-only</b> is the ceiling for anything that works by
+        knowing something about the recipient. <b>Sender-side only</b> knows nothing
+        whatsoever about the destination.</p>
+      <div class="abl" id="abl"></div>
+      <p class="note" style="margin-top:18px" id="unseenNote"></p>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Where this sits</h2></div>
+      <p class="sec-sub">Recipient-side fraud prevention asks <i>is this address
+        known-bad?</i> That question is well served and consolidating &mdash; Chainalysis
+        acquired Alterya, the leading off-chain scam-intelligence vendor, in January 2025.
+        We ask a different question, answerable with no information about the recipient.</p>
+      <div class="grid2">
+        <div class="card">
+          <div class="eyebrow" style="margin-bottom:10px">Recipient-side</div>
+          <h3 style="margin-bottom:8px">Is this address known-bad?</h3>
+          <p class="small muted" style="margin:0 0 14px">Blocklists, sanctions screening, and
+            off-chain scam intelligence monitoring web, social and chat channels, plus KYC
+            signals from the exchange.</p>
+          <dl class="kv">
+            <dt>Needs the scam to be observed</dt><dd>yes</dd>
+            <dt>Needs off-chain data partnerships</dt><dd>yes</dd>
+            <dt>Touches PII / KYC</dt><dd>yes</dd>
+            <dt>Works on an unreported address</dt><dd>no</dd>
+          </dl>
+        </div>
+        <div class="card" style="border-color:var(--accent)">
+          <div class="eyebrow" style="margin-bottom:10px;color:var(--accent)">Sender-side &mdash; Veridis</div>
+          <h3 style="margin-bottom:8px">Is this person being scammed?</h3>
+          <p class="small muted" style="margin:0 0 14px">The victim's own behaviour from
+            public chain data: a break from their baseline, convergence on a counterparty
+            they have no relationship with, money arriving and leaving, a balance draining.</p>
+          <dl class="kv">
+            <dt>Needs the scam to be observed</dt><dd>no</dd>
+            <dt>Needs off-chain data partnerships</dt><dd>no</dd>
+            <dt>Touches PII / KYC</dt><dd>none</dd>
+            <dt>Works on an unreported address</dt><dd><b id="worksUnreported">yes</b></dd>
+          </dl>
+        </div>
+      </div>
+      <p class="note" style="margin-top:18px">Complements, not substitutes. A wallet wants
+        both: the recipient check catches known infrastructure, and the sender check covers
+        the window before anything is known &mdash; which, in the replay above, was the
+        entire window in which the money moved.</p>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Model performance</h2>
+        <span class="eyebrow">temporal + grouped split</span></div>
+      <div class="grid2">
+        <div class="card"><h3 style="margin-bottom:12px">Detection</h3>
+          <dl class="kv" id="perf"></dl></div>
+        <div class="card"><h3 style="margin-bottom:12px">Signal by feature family</h3>
+          <p class="small muted" style="margin:0 0 14px">If the signal were destination-only
+            we would have rebuilt a blocklist with extra steps.</p>
+          <div id="famBars"></div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>What we would not claim</h2></div>
+      <div class="card">
+        <ul style="margin:0;padding-left:18px;display:grid;gap:10px" class="small" id="limits"></ul>
+      </div>
+    </section>
+
+    <footer>
+      <div>Generated <span id="gen"></span> from held-out model output. Labels from Tether's
+        on-chain TRC-20 freeze list and OFAC SDN; chain data from TronGrid. No PII, no KYC,
+        no licensed blocklist data.</div>
+    </footer>
+  </div>
+</div>
+
+<script>
+const D = /*__DATA__*/{};
+const $ = (s)=>document.querySelector(s);
+const fmtUsd = (n)=>"$"+Math.round(n).toLocaleString("en-US");
+const pct = (x,d=1)=>(100*x).toFixed(d)+"%";
+const SC = D.scenarios||[];
+
+/* ---------------- view routing ---------------- */
+let analysisReady=false;
+function show(name){
+  ["home","checking","result","research","analysis"].forEach(v=>
+    $("#view-"+v).classList.toggle("on", v===name));
+  document.body.classList.toggle("home-mode", name==="home"||name==="checking");
+  if(name==="analysis" && !analysisReady){ buildAnalysis(); analysisReady=true; }
+  window.scrollTo({top:0,behavior:"instant"});
+}
+$("#toAnalysis").addEventListener("click",()=>show("analysis"));
+$("#toAnalysis2").addEventListener("click",()=>show("analysis"));
+function goHome(){ $("#addrInput").value=""; $("#hint").textContent=""; show("home"); }
+$("#backHome").addEventListener("click",goHome);
+$("#backHome3").addEventListener("click",goHome);
+$("#backHome2").addEventListener("click",()=>show(current?"result":"home"));
+
+/* ---------------- home ---------------- */
+$("#exList").innerHTML = SC.map((s,i)=>`
+  <button class="ex" type="button" data-i="${i}">
+    <span class="ttl">${s.title}</span>
+    <span class="amt">${fmtUsd(s.request.amount_usd)}</span>
+  </button>`).join("");
+$("#exList").addEventListener("click",e=>{
+  const b=e.target.closest(".ex"); if(!b)return;
+  const s=SC[+b.dataset.i];
+  $("#addrInput").value=s.request.destination;
+  runCheck(+b.dataset.i);
+});
+
+/* The address index is ~1MB of precomputed research output. It ships as a
+   separate file and is fetched on the first search, so the landing page stays
+   light for anyone who only wants to try an example. */
+let INDEX=null, indexState="idle";
+async function loadIndex(){
+  if(INDEX||indexState==="failed") return INDEX;
+  if(indexState==="loading"){
+    while(indexState==="loading") await new Promise(r=>setTimeout(r,60));
+    return INDEX;
+  }
+  indexState="loading";
+  try{
+    const res=await fetch("address_index.json");
+    if(!res.ok) throw new Error(res.status);
+    const j=await res.json();
+    INDEX=new Map(j.entries.map(e=>[e.a.toLowerCase(),e]));
+    if(j.model && !D.addressModel) D.addressModel=j.model;
+    indexState="ready";
+    return INDEX;
+  }catch(err){
+    // A missing index must degrade to the honest message, not a broken search.
+    indexState="failed";
+    return null;
+  }
+}
+loadIndex().then(m=>{
+  if(m) $("#idxCount").textContent=
+    `${m.size.toLocaleString()} wallets indexed from held-out chain data`;
+});
+
+$("#askForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const q=$("#addrInput").value.trim();
+  if(!q){ $("#hint").className="hint"; $("#hint").textContent="Paste an address to check."; return; }
+  const i=SC.findIndex(s=>s.request.destination.toLowerCase()===q.toLowerCase());
+  if(i>=0){ runCheck(i); return; }
+
+  $("#hint").className="hint"; $("#hint").textContent="Looking it up\u2026";
+  const idx=await loadIndex();
+  const hit=idx&&idx.get(q.toLowerCase());
+  if(hit){ $("#hint").textContent=""; showResearch(hit); return; }
+
+  // Be honest about what this demo can and cannot answer.
+  $("#hint").className="hint err";
+  $("#hint").innerHTML=`We hold no chain history for that address here, so there is nothing to
+    report &mdash; and we won't invent a result. This page ships a fixed set of wallets whose
+    history we fetched; the live API pulls history for any address on request.`;
+});
+
+/* ---------------- check + result ---------------- */
+let current=null;
+function runCheck(i){
+  const s=SC[i];
+  $("#checkingAddr").textContent=s.request.destination;
+  $("#hint").textContent="";
+  show("checking");
+  setTimeout(()=>{ current=s; renderResult(s); show("result"); }, 850);
+}
+
+function ageText(d){
+  if(d<1) return "today";
+  if(d<45) return Math.round(d)+(Math.round(d)===1?" day ago":" days ago");
+  if(d<365) return Math.round(d/30)+" months ago";
+  const y=d/365; return (y<1.95?"about a year ago":y.toFixed(1)+" years ago");
+}
+
+function renderResult(s){
+  const r=s.response, crit=r.band==="high_risk", warn=r.band==="caution";
+  const col=crit?"var(--crit)":warn?"var(--warn)":"var(--good)";
+  const bg=crit?"var(--crit-bg)":warn?"var(--warn-bg)":"var(--good-bg)";
+
+  $("#rBadge").style.background=bg; $("#rBadge").style.color=col;
+  $("#rBadge").textContent=crit?"!":warn?"!":"&#10003;";
+  $("#rTitle").textContent=crit?"This looks like a scam"
+    :warn?"Worth a second look":"Nothing unusual here";
+  $("#rTitle").style.color=crit?"var(--crit)":"var(--ink)";
+  $("#rSummary").textContent=crit
+    ? "Transfers with this pattern are how pig-butchering scams take money. Once it is sent it cannot be recalled."
+    : warn
+    ? "A few things about this transfer are unusual for this wallet. Read them before you continue."
+    : "This transfer looks like ordinary activity for this wallet, and the destination behaves normally.";
+
+  $("#payCard").innerHTML=`
+    <div class="payrow"><span class="lbl">Sending</span>
+      <span class="v" style="font-size:16px;font-weight:600">${fmtUsd(s.request.amount_usd)} ${s.request.asset}</span></div>
+    <div class="payrow"><span class="lbl">To</span>
+      <span class="v"><a class="addr" target="_blank" rel="noopener"
+        href="https://tronscan.org/#/address/${s.request.destination}">${s.request.destination} &#8599;</a></span></div>
+    <div class="payrow"><span class="lbl">Address first seen</span>
+      <span class="v">${ageText(s.context.dest_age_days)}</span></div>
+    <div class="payrow"><span class="lbl">You have sent here before</span>
+      <span class="v">${s.context.prior_sends===0?"never"
+        :s.context.prior_sends===1?"once":s.context.prior_sends+" times"}</span></div>
+    <div class="payrow"><span class="lbl">On any public scam list</span>
+      <span class="v">no</span></div>`;
+
+  // On a safe verdict the model's top risk contributors are still non-empty -
+  // they simply did not add up to anything. Listing them under "Why" beside
+  // "Nothing unusual here" reads as a contradiction, so a clean result shows
+  // what reassured us, and files the raw contributors under a disclosure for
+  // anyone who wants them.
+  if(crit||warn){
+    $("#whyBlock").innerHTML=`<div class="whyhead">Why</div>
+      <ul class="whylist">${r.reasons.map(x=>
+        `<li><span class="dotmark" style="background:${col}"></span><span>${x}</span></li>`).join("")}</ul>
+      <p class="verifynote">Every one of these is checkable on a block explorer before you
+        decide. We never hold funds and never block a transfer ourselves.</p>`;
+  }else{
+    const ok=[];
+    if(s.context.prior_sends>0)
+      ok.push(`You have paid this address before &mdash; ${s.context.prior_sends} times`);
+    ok.push(`The destination has been active for ${ageText(s.context.dest_age_days).replace(" ago","")}`);
+    ok.push(`It is not on any sanctions or public scam list`);
+    ok.push(`This transfer fits the pattern of how this wallet normally moves money`);
+    $("#whyBlock").innerHTML=`<div class="whyhead">What we checked</div>
+      <ul class="whylist">${ok.map(x=>
+        `<li><span class="dotmark" style="background:var(--good)"></span><span>${x}</span></li>`).join("")}</ul>
+      <details style="margin:4px 0 22px">
+        <summary style="cursor:pointer;font-size:12.5px;color:var(--ink-3)">
+          What the model weighed anyway</summary>
+        <p class="verifynote" style="margin:10px 0 6px">These pushed the score up but did not
+          add up to a concern. The score stayed at ${r.score.toFixed(3)}, below the
+          caution threshold.</p>
+        <ul class="whylist">${r.reasons.map(x=>
+          `<li><span class="dotmark" style="background:var(--ink-3)"></span><span>${x}</span></li>`).join("")}</ul>
+      </details>`;
+  }
+
+  $("#rActions").innerHTML = (crit||warn)
+    ? `<button class="act act-primary" type="button" id="stopBtn">Don't send</button>
+       <button class="act act-ghost" type="button" id="goBtn">Send anyway</button>`
+    : `<button class="act act-primary" type="button" id="goBtn">Continue and send</button>`;
+
+  const after=(title,body)=>{
+    $("#rActions").innerHTML=`<div class="note" style="border-color:${col}">
+      <b>${title}</b><br>${body}</div>`;
+  };
+  const stop=$("#stopBtn"); if(stop) stop.addEventListener("click",()=>
+    after("Nothing was sent.","The money is still in the wallet. That is the whole product."));
+  $("#goBtn").addEventListener("click",()=>
+    after("Sent.","We return a number and reasons; the wallet decides and the person can always override. We never hold or block funds."));
+
+  $("#rScore").textContent=r.score.toFixed(3);
+  $("#rBand").textContent=r.band.replace("_"," ");
+  $("#rLat").textContent=r.latency_ms+" ms";
+
+  // keep the API panel in sync for whoever opens the analysis view
+  pendingApi=s;
+  if(analysisReady) paintApi();
+}
+
+/* ---------------- research result ---------------- */
+const fmtCompact=(n)=>{
+  if(n>=1e9) return "$"+(n/1e9).toFixed(1)+"bn";
+  if(n>=1e6) return "$"+(n/1e6).toFixed(1)+"m";
+  if(n>=1e3) return "$"+(n/1e3).toFixed(0)+"k";
+  return "$"+Math.round(n);
+};
+function holdText(sec){
+  if(sec==null) return null;
+  if(sec<90) return Math.round(sec)+" sec";
+  if(sec<5400) return Math.round(sec/60)+" min";
+  if(sec<172800) return Math.round(sec/3600)+" hr";
+  return Math.round(sec/86400)+" days";
+}
+function showResearch(e){
+  const p=e.p, listed=!!e.l, band=e.b||"ordinary", score=e.s;
+  const high=band==="high", elevated=band==="elevated";
+  const col=high?"var(--crit)":elevated?"var(--warn)":"var(--good)";
+  const bg=high?"var(--crit-bg)":elevated?"var(--warn-bg)":"var(--good-bg)";
+
+  $("#gBadge").style.background=bg; $("#gBadge").style.color=col;
+  $("#gBadge").textContent=high?"!":elevated?"?":"\u2713";
+  $("#gTitle").textContent = high ? "High risk destination"
+    : elevated ? "Some risk signals here"
+    : "Nothing unusual about this address";
+  $("#gTitle").style.color=high?"var(--crit)":"var(--ink)";
+  $("#gSummary").textContent = high
+    ? "Money moves through this address the way it moves through a scam collection point. Judged on the destination alone \u2014 we know nothing here about who is sending."
+    : elevated
+    ? "Some of what this address does resembles a collection point, but not decisively."
+    : "This address behaves like ordinary wallet activity.";
+
+  $("#gListed").innerHTML = listed
+    ? `<div class="listed"><b>Publicly listed</b> \u2014 source: ${e.ls||"unknown"}${
+        e.lw?`, first reported ${new Date(e.lw).toISOString().slice(0,10)}`:""}.
+        Every transfer into it before that date passed every blocklist in existence.</div>`
+    : "";
+
+  const facts=[
+    ["Age", p.age_days!=null?(p.age_days>=365?(p.age_days/365).toFixed(1)+" yr":Math.round(p.age_days)+" days"):null],
+    ["Wallets that paid it", p.senders_all!=null?p.senders_all.toLocaleString():null],
+    ["In its final week", p.senders_7d!=null?p.senders_7d.toLocaleString():null],
+    ["Total received", p.inbound_usd!=null?fmtCompact(p.inbound_usd):null],
+    ["Average per payer", p.usd_per_sender!=null?fmtCompact(p.usd_per_sender):null],
+    ["Forwarded onward", p.forward_ratio!=null?Math.round(Math.min(p.forward_ratio,1)*100)+"%":null],
+    ["To one address", p.consolidation_ratio!=null?Math.round(p.consolidation_ratio*100)+"%":null],
+    ["Typically held", holdText(p.median_hold_secs)],
+  ].filter(f=>f[1]!=null);
+  $("#gFacts").innerHTML=facts.map(([k,v])=>
+    `<div class="fact"><div class="fv">${v}</div><div class="fk">${k}</div></div>`).join("");
+
+  $("#gNotes").innerHTML=(e.n&&e.n.length?e.n:["Nothing stood out in its transfer pattern."])
+    .map(n=>`<li><span class="dotmark" style="background:${col}"></span><span>${n[0].toUpperCase()+n.slice(1)}</span></li>`).join("");
+
+  // Say what the number is worth, measured, right next to the number.
+  const ev=(D.addressModel&&D.addressModel.evaluation)||null;
+  const worth = ev ? `This is a destination-only model scored against
+    ${ev.n_scam.toLocaleString()} addresses on public scam lists and
+    ${ev.n_control.toLocaleString()} ordinary ones: <b>ROC-AUC
+    ${ev.roc_auc.toFixed(3)}</b>. Median score for listed addresses
+    ${ev.score_median_scam.toFixed(2)}, for ordinary ones
+    ${ev.score_median_control.toFixed(3)}.` : "";
+  $("#gVerify").innerHTML=`<b>Risk score ${score!=null?score.toFixed(3):"\u2014"}</b>
+    (${band}). ${worth}<br>Every figure above is on-chain and checkable \u2014
+    <a class="addr" target="_blank" rel="noopener"
+       href="https://tronscan.org/#/address/${e.a}">open ${e.a.slice(0,12)}\u2026 on Tronscan \u2197</a>`;
+
+  $("#gNext").innerHTML=`<b>This describes the address, not a transfer.</b> Shape alone
+    cannot separate a scam collector from an exchange deposit wallet \u2014 both take money
+    from many unrelated payers and forward it immediately. Scoring a send also needs the
+    sender, and that is where most of the signal lives.
+    <button class="quietlink" type="button" id="toAnalysis3"
+    style="margin:0">See how the scoring works \u2192</button>`;
+  $("#toAnalysis3").addEventListener("click",()=>show("analysis"));
+  show("research");
+}
+
+/* ---------------- analysis view ---------------- */
+let pendingApi=null;
+function json(o){
+  const esc=(t)=>t.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  return esc(JSON.stringify(o,null,2))
+    .replace(/"([^"]+)":/g,'<span class="k">"$1"</span>:')
+    .replace(/: "([^"]*)"/g,': <span class="s">"$1"</span>')
+    .replace(/: (-?\d+\.?\d*)/g,': <span class="n">$1</span>');
+}
+function paintApi(){
+  const s=pendingApi||SC[0]; if(!s)return;
+  $("#reqJson").innerHTML=json(s.request);
+  $("#resJson").innerHTML=json(s.response);
+  $("#latBadge").textContent=s.response.latency_ms+" ms";
+}
+function bandColor(b){
+  return b==="high_risk"?"var(--crit)":b==="caution"?"var(--warn)":"var(--good)";
+}
+
+function buildAnalysis(){
+  paintApi();
+  $("#themeBtn").addEventListener("click",()=>{
+    const r=document.documentElement, cur=r.getAttribute("data-theme");
+    const dark=cur?cur==="dark":matchMedia("(prefers-color-scheme: dark)").matches;
+    r.setAttribute("data-theme",dark?"light":"dark"); draw();
+  });
+
+  /* operating dial */
+  const CURVE=D.operating_curve||[];
+  const range=$("#fprRange");
+  range.max=String(Math.max(0,CURVE.length-1));
+  function renderDial(){
+    const c=CURVE[+range.value]; if(!c)return;
+    $("#dialOut").innerHTML=[
+      ["Victims caught on transfer 1",pct(c.early_k1)],
+      ["Victims caught by transfer 3",pct(c.early_k3)],
+      ["Precision when we fire",c.precision.toFixed(3)],
+      ["Interruptions per 1,000 sends",c.interrupted_per_1000.toFixed(1)],
+    ].map(([l,v])=>`<div class="row"><span class="lbl">${l}</span>
+       <span class="num">${v}</span></div>`).join("");
+    $("#dialNote").innerHTML=`At a <b>${pct(c.budget,2)}</b> budget the model fires on
+      <b>${c.interrupted_per_1000.toFixed(1)} in every 1,000</b> legitimate sends and catches
+      <b>${pct(c.early_k1)}</b> of victims on their very first transfer.
+      Measured FPR ${pct(c.fpr,2)}.
+      <span class="muted">Rates are against our matched control population, which is not a
+      sample of real wallet traffic &mdash; a customer would re-fit this on their own.</span>`;
+  }
+  range.addEventListener("input",renderDial); renderDial();
+
+  $("#policy").innerHTML=`<div class="eyebrow" style="margin-top:6px">What the wallet does
+    with each band</div>`+
+  [["safe","var(--good)","var(--good-bg)","Send normally. No interruption, no friction."],
+   ["caution","var(--warn)","var(--warn-bg)","Inline note on the confirm screen. The user reads it and proceeds."],
+   ["high_risk","var(--crit)","var(--crit-bg)","Blocking interstitial with reasons. The user can still override &mdash; we never hold funds."],
+  ].map(([b,c,bg,t])=>`<div class="policy-row">
+     <span class="band" style="color:${c};background:${bg}">${b}</span>
+     <span class="small">${t}</span></div>`).join("");
+
+  /* deployment prevalence */
+  const PV=D.prevalence||[], EC2=D.economics||[];
+  if(PV.length){
+    $("#prevTbl").innerHTML=`<thead><tr><th>If 1 scam in&hellip;</th><th>Prevalence</th>
+      <th>Precision</th><th>False alerts per real catch</th></tr></thead><tbody>`+
+      PV.map(r=>`<tr><td class="mono">${Math.round(1/r.prevalence).toLocaleString()} sends</td>
+        <td class="num">${pct(r.prevalence,3)}</td>
+        <td class="num">${r.precision.toFixed(3)}</td>
+        <td class="num">${r.false_per_true?r.false_per_true.toFixed(1):"\u2014"}</td>
+        </tr>`).join("")+`</tbody>`;
+    const worst=PV[PV.length-1], mid=PV.find(r=>r.prevalence===0.001)||PV[2];
+    $("#prevNote").innerHTML=`Measured at a ${pct(D.metrics.base_rate,1)} evaluation
+      prevalence this model reports precision <b>${D.metrics.precision.toFixed(3)}</b>. At
+      1 scam in 1,000 sends the same model, unchanged, has precision
+      <b>${mid?mid.precision.toFixed(3):"\u2014"}</b>. Both describe the same classifier.
+      Only the second describes what a wallet would experience, so it is the one that
+      belongs in a conversation about deploying it.`;
+  }
+  if(EC2.length){
+    $("#econTbl").innerHTML=`<thead><tr><th>Budget</th><th>Recall</th>
+      <th>False alerts</th><th>Protected</th><th>Per false alert</th></tr></thead><tbody>`+
+      EC2.map(r=>`<tr><td class="mono">${pct(r.budget,2)}</td>
+        <td class="num">${r.recall.toFixed(3)}</td>
+        <td class="num">${Math.round(r.false_alerts_per_n).toLocaleString()}</td>
+        <td class="num">${fmtUsd(r.usd_protected_per_n)}</td>
+        <td class="num">${fmtUsd(r.usd_per_false_alert)}</td></tr>`).join("")+`</tbody>`;
+    const tight=EC2[0], loose=EC2[EC2.length-1];
+    $("#econNote").innerHTML=`Per 100,000 real sends at 1 scam in 1,000. The average victim
+      relationship we catch is worth <b>${fmtUsd(tight.usd_per_relationship)}</b>, and that
+      figure barely moves across the range &mdash; what changes is how many we catch and how
+      much friction it costs. At the tightest setting each false alert buys
+      <b>${fmtUsd(tight.usd_per_false_alert)}</b> of protected money; at the loosest,
+      <b>${fmtUsd(loose.usd_per_false_alert)}</b> with
+      ${(loose.recall/tight.recall).toFixed(1)}x the recall. A wallet that prices an
+      interruption below either number is better off running us.`;
+  }
+
+  /* cost curve */
+  const CC=D.cost_curve||[];
+  if(CC.length){
+    $("#costTbl").innerHTML=`<thead><tr><th>Budget</th><th>Interruptions</th>
+      <th>Dollars protected</th><th>Per interruption</th></tr></thead><tbody>`+
+      CC.map(c=>`<tr><td class="mono">${pct(c.budget,2)}</td>
+        <td class="num">${c.interruptions.toLocaleString()}</td>
+        <td class="num">${fmtUsd(c.protected_usd)}</td>
+        <td class="num">${c.usd_per_interruption?fmtUsd(c.usd_per_interruption):"\u2014"}</td>
+        </tr>`).join("")+`</tbody>`;
+  }
+
+  /* calibration */
+  const EC=D.ece;
+  if(EC){
+    $("#calKv").innerHTML=[
+      ["Expected calibration error",EC.ece.toFixed(4)],
+      ["Worst single-bin gap",EC.max_gap.toFixed(3)],
+    ].map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
+    $("#relTbl").innerHTML=`<thead><tr><th>n</th><th>Predicted</th><th>Observed</th></tr></thead>
+      <tbody>`+EC.bins.map(b=>`<tr><td class="num">${b.n}</td>
+        <td class="num">${b.predicted.toFixed(3)}</td>
+        <td class="num">${b.observed.toFixed(3)}</td></tr>`).join("")+`</tbody>`;
+  }
+
+  /* drift by family */
+  const PF=D.psi_by_family;
+  if(PF){
+    const order=Object.entries(PF).sort((a,b)=>b[1].median-a[1].median);
+    const mx=Math.max(...order.map(([,v])=>v.median),0.05);
+    $("#psiBars").innerHTML=order.map(([f,v])=>{
+      const col=v.median>=0.25?"var(--series-2)":v.median>=0.1?"var(--warn)":"var(--series-3)";
+      return `<div class="bar-row">
+        <div class="bar-label" style="text-transform:capitalize">${f}
+          <small>${v.material}/${v.n} material shifts</small></div>
+        <div class="track"><div class="fill" style="width:${Math.max(3,100*v.median/mx)}%;
+          background:${col}"></div></div>
+        <div class="bar-val">${v.median.toFixed(3)}</div></div>`;
+    }).join("");
+    const d=PF.destination, se=PF.sender;
+    if(d&&se){
+      $("#psiNote").innerHTML=`<b>Destination features drift most.</b> Median PSI
+        ${d.median.toFixed(3)} against ${se.median.toFixed(3)} for sender features, with
+        ${d.material} of ${d.n} destination features showing a material shift versus
+        ${se.material} of ${se.n}. Scam infrastructure is rebuilt constantly; how a person
+        behaves when they are being talked into a transfer is not. That is an argument for
+        the sender side being the more durable half, independent of how well either scores
+        today.`;
+    }
+  }
+
+  /* ablation */
+  const arms=[
+    ["destination_only","Destination only","what a blocklist or recipient-side intelligence can see"],
+    ["sender_behaviour_only","Sender behaviour only","the victim's own pattern, nothing about the counterparty"],
+    ["sender_side_only","Sender side only","sender behaviour + the relationship, no destination"],
+    ["full","Everything","both halves combined"],
+  ];
+  const avail=arms.filter(a=>D.ablation[a[0]]);
+  const maxLift=Math.max(...avail.map(a=>D.ablation[a[0]].lift),1);
+  $("#abl").innerHTML=avail.map(([key,label,sub])=>{
+    const a=D.ablation[key], w=Math.max(2,100*a.lift/maxLift);
+    const col=key==="destination_only"?"var(--series-2)":key==="full"?"var(--series-3)":"var(--series-1)";
+    return `<div class="bar-row">
+      <div class="bar-label">${label}<small>${sub} &middot; ${a.n_features} features</small></div>
+      <div class="track"><div class="fill" style="width:${w}%;background:${col}"></div></div>
+      <div class="bar-val">${a.lift.toFixed(1)}&times;</div></div>`;
+  }).join("")+`<p class="small muted" style="margin:14px 0 0">PR-AUC lift over the test-set
+    base rate, and each arm's share of victims caught on transfer 1:
+    ${avail.map(([k,l])=>`${l.toLowerCase()} ${pct(D.ablation[k].early_k1,0)}`).join(" &middot; ")}.</p>`;
+
+  if(D.unseen && D.unseen.pr_auc){
+    $("#unseenNote").innerHTML=`<b>The sharpest version of the claim.</b> Restricted to
+      transfers whose destination had no prior inbound activity at all &mdash; an address
+      effectively invisible to anything that works by knowing something about the recipient
+      &mdash; the sender-side model still reaches PR-AUC ${D.unseen.pr_auc.toFixed(3)} against
+      a ${D.unseen.base_rate.toFixed(3)} base rate (${D.unseen.lift.toFixed(1)}&times; lift,
+      n=${D.unseen.n}).`;
+  }else{
+    $("#unseenNote").innerHTML=`<b>Unseen-destination test.</b> ${(D.unseen&&D.unseen.note)||"not enough fresh-destination events to report separately."}`;
+    $("#worksUnreported").textContent="by design";
+  }
+
+  $("#perf").innerHTML=[
+    ["PR-AUC",D.metrics.pr_auc.toFixed(3)],
+    ["Base rate (test)",D.metrics.base_rate.toFixed(3)],
+    ["Lift over base rate",D.metrics.lift.toFixed(1)+"&times;"],
+    ["ROC-AUC",D.metrics.roc_auc.toFixed(3)],
+    ["False-positive rate",pct(D.metrics.fpr,2)],
+    ["Precision at operating point",D.metrics.precision.toFixed(3)],
+    ["Control:victim ratio achieved",D.achieved_ratio.toFixed(1)+":1"],
+    ["Dollars after first flag",fmtUsd(D.dollars.protected_usd)+" of "+fmtUsd(D.dollars.total_usd)],
+  ].map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
+
+  const famOrder=["destination","sender","relationship","context"];
+  const famMax=Math.max(...famOrder.map(f=>D.families[f]||0));
+  $("#famBars").innerHTML=famOrder.filter(f=>D.families[f]!==undefined).map(f=>{
+    const v=D.families[f];
+    const col=f==="destination"?"var(--series-2)":f==="context"?"var(--ink-3)":"var(--series-1)";
+    return `<div class="bar-row"><div class="bar-label" style="text-transform:capitalize">${f}</div>
+      <div class="track"><div class="fill" style="width:${Math.max(2,100*v/famMax)}%;background:${col}"></div></div>
+      <div class="bar-val">${pct(v,1)}</div></div>`;}).join("");
+
+  /* limits */
+  const nv=D.early.length?D.early[0].victims:0;
+  const lim=[];
+  (D.warnings||[]).forEach(w=>lim.push(`<b>The pipeline flagged this run:</b> ${w}`));
+  if(D.first_send){
+    lim.push(`<b>The control pool over-represents repeat payments.</b> Unmatched, controls
+      carried far more prior sends to the same destination than victims did, which inflates
+      "have you paid this address before". Matching is now exact on that, and the
+      first-send-only slice &mdash; where the feature is constant and the model must use
+      behaviour alone &mdash; reaches ROC-AUC ${D.first_send.metrics.roc_auc.toFixed(3)} on
+      ${D.first_send.n_positive} victims against ${D.first_send.n_negative} controls.`);
+  }
+  $("#limits").innerHTML=lim.concat([
+    `<b>The held-out set is ${nv} victim relationships.</b> Confidence intervals are wide.
+     What is trustworthy at this scale is the direction &mdash; the feature-family split and
+     the ablation comparisons, which share a test set &mdash; not the third decimal of any rate.`,
+    `<b>Dataset size is capped by a free-tier API quota, not by the method.</b> Labels
+     (${D.dataset.labels.toLocaleString()} addresses) and victim identification
+     (${D.dataset.victims_identified.toLocaleString()} wallets) ran at full scale; fetching a
+     full history per victim is what throttles.`,
+    `<b>Labels are Tether freezes, which cover many fraud types</b> &mdash; not only
+     pig-butchering. Sub-typing them is the first thing more data buys.`,
+    `<b>The escalation ratio did not separate victims from controls</b> (univariate AUC 0.47),
+     contrary to our own prior. We kept the negative result and the investigation rather than
+     dropping the feature quietly.`,
+  ]).map(t=>`<li>${t}</li>`).join("");
+
+  $("#gen").textContent=D.generated;
+  buildReplay();
+}
+
+/* ---------------- replay ---------------- */
+const rep=D.replay, steps=rep.steps;
+let idx=0, timer=null;
+function buildReplay(){
+  const dots=$("#dots");
+  dots.innerHTML=steps.map((s,i)=>
+    `<button class="sdot${s.band==="high_risk"?" flagged":""}" data-i="${i}"
+       aria-current="${i===0}" aria-label="Go to transfer ${s.k}"></button>`).join("");
+  dots.addEventListener("click",e=>{
+    const b=e.target.closest(".sdot"); if(!b)return; stopPlay(); idx=+b.dataset.i; renderStep();});
+  $("#playBtn").addEventListener("click",()=>{
+    if(timer){stopPlay();return;}
+    if(idx>=steps.length-1) idx=-1;
+    $("#playBtn").innerHTML="&#10073;&#10073;&nbsp; Pause";
+    timer=setInterval(()=>{ if(idx>=steps.length-1){stopPlay();return;} idx++; renderStep(); },1150);
+    if(idx<0){idx=0;renderStep();}
+  });
+  addEventListener("resize",draw);
+  renderStep();
+  $("#protected").textContent=fmtUsd(rep.protected_usd);
+  $("#total").textContent=fmtUsd(rep.total_usd);
+  if(rep.listed_at){
+    const firstT=new Date(steps[0].when.replace(" ","T")+"Z");
+    const listed=new Date(rep.listed_at.replace(" ","T")+"Z");
+    const days=Math.round((listed-firstT)/86400000);
+    $("#listedGap").textContent=(days>=365?(days/365).toFixed(1)+" yr":days+" days");
+    $("#listedNote").textContent="after the first transfer, before any public listing";
+  }else{ $("#listedGap").textContent="never";
+    $("#listedNote").textContent="this address was never publicly listed"; }
+}
+function stopPlay(){ if(timer){clearInterval(timer);timer=null;}
+  $("#playBtn").innerHTML="&#9654;&nbsp; Play replay"; }
+
+function renderStep(){
+  const s=steps[idx];
+  [...$("#dots").children].forEach((d,i)=>d.setAttribute("aria-current",String(i===idx)));
+  $("#stepLabel").textContent=`Transfer ${s.k} of ${steps.length} &middot; ${s.when}`;
+  $("#blockPane").innerHTML=`
+    <div class="transfer-line"><span class="amt">${fmtUsd(s.amount)}</span>
+      <span class="small muted">USDT &middot; ${s.when}</span></div>
+    <div style="margin:18px 0 0"><span class="verdict ${s.blocklist==="listed"?"v-crit":"v-clean"}">
+      ${s.blocklist==="listed"?"LISTED":"NO MATCH"}</span></div>
+    <p class="small muted" style="margin:14px 0 0">
+      ${s.blocklist==="listed"
+        ? "This address is now on a public list. The transfers above already settled."
+        : "No sanctions hit, no scam report, no illicit history. Nothing to flag on."}</p>
+    <div class="tx-meta"><span>destination age <b class="mono">${s.dest_age_days}d</b></span>
+      <span>public reports <b class="mono">0</b></span></div>`;
+  const cls=s.band==="high_risk"?"v-crit":s.band==="caution"?"v-warn":"v-clean";
+  const col=bandColor(s.band);
+  const reasons=s.reasons.length
+    ? `<ul class="reasons">${s.reasons.map(r=>`<li>${r}</li>`).join("")}</ul>`
+    : `<p class="nothing">No elevated signals.</p>`;
+  $("#scorePane").innerHTML=`
+    <div style="display:flex;align-items:flex-end;gap:14px">
+      <div class="big-score" style="color:${col}">${s.score.toFixed(2)}</div>
+      <span class="verdict ${cls}" style="margin-bottom:8px">
+        ${s.band.replace("_"," ").toUpperCase()}</span></div>
+    <div class="meter"><span style="width:${Math.max(3,s.score*100)}%;background:${col}"></span></div>
+    ${reasons}
+    <div class="tx-meta"><span>${s.dest_senders_7d} senders / 7d</span>
+      <a class="addr" href="https://tronscan.org/#/transaction/${s.tx}" target="_blank"
+         rel="noopener">verify tx on Tronscan &#8599;</a></div>`;
+  draw();
+}
+
+function draw(){
+  const el=$("#chart"); if(!el||!el.clientWidth)return;
+  const W=el.clientWidth,H=132,padL=34,padR=14,padT=12,padB=26,n=steps.length;
+  const x=i=> padL + (n<2?0:i*(W-padL-padR)/(n-1));
+  const y=v=> padT + (1-v)*(H-padT-padB);
+  const cs=getComputedStyle(document.documentElement);
+  const c1=cs.getPropertyValue("--series-1").trim(), c2=cs.getPropertyValue("--series-2").trim();
+  const crit=cs.getPropertyValue("--crit").trim(), ink3=cs.getPropertyValue("--ink-3").trim();
+  const line=cs.getPropertyValue("--line").trim();
+  const thrY=y(Math.min(1,Math.max(0,rep.thresholds.high_risk)));
+  let g="";
+  [0,0.5,1].forEach(v=>{
+    g+=`<line x1="${padL}" x2="${W-padR}" y1="${y(v)}" y2="${y(v)}" stroke="${line}" stroke-width="1"/>`;
+    g+=`<text x="${padL-7}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="${ink3}"
+        font-family="IBM Plex Mono, monospace">${v.toFixed(1)}</text>`;});
+  g+=`<line x1="${padL}" x2="${W-padR}" y1="${thrY}" y2="${thrY}" stroke="${crit}"
+      stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  const bl=steps.map((s,i)=>`${x(i)},${y(s.blocklist==="listed"?1:0)}`).join(" ");
+  g+=`<polyline points="${bl}" fill="none" stroke="${c2}" stroke-width="2" stroke-linejoin="round"/>`;
+  const lastListed=steps[steps.length-1].blocklist==="listed";
+  g+=`<text x="${W-padR}" y="${y(lastListed?1:0)-13}" text-anchor="end" font-size="10.5"
+      fill="${c2}" font-family="IBM Plex Mono, monospace">${lastListed?"listed":"no match, every transfer"}</text>`;
+  g+=`<text x="${W-padR}" y="${thrY-7}" text-anchor="end" font-size="10.5" fill="${crit}"
+      font-family="IBM Plex Mono, monospace">high-risk threshold</text>`;
+  const allPts=steps.map((s,i)=>`${x(i)},${y(Math.min(1,s.score))}`).join(" ");
+  g+=`<polyline points="${allPts}" fill="none" stroke="${c1}" stroke-width="2"
+      stroke-linejoin="round" stroke-linecap="round" opacity="0.4"/>`;
+  const pts=steps.slice(0,idx+1).map((s,i)=>`${x(i)},${y(Math.min(1,s.score))}`).join(" ");
+  g+=`<polyline points="${pts}" fill="none" stroke="${c1}" stroke-width="2.5"
+      stroke-linejoin="round" stroke-linecap="round"/>`;
+  steps.forEach((s,i)=>{ if(i>idx)return;
+    g+=`<circle cx="${x(i)}" cy="${y(Math.min(1,s.score))}" r="${i===idx?5.5:3.5}" fill="${c1}"
+        stroke="var(--surface)" stroke-width="2"/>`;});
+  steps.forEach((s,i)=>{
+    g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="10"
+        fill="${i===idx?cs.getPropertyValue("--ink").trim():ink3}"
+        font-family="IBM Plex Mono, monospace">${s.k}</text>`;});
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img"
+    aria-label="Veridis score by transfer against a flat blocklist verdict">${g}</svg>`;
+}
+
+show("home");
+</script>

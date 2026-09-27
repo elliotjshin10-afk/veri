@@ -1,0 +1,53 @@
+"""Assemble the deployable site: only the files the page actually requests.
+
+site/ holds build inputs as well as outputs. address_index.json is 6.6MB and is
+the SOURCE build_site.py compresses into index_compact.json - shipping it would
+quadruple the deploy for a file no browser ever asks for. This copies exactly
+what index.html fetches at runtime, so what goes on the host is what the page
+needs and nothing else.
+"""
+from __future__ import annotations
+
+import hashlib, pathlib, re, shutil, sys
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+SITE, DIST = ROOT / "site", ROOT / "dist"
+
+# index.html plus every asset it fetches or imports.
+RUNTIME = ["index.html", "scorer.js", "index_compact.json",
+           "model_dest.json", "model_pair.json"]
+
+
+def main() -> None:
+    html = (SITE / "index.html").read_text(encoding="utf-8")
+    asked = set(re.findall(r'grab\("([^"]+)"\)', html)) \
+        | {m.lstrip("./") for m in re.findall(r'import\("([^"]+)"\)', html)}
+    missing = asked - set(RUNTIME)
+    if missing:
+        sys.exit(f"index.html requests files not in RUNTIME: {sorted(missing)}")
+
+    if DIST.exists():
+        shutil.rmtree(DIST)
+    DIST.mkdir()
+    total = 0
+    for name in RUNTIME:
+        src = SITE / name
+        if not src.exists():
+            sys.exit(f"missing {src} - run `make site` first")
+        shutil.copy2(src, DIST / name)
+        total += src.stat().st_size
+        print(f"  {name:22s} {src.stat().st_size/1024:7.0f} KB")
+
+    # A deploy is a public claim about the ledger's contents; record which one.
+    led = ROOT / "data" / "ledger" / "predictions.jsonl"
+    if led.exists():
+        head = hashlib.sha256(led.read_bytes()).hexdigest()[:16]
+        (DIST / "ledger-head.txt").write_text(head + "\n")
+        print(f"  ledger-head.txt        {head}")
+
+    print(f"\ndist/ ready - {total/1024/1024:.1f} MB, {len(RUNTIME)} files")
+    print("deploy the CONTENTS of dist/ as a static site")
+
+
+if __name__ == "__main__":
+    main()

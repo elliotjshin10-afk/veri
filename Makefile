@@ -1,0 +1,113 @@
+PY := ./.venv/bin/python
+export DYLD_LIBRARY_PATH := /opt/homebrew/opt/libomp/lib:$(DYLD_LIBRARY_PATH)
+
+.PHONY: setup labels scam-history victims controls harvest features train eval crosschain api demo bench ui research browser-model parity site test dataset clean
+
+setup:
+	/opt/homebrew/bin/python3.11 -m venv .venv
+	$(PY) -m pip install -q -r requirements.txt
+	@echo "macOS: LightGBM needs OpenMP -> brew install libomp"
+
+## ---- dataset (M0-M2) -------------------------------------------------
+labels:
+	$(PY) scripts/m0_labels.py
+
+scam-history:
+	$(PY) -u scripts/m1_scam_histories.py $(N) $(PAGES)
+
+victims:
+	$(PY) -u scripts/m1b_victims.py $(N) $(PAGES)
+
+controls:
+	$(PY) -u scripts/m2_controls.py
+
+## Rebuild dataset tables from the HTTP cache alone, making no requests.
+## Use after a quota-limited ingest stalls part-way.
+N ?= 200
+PAGES ?= 3
+harvest:
+	$(PY) -u scripts/harvest_cache.py victims $(PAGES)
+	$(PY) -u scripts/harvest_cache.py controls $(PAGES)
+
+dataset: labels scam-history victims controls features
+
+## ---- model (M3-M4) ---------------------------------------------------
+features:
+	$(PY) -u scripts/m3_features.py
+
+train:
+	$(PY) -u scripts/m4_train.py
+
+eval:
+	$(PY) -u scripts/m4_train.py
+
+crosschain:
+	$(PY) -u scripts/m7_crosschain.py
+
+## ---- product (M5-M6) -------------------------------------------------
+api:
+	$(PY) -m uvicorn veridis.api.main:app --app-dir src --host 127.0.0.1 --port 8000
+
+browser-model:
+	$(PY) -u scripts/build_browser_model.py
+
+parity:
+	$(PY) -u scripts/check_parity.py $(N)
+
+site:
+	$(PY) -u scripts/build_site.py
+
+# Only the five files the page fetches at runtime. Deploy dist/, not site/.
+dist: site
+	$(PY) -u scripts/build_dist.py
+
+ui:
+	$(PY) -u scripts/build_ui.py
+	@echo "open demo/veridis_demo.html"
+
+research:
+	$(PY) -u scripts/research.py $(ADDR)
+
+bench:
+	$(PY) -u scripts/bench_api.py
+
+report:
+	$(PY) -u scripts/make_report.py
+
+demo:
+	$(PY) -u scripts/m6_demo.py
+	$(PY) -u scripts/render_demo.py
+	@echo "open demo/index.html"
+
+## ---- gates -----------------------------------------------------------
+test:
+	$(PY) -m pytest tests/ -q
+	@echo '--- browser/Python scoring parity ---'
+	$(PY) -u scripts/check_parity.py 200
+	@echo '--- browser/Python reason-text parity ---'
+	$(PY) -u scripts/check_notes_parity.py
+	@echo '--- two-sided (sender+destination) feature parity ---'
+	$(PY) -u scripts/check_pair_parity.py 300
+
+clean:
+	rm -rf data/interim/* data/processed/* reports/*
+
+# --- prediction ledger -------------------------------------------------
+# Nightly: flag unlisted addresses, then check earlier calls against the
+# current freeze list. Order matters - resolve before predict would leave the
+# newest entries unchecked for a day.
+# ~1% of candidates clear the 1% threshold, so the candidate count sets how
+# fast the ledger accrues: 2,000 a night is roughly 20 entries, ~10 minutes of
+# fetching, and about 1,800 calls on the record by the end of a quarter.
+N ?= 2000
+ledger:
+	$(PY) -u scripts/ledger_predict.py $(N)
+	$(PY) -u scripts/ledger_resolve.py
+	$(PY) -u scripts/ledger_report.py
+
+ledger-verify:
+	$(PY) -c "import sys; sys.path.insert(0,'src'); \
+	from veridis.ledger import Ledger, predictions_path, resolutions_path; \
+	from veridis.config import ROOT; \
+	[print(n, Ledger(p(ROOT)).verify()) for n, p in \
+	 (('predictions', predictions_path), ('resolutions', resolutions_path))]"

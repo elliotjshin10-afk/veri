@@ -1,0 +1,56 @@
+name: nightly prediction ledger
+
+# Runs in CI rather than on a laptop for a reason beyond reliability. The hash
+# chain proves the ORDER of entries; it cannot prove when they were written,
+# because whoever holds the file could regenerate it. A commit made by GitHub
+# carries a timestamp we do not control, so each night's entries are anchored
+# by a third party. That is the gap the docs flagged, closed.
+on:
+  schedule:
+    - cron: "17 3 * * *"        # 03:17 UTC, off the hour so it isn't queued
+  workflow_dispatch:            # and runnable by hand
+
+permissions:
+  contents: write               # to commit the night's entries
+
+concurrency:
+  group: ledger                 # never two runs appending at once
+  cancel-in-progress: false
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Verify the chain before appending
+        run: make ledger-verify
+
+      - name: Predict, resolve, report
+        env:
+          TRONGRID_API_KEY: ${{ secrets.TRONGRID_API_KEY }}
+        run: make ledger N=2000
+
+      - name: Verify the chain after appending
+        run: make ledger-verify
+
+      - name: Commit the night's entries
+        run: |
+          git config user.name  "veridis-ledger"
+          git config user.email "noreply@users.noreply.github.com"
+          git add data/ledger site/ledger.json
+          if git diff --staged --quiet; then
+            echo "no new entries tonight"
+          else
+            head=$(tail -1 data/ledger/predictions.jsonl | python -c "import json,sys;print(json.load(sys.stdin)['hash'][:16])")
+            git commit -m "ledger: $(date -u +%Y-%m-%d), head $head"
+            git push
+          fi
