@@ -1,4 +1,7 @@
-PY := ./.venv/bin/python
+# Use the local venv when there is one, otherwise whatever python is on PATH.
+# The hardcoded venv path meant every target failed on a clean checkout, which
+# is exactly what CI is.
+PY := $(shell [ -x ./.venv/bin/python ] && echo ./.venv/bin/python || echo python3)
 export DYLD_LIBRARY_PATH := /opt/homebrew/opt/libomp/lib:$(DYLD_LIBRARY_PATH)
 
 .PHONY: setup labels scam-history victims controls harvest features train eval crosschain api demo bench ui research browser-model parity site test dataset clean
@@ -106,8 +109,4 @@ ledger:
 	$(PY) -u scripts/ledger_report.py
 
 ledger-verify:
-	$(PY) -c "import sys; sys.path.insert(0,'src'); \
-	from veridis.ledger import Ledger, predictions_path, resolutions_path; \
-	from veridis.config import ROOT; \
-	[print(n, Ledger(p(ROOT)).verify()) for n, p in \
-	 (('predictions', predictions_path), ('resolutions', resolutions_path))]"
+	$(PY) -u scripts/ledger_verify.py

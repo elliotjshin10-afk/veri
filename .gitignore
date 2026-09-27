@@ -35,3 +35,4 @@ dist/
 # derived from this; committing both would put 6.4MB of churn in history every
 # time the index is rebuilt, for a file no browser requests.
 site/address_index.json
+.DS_Store
