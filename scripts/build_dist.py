@@ -8,7 +8,7 @@ needs and nothing else.
 """
 from __future__ import annotations
 
-import hashlib, pathlib, re, shutil, sys
+import pathlib, re, shutil, sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SITE, DIST = ROOT / "site", ROOT / "dist"
@@ -38,12 +38,20 @@ def main() -> None:
         total += src.stat().st_size
         print(f"  {name:22s} {src.stat().st_size/1024:7.0f} KB")
 
-    # A deploy is a public claim about the ledger's contents; record which one.
+    # A deploy is a public claim about the ledger's contents, so publish the
+    # CHAIN head - the value the page displays and the one a reader can
+    # recompute from predictions.jsonl. The first version wrote sha256 of the
+    # file instead, which is a real fingerprint of nothing anyone can check
+    # against, and which disagreed with the page by construction.
     led = ROOT / "data" / "ledger" / "predictions.jsonl"
     if led.exists():
-        head = hashlib.sha256(led.read_bytes()).hexdigest()[:16]
-        (DIST / "ledger-head.txt").write_text(head + "\n")
-        print(f"  ledger-head.txt        {head}")
+        lines = [l for l in led.read_text().splitlines() if l.strip()]
+        if lines:
+            import json
+            head = json.loads(lines[-1])["hash"]
+            (DIST / "ledger-head.txt").write_text(
+                f"{head}\n{len(lines)} entries\n")
+            print(f"  ledger-head.txt        {head[:16]} ({len(lines)} entries)")
 
     print(f"\ndist/ ready - {total/1024/1024:.1f} MB, {len(RUNTIME)} files")
     print("deploy the CONTENTS of dist/ as a static site")
