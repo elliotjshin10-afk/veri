@@ -167,6 +167,8 @@ def ledger_facts() -> dict | None:
         return None
     r = json.loads(p.read_text())
     return {"predictions": r["predictions"], "head": r["head"][:16],
+            "substantive": r.get("substantive"), "min_senders": r.get("min_senders"),
+            "min_inbound": r.get("min_inbound"),
             "generated_at": r["generated_at"], "cohorts": r["cohorts"],
             "open_recent": [{"a": x["address"], "s": round(x["score"], 3),
                              "d": x["predicted_at"][:10], "age": round(x["age_days"], 1)}

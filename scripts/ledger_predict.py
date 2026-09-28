@@ -114,11 +114,17 @@ async def main() -> None:
         if score < threshold:
             continue
         addr = row["destination"]
+        # Inbound total is not a model feature, but without it a reader cannot
+        # tell a call on a wallet holding $10 from one holding $3m, and the
+        # report needs that distinction to mean anything.
+        senders = row.get("dest_senders_all") or 0
+        inbound = float((row.get("dest_usd_per_sender") or 0) * senders)
         ledger.append({
             "address": addr, "chain": "tron", "predicted_at": stamp,
             "predicted_at_ms": now_ms, "score": round(float(score), 6),
             "threshold": round(threshold, 6), "fpr_budget": FPR_BUDGET,
             "model_sha256_16": model_sha,
+            "senders": int(senders), "inbound_usd": round(inbound, 2),
             # The evidence, so the call can be audited without our warehouse.
             "features": {f: (None if row[f] is None else round(float(row[f]), 6))
                          for f in DEST_FEATURES},
