@@ -87,6 +87,10 @@ def main() -> None:
 
     train_dest = set(temporal_split(
         pl.read_parquet(PROCESSED / "events_features.parquet")).train["destination"].unique())
+    # The point-in-time model trains on these very addresses, so a backtest
+    # including them would report on its own training data - the exact flattery
+    # this project has already had to correct twice.
+    keep_only = set(json.loads((PROCESSED / "pit_holdout.json").read_text())["addresses"])
 
     # ---- positives ----
     pos = (pl.read_parquet(INTERIM / "leadtime_labels.parquet")
@@ -95,19 +99,35 @@ def main() -> None:
            .join(span, on="address", how="left")
            .with_columns(pl.col("truncated").fill_null(False))
            .filter(pl.col("first_seen").is_not_null()
-                   & ~pl.col("address").is_in(list(train_dest))))
+                   & ~pl.col("address").is_in(list(train_dest))
+                   & pl.col("address").is_in(list(keep_only))))
 
     # ---- negatives, with pseudo-freeze dates drawn from the positives ----
     scam = set(pl.read_parquet(INTERIM / "scam_addresses.parquet")
                .filter(pl.col("accepted"))["address"].to_list())
     victims = set(pl.read_parquet(INTERIM / "victims.parquet")["victim_address"].to_list())
-    ctrl = ((set(pl.read_parquet(INTERIM / "control_seeds.parquet")["address"].to_list())
-             | set(pl.read_parquet(INTERIM / "control_peers.parquet")["address"].to_list()))
-            - scam - victims - train_dest)
+    # All three control sets, not just the first two. The 2,200 freshly sampled
+    # wallets were being left out, which with the holdout applied left 180
+    # negatives - a 1% threshold set by the top two scores.
+    ctrl: set[str] = set()
+    for n in ("control_seeds", "control_peers", "control2_truncated"):
+        cp = INTERIM / f"{n}.parquet"
+        if cp.exists():
+            ctrl |= set(pl.read_parquet(cp)["address"].to_list())
+    ctrl -= scam | victims | train_dest
+    # The SAME restriction as the positives. Leaving it off the negatives was
+    # measuring the false-alarm rate on wallets the model trained against, and
+    # it showed: FPR came out at 0.7-1.1% where the honest figure is several
+    # times that. A holdout applied to one arm only is not a holdout.
+    ctrl &= keep_only
 
     marks = pos["mark_at"].to_numpy()
     neg = (pl.DataFrame({"address": sorted(ctrl)})
-           .join(pl.read_parquet(INTERIM / "control_truncated.parquet"), on="address", how="left")
+           .join(pl.concat([pl.read_parquet(INTERIM / f"{n}.parquet")
+                            for n in ("control_truncated", "control2_truncated")
+                            if (INTERIM / f"{n}.parquet").exists()],
+                           how="vertical_relaxed").unique("address"),
+                 on="address", how="left")
            .join(span, on="address", how="left")
            .with_columns(pl.col("truncated").fill_null(False))
            .filter(pl.col("first_seen").is_not_null()))
@@ -158,18 +178,34 @@ def main() -> None:
     g = pr.filter(pl.col("horizon") == head)
     ps = np.sort(g.filter(pl.col("label") == 1)["score"].to_numpy())
     ns = np.sort(g.filter(pl.col("label") == 0)["score"].to_numpy())
+    def ci(budget, n=600):
+        """The holdout carries ~190 controls, so a 1% threshold rests on the
+        top two scores. The point estimate is far less certain than it reads,
+        and quoting it bare would repeat a mistake this project has already
+        made twice."""
+        out = []
+        for _ in range(n):
+            a = rng.choice(ps, len(ps), replace=True)
+            b = rng.choice(ns, len(ns), replace=True)
+            out.append(float((a >= float(np.quantile(b, 1 - budget))).mean()))
+        return [float(np.percentile(out, 2.5)), float(np.percentile(out, 97.5))]
+
     ops = {}
     print(f"\noperating points at {head} days, both arms point-in-time")
-    print("  FPR budget   threshold      TPR")
+    print(f"  ({len(ps):,} listed vs {len(ns):,} ordinary - the ordinary arm is thin,")
+    print("   so each figure carries its bootstrap interval)")
+    print("  FPR budget   threshold      TPR      95% CI")
     for target in (0.01, 0.02, 0.05, 0.10):
         t = float(np.quantile(ns, 1 - target))
-        ops[f"{target:.2f}"] = {"threshold": t,
-                                "tpr": float((ps >= t).mean()),
-                                "fpr": float((ns >= t).mean())}
-        print(f"    {target:6.0%}     {t:9.4f}   {float((ps >= t).mean()):6.1%}")
+        lo, hi = ci(target)
+        ops[f"{target:.2f}"] = {"threshold": t, "tpr": float((ps >= t).mean()),
+                                "fpr": float((ns >= t).mean()), "tpr_ci": [lo, hi]}
+        print(f"    {target:6.0%}     {t:9.4f}   {float((ps >= t).mean()):6.1%}"
+              f"   {lo:5.0%}-{hi:5.0%}")
 
     (PROCESSED / "leadtime_roc.json").write_text(json.dumps(
         {"horizons": out, "operating_points": ops, "headline_horizon": head,
+         "n_pos_headline": int(len(ps)), "n_neg_headline": int(len(ns)),
          "threshold_high": hi, "seed": SEED,
          "generated_at": dt.datetime.utcnow().isoformat() + "Z"}, indent=2))
     print(f"\nwrote {PROCESSED / 'leadtime_roc.json'}")

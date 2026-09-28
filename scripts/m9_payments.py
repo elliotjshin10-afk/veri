@@ -31,6 +31,8 @@ HORIZON = int(sys.argv[1]) if len(sys.argv) > 1 else 90
 
 def main() -> None:
     tf = all_transfers()
+    hold = json.loads((PROCESSED / "pit_holdout.json").read_text())
+    keep_only = set(hold["addresses"])
     trained = set(temporal_split(
         pl.read_parquet(PROCESSED / "events_features.parquet")).train["destination"].unique())
     span = (pl.concat([
@@ -44,7 +46,8 @@ def main() -> None:
            .join(pl.read_parquet(INTERIM / "leadtime_truncated.parquet"), on="address", how="left")
            .join(span, on="address", how="left")
            .with_columns(pl.col("truncated").fill_null(False))
-           .filter(pl.col("first_seen").is_not_null() & ~pl.col("address").is_in(list(trained)))
+           .filter(pl.col("first_seen").is_not_null() & ~pl.col("address").is_in(list(trained))
+                   & pl.col("address").is_in(list(keep_only)))
            .with_columns((pl.col("frozen_at") - HORIZON * DAY).alias("t")))
     pos = pos.filter((pl.col("t") > pl.col("first_seen"))
                      & (~pl.col("truncated") | (pl.col("t") <= pl.col("last_seen"))))

@@ -31,10 +31,10 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 N_CANDIDATES = int(sys.argv[1]) if len(sys.argv) > 1 else 400
 MAX_PAGES = int(sys.argv[2]) if len(sys.argv) > 2 else 4
-# Deliberately the tight end of the curve. A ledger is a public claim, and one
-# made at a 10% false-alarm rate would fill with wallets that were never going
-# to be frozen and say nothing about the model.
-FPR_BUDGET = "0.01"
+# The "high" band: the top 1% of ordinary wallets by the shipped model's own
+# held-out control distribution. A ledger is a public claim, and one made at a
+# looser budget would fill with wallets that were never going to be frozen and
+# say nothing about the model.
 
 
 async def sample_recent(client, n: int) -> list[str]:
@@ -74,8 +74,11 @@ async def main() -> None:
     model_path = PROCESSED / "model_dest_latest.txt"
     model_sha = hashlib.sha256(model_path.read_bytes()).hexdigest()[:16]
     booster = lgb.Booster(model_file=str(model_path))
-    roc = json.loads((PROCESSED / "leadtime_roc.json").read_text())
-    threshold = roc["operating_points"][FPR_BUDGET]["threshold"]
+    # The banding threshold from the shipped model's own held-out control
+    # distribution, not from the backtest file - those are different runs and
+    # a threshold borrowed across them means nothing.
+    report = json.loads((PROCESSED / "address_model_report.json").read_text())
+    threshold = report["thresholds"]["high"]
 
     listed = listed_addresses()
     ledger = Ledger(predictions_path(ROOT))
@@ -122,7 +125,7 @@ async def main() -> None:
         ledger.append({
             "address": addr, "chain": "tron", "predicted_at": stamp,
             "predicted_at_ms": now_ms, "score": round(float(score), 6),
-            "threshold": round(threshold, 6), "fpr_budget": FPR_BUDGET,
+            "threshold": round(threshold, 6), "band": "high",
             "model_sha256_16": model_sha,
             "senders": int(senders), "inbound_usd": round(inbound, 2),
             # The evidence, so the call can be audited without our warehouse.
@@ -131,8 +134,8 @@ async def main() -> None:
         })
         flagged += 1
 
-    print(f"scored {len(fresh):,} addresses at threshold {threshold:.4f} "
-          f"({FPR_BUDGET} FPR budget) -> {flagged} flagged")
+    print(f"scored {len(fresh):,} addresses at the high band threshold "
+          f"{threshold:.4f} -> {flagged} flagged")
     print(f"ledger now {len(ledger):,} entries, head {ledger.head[:16]}")
 
 

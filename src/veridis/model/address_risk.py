@@ -49,18 +49,22 @@ def train_destination_model(train: pl.DataFrame, seed: int = 17):
 
 
 def evaluate_at_address_level(
-    booster, features: pl.DataFrame, scam: set[str], control: set[str]
+    booster, features: pl.DataFrame, scam: set[str], control: set[str],
+    exclude: set[str] | None = None,
 ) -> dict:
     """How well does this separate *addresses*, not transfers?
 
-    The model is trained on events; `/research` applies it to an address. Those
-    are different tasks, so the address-level number is measured directly
-    rather than inherited from the event-level metrics.
+    `exclude` drops addresses the model was trained on. Without it the figure is
+    measured partly on material the model has already seen, and it flatters
+    badly: the shipped model reported 0.9146 this way and 0.7703 once its own
+    training addresses were removed. It is optional only so that older callers
+    keep working; every caller that reports a number should pass it.
     """
     from sklearn.metrics import average_precision_score, roc_auc_score
 
+    labelled = (scam | control) - (exclude or set())
     keep = features.filter(
-        pl.col("address").is_in(list(scam | control))
+        pl.col("address").is_in(list(labelled))
     )
     if keep.height == 0:
         return {"n": 0, "note": "no labelled addresses to evaluate"}

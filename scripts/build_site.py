@@ -118,45 +118,45 @@ def build_index_rows(entries: list) -> list:
 
 
 def leadtime_facts() -> dict | None:
-    """Headline figures for the readout.
+    """Headline figures, and only the ones the data can carry.
 
-    The page quotes recall in PAYMENTS, not addresses. Address recall answers
-    "what share of scam collectors do we catch", which is not what the product
-    does - it sits in a send flow and warns on one payment at a time. The two
-    numbers differ in our favour, because the collectors we catch are the busy
-    ones: at a 1% false-alarm budget we catch 24% of the addresses but 33% of
-    the payments into them.
+    The page used to lead with recall at a 1% false-alarm budget. After the
+    model was retrained point-in-time and the backtest was restricted to
+    addresses it had never seen, the ordinary arm of that holdout came to ~190
+    wallets - so a 1% threshold rests on the top two control scores and the
+    bootstrap interval on that recall runs 9% to 51%. A number that wide is not
+    a headline, and picking the cell that flatters most is how the two earlier
+    corrections in this project happened.
 
-    Not dollars. The holdings contain a single $212.9bn USDT transfer, larger
-    than Tether's whole supply, so any dollar total is set by a few treasury
-    movements rather than by victims. Payments are robust to that; the median
-    one here is $5,000, which is the scale this is actually about.
-
-    Both halves come from the same two-arm point-in-time run (m9_roc.py) - an
-    earlier version paired recall from one protocol with a false-positive rate
-    measured a different way, which flattered it.
+    So the page leads with ROC-AUC, which is stable because it uses every
+    listed/ordinary pair rather than a threshold, and states the operating
+    point underneath with its interval attached. When more control data lands
+    the interval tightens and the operating point can lead again.
     """
     roc, base = PROCESSED / "leadtime_roc.json", PROCESSED / "leadtime_report.json"
     pay = PROCESSED / "leadtime_payments.json"
     if not (roc.exists() and base.exists() and pay.exists()):
         return None
     r, b, q = (json.loads(x.read_text()) for x in (roc, base, pay))
-    days, key = r["headline_horizon"], "0.01"
-    h, op = r["horizons"][str(days)], q["operating_points"][key]
+    days = r["headline_horizon"]
+    h = r["horizons"][str(days)]
+    op = r["operating_points"]["0.05"]
+    pay_op = q["operating_points"]["0.05"]
     return {
         "population": b["population"],
         "headline_days": days,
+        "roc_auc": round(h["roc_auc"], 3),
+        "n_pos": r.get("n_pos_headline", h["n_pos"]),
+        "n_neg": r.get("n_neg_headline", h["n_neg"]),
         "payments": q["payments_in_window"],
         "median_payment": q["median_payment_usd"],
-        "payment_pct": f"{op['payment_recall']:.0%}",
-        "address_pct": f"{op['address_recall']:.0%}",
-        "fpr_pct": "1%",
-        "n_pos": h["n_pos"], "n_neg": h["n_neg"],
-        "roc_auc": round(h["roc_auc"], 3),
-        "loose_tpr": f"{h['tpr']:.0%}", "loose_fpr": f"{h['fpr']:.0%}",
-        "ops": [{"fpr": f"{float(k):.0%}",
-                 "pay": f"{q['operating_points'][k]['payment_recall']:.0%}"}
-                for k in ("0.01", "0.02", "0.05", "0.10")],
+        "op_fpr": "5%",
+        "op_tpr": f"{op['tpr']:.0%}",
+        "op_ci": [f"{op['tpr_ci'][0]:.0%}", f"{op['tpr_ci'][1]:.0%}"],
+        "op_pay": f"{pay_op['payment_recall']:.0%}",
+        "ops": [{"fpr": f"{float(k):.0%}", "tpr": f"{v['tpr']:.0%}",
+                 "ci": [f"{v['tpr_ci'][0]:.0%}", f"{v['tpr_ci'][1]:.0%}"]}
+                for k, v in sorted(r["operating_points"].items(), key=lambda x: float(x[0]))],
     }
 
 
