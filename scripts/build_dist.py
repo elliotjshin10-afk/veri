@@ -18,7 +18,9 @@ RUNTIME = ["index.html", "scorer.js", "index_compact.json",
            "model_dest.json", "model_pair.json",
            # Fetched at run time so a nightly ledger commit updates the live
            # page without rebuilding the site.
-           "ledger.json"]
+           "ledger.json",
+           # Social preview card. A link with no card is a link nobody clicks.
+           "og.png"]
 
 
 def main() -> None:
