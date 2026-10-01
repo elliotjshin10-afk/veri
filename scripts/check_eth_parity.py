@@ -1,10 +1,10 @@
-"""Prove the browser scores the Ethereum model exactly as LightGBM does.
+"""Prove the browser scores the Ethereum models exactly as LightGBM does.
 
-model_eth.json is a hand-rolled export of LightGBM's trees, walked by the
-browser's own `score()`. The Tron models have been checked against the library
-that produced them since the start; the Ethereum model shipped without that
-check, which left every live Ethereum verdict resting on an unverified
-re-implementation of someone else's tree format.
+model_eth.json and model_pair_eth.json are hand-rolled exports of LightGBM's
+trees, walked by the browser's own `score()`. The Tron models have been checked
+against the library that produced them since the start; the Ethereum ones
+shipped without that check, which left every live Ethereum verdict resting on an
+unverified re-implementation of someone else's tree format.
 
 The sample is the 400 held-out rows closest to a band edge - where a tiny
 disagreement is the difference between "ordinary" and "elevated", and so where a
@@ -19,23 +19,38 @@ sys.path.insert(0, "src")
 
 from veridis.config import PROCESSED, ROOT, SITE
 
-SAMPLE = PROCESSED / "eth_parity_sample.json"
-MODEL = SITE / "model_eth.json"
+# Both Ethereum models, checked by one script rather than two near-identical
+# ones. The destination model answers an address lookup; the pair model answers
+# a real send with the sender known. They share this code path because they
+# share the failure: a tree-walk that disagrees with the library that produced
+# the trees.
+MODELS = (
+    ("destination", PROCESSED / "eth_parity_sample.json", SITE / "model_eth.json",
+     "scripts/m7_pit_model.py", True),
+    ("two-sided", PROCESSED / "eth_pair_parity_sample.json",
+     SITE / "model_pair_eth.json", "scripts/m10_eth_pair_model.py", False),
+)
 
 
-def main() -> None:
-    if not SAMPLE.exists():
-        sys.exit(f"no {SAMPLE.name} - run scripts/m7_pit_model.py first")
-    if not MODEL.exists():
-        sys.exit(f"no {MODEL.name} - the Ethereum model has not been shipped")
-    sample = json.loads(SAMPLE.read_text())
-    model = json.loads(MODEL.read_text())
+def check_one(label: str, sample_path, model_path, built_by: str,
+              required: bool) -> bool:
+    """True if checked and identical; False if it failed. A model that is not
+    shipped yet is skipped, not failed - the page degrades without the pair
+    model by design, so its absence is a defined state."""
+    if not model_path.exists() or not sample_path.exists():
+        if required:
+            sys.exit(f"no {model_path.name}/{sample_path.name} - run {built_by}")
+        print(f"\n{label}: not shipped yet (build it with {built_by}) - skipped")
+        return True
+    print(f"\n{label} model: {model_path.name}")
+    sample = json.loads(sample_path.read_text())
+    model = json.loads(model_path.read_text())
 
     if sample["features"] != model["features"]:
-        sys.exit("feature order differs between the sample and the shipped model:\n"
-                 f"  sample: {sample['features']}\n  model:  {model['features']}")
+        print("  FAILED - feature order differs between sample and shipped model")
+        return False
     rows = sample["rows"]
-    print(f"{len(rows)} held-out rows, {len(model['features'])} features, "
+    print(f"  {len(rows)} held-out rows, {len(model['features'])} features, "
           f"{len(model['trees'])} trees")
 
     scorer = (ROOT / "site" / "scorer.js").resolve().as_uri()
@@ -55,9 +70,11 @@ console.log(JSON.stringify(rows.map(x => {{
         json.dump([r["x"] for r in rows], fh); xs = fh.name
     with tempfile.NamedTemporaryFile("w", suffix=".mjs", delete=False) as fh:
         fh.write(driver); drv = fh.name
-    res = subprocess.run(["node", drv, str(MODEL), xs], capture_output=True, text=True)
+    res = subprocess.run(["node", drv, str(model_path), xs],
+                         capture_output=True, text=True)
     if res.returncode != 0:
-        sys.exit("node failed:\n" + res.stderr[:2500])
+        print("  node failed:\n" + res.stderr[:1500])
+        return False
     got = json.loads(res.stdout)
 
     worst, where = 0.0, -1
@@ -65,7 +82,7 @@ console.log(JSON.stringify(rows.map(x => {{
         d = abs(r["p"] - g)
         if d > worst:
             worst, where = d, i
-    print(f"worst absolute score difference: {worst:.3e}")
+    print(f"  worst absolute score difference: {worst:.3e}")
 
     # The bands are the thing a person sees, so check they agree as labels too,
     # not just as numbers near each other.
@@ -79,15 +96,27 @@ console.log(JSON.stringify(rows.map(x => {{
              if band(r["p"]) != band(g)]
     if flips:
         i = flips[0]
-        print(f"\nETH PARITY FAILED - {len(flips)} rows land in different bands, "
-              f"e.g. row {i}: python {rows[i]['p']:.9f} ({band(rows[i]['p'])}) "
+        print(f"  FAILED - {len(flips)} rows land in different bands, e.g. row {i}: "
+              f"python {rows[i]['p']:.9f} ({band(rows[i]['p'])}) "
               f"vs browser {got[i]:.9f} ({band(got[i])})")
-        sys.exit(1)
+        return False
     if worst > 1e-9:
-        print(f"\nETH PARITY FAILED - scores differ by {worst:.3e} at row {where}: "
+        print(f"  FAILED - scores differ by {worst:.3e} at row {where}: "
               f"python {rows[where]['p']!r} vs browser {got[where]!r}")
+        return False
+    print("  identical")
+    return True
+
+
+def main() -> None:
+    ok = True
+    for args in MODELS:
+        ok = check_one(*args) and ok
+    if not ok:
+        print("\nETH PARITY FAILED")
         sys.exit(1)
-    print("\nETH PARITY OK - the browser scores the Ethereum model identically.")
+    print("\nETH PARITY OK - the browser scores every shipped Ethereum model "
+          "identically.")
 
 
 if __name__ == "__main__":

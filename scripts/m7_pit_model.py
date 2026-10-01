@@ -27,6 +27,8 @@ import polars as pl
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from veridis.config import INTERIM, PROCESSED, SITE
+from veridis.dataset.holdings import (ETH_INDEPENDENT_SET, eth_complete,
+                                      eth_transfers)
 from veridis.features.asof import FeatureEngine
 from veridis.model.address_risk import DEST_FEATURES
 
@@ -36,18 +38,10 @@ TEST_FRAC = 0.30
 SEED = 17
 BROWSER = [f for f in DEST_FEATURES if f != "dest_funder_fanout"]
 
-TX = ("eth_scam_transfers", "eth_victim_transfers", "eth_control_transfers",
-      "eth_coverage_transfers", "eth_control2_transfers", "eth_control3_transfers")
-TR = ("eth_truncated", "eth_coverage_truncated", "eth_control2_truncated",
-      "eth_control3_truncated")
-# Two control populations, and the difference between them is the whole test.
-# control2 are counterparties already in our pool - 97% of them counterparties
-# OF FROZEN ADDRESSES, so victims, mules and cash-out points. Separating a
-# collector from its own neighbours is not the question the product asks.
-# control3 are sampled from USDT transfers in historical block windows across
-# five years: ordinary wallets, drawn by a procedure with no knowledge of any
-# scam. The headline comes from control3 alone.
-INDEPENDENT = "eth_control3_truncated"
+# What we hold lives in veridis.dataset.holdings, not here. This script used to
+# keep its own copy of the list, which is how the Tron side ended up with three
+# scripts that disagreed about the data and three published numbers to match.
+INDEPENDENT = ETH_INDEPENDENT_SET
 
 
 def slim(t):
@@ -62,13 +56,8 @@ def slim(t):
 
 def main() -> None:
     rng = np.random.default_rng(SEED)
-    tf = pl.concat([pl.read_parquet(INTERIM / f"{n}.parquet") for n in TX
-                    if (INTERIM / f"{n}.parquet").exists()],
-                   how="vertical_relaxed").unique(subset=["tx_hash", "to_address"])
-    trunc = pl.concat([pl.read_parquet(INTERIM / f"{n}.parquet") for n in TR
-                       if (INTERIM / f"{n}.parquet").exists()],
-                      how="vertical_relaxed").unique("address")
-    complete = set(trunc.filter(~pl.col("truncated"))["address"].to_list())
+    tf = eth_transfers()
+    complete = eth_complete()
 
     span = (pl.concat([
         tf.select(pl.col("to_address").alias("address"), "block_time"),

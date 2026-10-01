@@ -22,8 +22,19 @@ RUNTIME = ["index.html", "scorer.js", "index_compact.json",
            # The Ethereum model, now that it has been judged against ordinary
            # wallets rather than a scam collector's own neighbours.
            "model_eth.json",
+           # The Ethereum two-sided model. Optional (see OPTIONAL below).
+           "model_pair_eth.json",
            # Social preview card. A link with no card is a link nobody clicks.
            "og.png"]
+
+
+# Files the page ASKS for but can run without, because it has a defined answer
+# when they are absent. model_pair_eth.json is the two-sided Ethereum model: with
+# it a connected wallet gets a relationship verdict, without it the page falls
+# back to the destination-only answer, which is weaker but not wrong. Everything
+# else in RUNTIME is load-bearing and a missing file stops the build - a page
+# deployed without its index or its destination model is broken, not degraded.
+OPTIONAL = {"model_pair_eth.json"}
 
 
 def main() -> None:
@@ -41,6 +52,9 @@ def main() -> None:
     for name in RUNTIME:
         src = SITE / name
         if not src.exists():
+            if name in OPTIONAL:
+                print(f"  {name:22s} ABSENT - the page degrades without it")
+                continue
             sys.exit(f"missing {src} - run `make site` first")
         shutil.copy2(src, DIST / name)
         total += src.stat().st_size

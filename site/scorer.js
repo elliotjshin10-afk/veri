@@ -507,10 +507,23 @@ function esUrl(chainId, params) {
    margin that a slow page load cannot bunch two requests into one second. */
 const ES_MIN_GAP_MS = 400;
 let esLast = 0;
-async function esPace() {
-  const wait = ES_MIN_GAP_MS - (Date.now() - esLast);
-  if (wait > 0) await sleep(wait);
-  esLast = Date.now();
+/* A queue, not a delay. Two callers that each wait "400ms since esLast" read
+   the same esLast, wait the same amount and then fire in the same millisecond -
+   so pacing that works for one history breaks the moment a two-sided check
+   fetches the sender's and the destination's at once, which is exactly when the
+   product needs it most. Chaining through one promise makes the gap hold
+   between requests rather than per caller. */
+let esQueue = Promise.resolve();
+function esPace() {
+  const turn = esQueue.then(async () => {
+    const wait = ES_MIN_GAP_MS - (Date.now() - esLast);
+    if (wait > 0) await sleep(wait);
+    esLast = Date.now();
+  });
+  // The queue must survive a rejected turn, or one failure wedges every
+  // request that comes after it.
+  esQueue = turn.catch(function () {});
+  return turn;
 }
 
 async function esGet(url, signal) {

@@ -95,7 +95,7 @@ test:
 	$(PY) -u scripts/check_evm_parity.py 200
 	@echo '--- Etherscan refusal handling (browser) ---'
 	node scripts/check_js_refusal.mjs
-	@echo '--- browser/LightGBM parity, Ethereum model ---'
+	@echo '--- browser/LightGBM parity, Ethereum models ---'
 	$(PY) -u scripts/check_eth_parity.py
 
 clean:

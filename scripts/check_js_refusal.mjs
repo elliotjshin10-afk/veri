@@ -96,6 +96,27 @@ await fetchTransfersEvm(A, {maxPages: 3});
 const per = (Date.now() - t0) / 2;          // gaps between 3 requests
 check("requests are paced under 3/sec", per >= 333, `${per.toFixed(0)}ms between requests`);
 
+/* 8. Two histories fetched AT ONCE stay paced. A two-sided check reads the
+ *    sender's and the destination's together, and per-caller pacing lets both
+ *    fire in the same millisecond - the one case where the gap matters most. */
+let stamps = [];
+globalThis.fetch = async (url) => {
+  stamps.push(Date.now());
+  return {ok: true, status: 200,
+          json: async () => ({status: "1", result: rows(3)})};
+};
+stamps = [];
+await Promise.all([
+  fetchTransfersEvm("0x" + "b".repeat(40), {maxPages: 2}),
+  fetchTransfersEvm("0x" + "c".repeat(40), {maxPages: 2}),
+]);
+stamps.sort((a, b) => a - b);
+let tightest = Infinity;
+for (let i = 1; i < stamps.length; i++) tightest = Math.min(tightest, stamps[i] - stamps[i - 1]);
+check("concurrent fetches share one pacing queue",
+      stamps.length >= 2 && tightest >= 333,
+      `${stamps.length} requests, tightest gap ${tightest}ms`);
+
 console.log(fails.length
   ? `\n${fails.length} refusal check(s) FAILED`
   : "\nall refusal checks passed");

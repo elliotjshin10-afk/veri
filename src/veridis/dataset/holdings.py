@@ -53,6 +53,76 @@ TRUNCATED_SETS = (
 )
 
 
+# The Ethereum side, kept here for the same reason as the Tron side: the list
+# was already copied into m7_pit_model and then into a second script, which is
+# how three Tron scripts came to disagree about what we hold. One list.
+ETH_TRANSFER_SETS = (
+    "eth_scam_transfers",         # frozen addresses, first pass
+    "eth_victim_transfers",       # their payers, first pass
+    "eth_control_transfers",      # the first control attempt
+    "eth_coverage_transfers",     # the rest of the Ethereum freeze list
+    "eth_control2_transfers",     # counterparties already in the pool
+    "eth_control3_transfers",     # independently sampled ordinary wallets
+    "eth_sender_transfers",       # senders on both arms, for the pair model
+)
+
+ETH_TRUNCATED_SETS = (
+    "eth_truncated", "eth_coverage_truncated", "eth_control2_truncated",
+    "eth_control3_truncated", "eth_sender_truncated",
+)
+
+# The control arm the headline is measured against: ordinary wallets drawn from
+# historical USDT block windows with no knowledge of any scam. The other control
+# sets are counterparties of frozen addresses - victims, mules, cash-out points -
+# and scoring against those measures how well we separate a collector from its
+# own neighbours, which is not the question the product asks.
+ETH_INDEPENDENT_SET = "eth_control3_truncated"
+
+
+def eth_transfers() -> pl.DataFrame:
+    """Every Ethereum transfer we hold, deduplicated the same way."""
+    frames = []
+    for name in ETH_TRANSFER_SETS:
+        p = INTERIM / f"{name}.parquet"
+        if p.exists():
+            df = pl.read_parquet(p)
+            frames.append(df if not frames else df.select(frames[0].columns))
+    if not frames:
+        raise SystemExit("no Ethereum transfer data found - run the ingest first")
+    return pl.concat(frames, how="vertical_relaxed").unique(
+        subset=["tx_hash", "to_address"])
+
+
+def eth_complete() -> set[str]:
+    """Addresses whose Ethereum history we fetched IN FULL.
+
+    Completeness is not a nicety here: every lifetime feature - age, payer
+    count, inbound total - is wrong on a partial history, and the models are
+    fitted only on complete ones. A truncated history must therefore be
+    excluded, not scored, which is only possible because the ingest records
+    truncation honestly. It did not always: a rate-limit refusal used to be
+    recorded as the end of the list, so 932 cut-short histories were marked
+    complete and trained on as though they were whole.
+    """
+    out: set[str] = set()
+    for name in ETH_TRUNCATED_SETS:
+        p = INTERIM / f"{name}.parquet"
+        if p.exists():
+            d = pl.read_parquet(p)
+            out |= set(d.filter(~pl.col("truncated"))["address"].to_list())
+    return out
+
+
+def eth_fetched() -> set[str]:
+    """Ethereum addresses whose own history we fetched, complete or not."""
+    out: set[str] = set()
+    for name in ETH_TRUNCATED_SETS:
+        p = INTERIM / f"{name}.parquet"
+        if p.exists():
+            out |= set(pl.read_parquet(p)["address"].to_list())
+    return out
+
+
 def all_transfers() -> pl.DataFrame:
     """Every transfer we hold, deduplicated on (tx_hash, to_address).
 
