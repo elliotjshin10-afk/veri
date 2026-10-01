@@ -15,19 +15,19 @@ import numpy as np
 import polars as pl
 
 from veridis.features.asof import FeatureEngine
+from veridis.dataset.holdings import all_indexed, all_transfers
 from veridis.config import INTERIM, PROCESSED
 
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 60
 model = json.loads((__import__("pathlib").Path("site/model_dest.json")).read_text())
 FEATS = model["features"]
 
-warehouse = pl.read_parquet(PROCESSED / "warehouse_transfers.parquet")
-indexed: set[str] = set()
-for name in ("scam_truncated.parquet", "victim_truncated.parquet",
-             "control_truncated.parquet"):
-    p = INTERIM / name
-    if p.exists():
-        indexed |= set(pl.read_parquet(p)["address"].to_list())
+# holdings is the one list of what we hold. This script kept its own - the M3
+# warehouse plus three truncated files - so it compared the browser against a
+# feature layer fed different data from the one the index and the model were
+# built on, and failed on whichever addresses happened to differ.
+warehouse = all_transfers()
+indexed = all_indexed()
 
 last = (pl.concat([
     warehouse.select(pl.col("to_address").alias("address"), "block_time"),
@@ -35,7 +35,7 @@ last = (pl.concat([
 ], how="vertical_relaxed")
     .filter(pl.col("address").is_in(list(indexed)))
     .group_by("address").agg(pl.col("block_time").max().alias("last_seen")))
-sample = last.sample(n=min(N, last.height), seed=5)
+sample = last.sort("address").sample(n=min(N, last.height), seed=5)
 
 # --- Python side: the real feature layer ---
 probe = sample.select(
