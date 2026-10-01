@@ -38,12 +38,20 @@ def build_examples() -> dict:
     # Labels name what the wallet IS. They used to describe the model's own
     # cleverness - "Reported nowhere, we flag it anyway" - which reads as a
     # boast to anyone who does not already know what a blocklist is.
+    # The page's verdict layer overrides the band for institutional-scale
+    # addresses, so an example picked purely on band can end up labelled
+    # "A scam collection wallet" while the card reads "Institutional
+    # infrastructure". Exclude anything that trips that gate.
+    def retail(e):
+        p = e.get("p") or {}
+        return (p.get("usd_per_sender") or 0) < 1e6 and (p.get("inbound_usd") or 0) < 1e8
+
     picks = [
-        (first(lambda e: e["b"] == "high" and e["l"]),
+        (first(lambda e: e["b"] == "high" and e["l"] and retail(e)),
          "A scam collection wallet"),
-        (first(lambda e: e["b"] == "high" and not e["l"]),
+        (first(lambda e: e["b"] == "high" and not e["l"] and retail(e)),
          "A collection wallet nobody has reported yet"),
-        (first(lambda e: e["b"] == "ordinary" and not e["l"]
+        (first(lambda e: e["b"] == "ordinary" and not e["l"] and retail(e)
                and (e["p"].get("senders_all") or 0) > 3),
          "An ordinary personal wallet"),
     ]
@@ -63,10 +71,11 @@ def build_examples() -> dict:
         return [e for e in entries if fn(e)][:n]
 
     starter = (
-        take(lambda e: e["b"] == "high" and e["l"], 2)
-        + take(lambda e: e["b"] == "high" and not e["l"], 2)
-        + take(lambda e: e["b"] == "elevated", 2)
-        + take(lambda e: e["b"] == "ordinary" and (e["p"].get("senders_all") or 0) > 3, 2)
+        take(lambda e: e["b"] == "high" and e["l"] and retail(e), 2)
+        + take(lambda e: e["b"] == "high" and not e["l"] and retail(e), 2)
+        + take(lambda e: e["b"] == "elevated" and retail(e), 2)
+        + take(lambda e: e["b"] == "ordinary" and retail(e)
+               and (e["p"].get("senders_all") or 0) > 3, 2)
     )
     seen, starter_rows = set(), []
     for e in starter:
