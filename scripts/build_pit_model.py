@@ -177,6 +177,15 @@ def main() -> None:
     neg_s = np.sort(s_lite[yt == 0])
     thr = {"elevated": float(np.quantile(neg_s, 0.90)), "high": float(np.quantile(neg_s, 0.99))}
 
+    # Score EVERY indexed address, not only the held-out ones: the index the
+    # site ships is built from this file. build_address_model.py used to write
+    # it; when this script replaced that one it did not take the job over, and
+    # 3,000 newly fetched addresses landed in the index with a null band.
+    all_scores = lite.predict(served.select(BROWSER_FEATURES).to_numpy())
+    pl.DataFrame({"address": served["address"].to_list(),
+                  "dest_score": all_scores}).write_parquet(PROCESSED / "address_scores.parquet")
+    print(f"scored {served.height:,} indexed addresses -> address_scores.parquet")
+
     full.save_model(str(PROCESSED / "model_dest_latest.txt"))
     lite.save_model(str(PROCESSED / "model_browser.txt"))
     (SITE / "model_dest.json").write_text(json.dumps(

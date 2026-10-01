@@ -120,18 +120,16 @@ def build_index_rows(entries: list) -> list:
 def leadtime_facts() -> dict | None:
     """Headline figures, and only the ones the data can carry.
 
-    The page used to lead with recall at a 1% false-alarm budget. After the
-    model was retrained point-in-time and the backtest was restricted to
-    addresses it had never seen, the ordinary arm of that holdout came to ~190
-    wallets - so a 1% threshold rests on the top two control scores and the
-    bootstrap interval on that recall runs 9% to 51%. A number that wide is not
-    a headline, and picking the cell that flatters most is how the two earlier
-    corrections in this project happened.
+    This number has moved twice for reasons worth remembering. It fell to 22%
+    when the backtest was restricted to addresses the retrained model had never
+    seen - correct, and it should have fallen. It then rose again when the
+    ordinary arm turned out to be 195 wallets rather than 749: m9_roc kept its
+    own list of transfer files and had silently missed control2_transfers, so
+    3,000 freshly fetched controls were dropped for having no history. The
+    interval on that recall ran 16%-50%; with the full arm it runs 49%-66%.
 
-    So the page leads with ROC-AUC, which is stable because it uses every
-    listed/ordinary pair rather than a threshold, and states the operating
-    point underneath with its interval attached. When more control data lands
-    the interval tightens and the operating point can lead again.
+    The page leads with the operating point again because the interval now
+    supports it. Both numbers are quoted with the interval regardless.
     """
     roc, base = PROCESSED / "leadtime_roc.json", PROCESSED / "leadtime_report.json"
     pay = PROCESSED / "leadtime_payments.json"
@@ -140,20 +138,19 @@ def leadtime_facts() -> dict | None:
     r, b, q = (json.loads(x.read_text()) for x in (roc, base, pay))
     days = r["headline_horizon"]
     h = r["horizons"][str(days)]
-    op = r["operating_points"]["0.05"]
-    pay_op = q["operating_points"]["0.05"]
+    op, pay_op = r["operating_points"]["0.01"], q["operating_points"]["0.01"]
     return {
         "population": b["population"],
         "headline_days": days,
+        "payment_pct": f"{pay_op['payment_recall']:.0%}",
+        "address_pct": f"{op['tpr']:.0%}",
+        "ci": [f"{op['tpr_ci'][0]:.0%}", f"{op['tpr_ci'][1]:.0%}"],
+        "fpr_pct": "1%",
         "roc_auc": round(h["roc_auc"], 3),
         "n_pos": r.get("n_pos_headline", h["n_pos"]),
         "n_neg": r.get("n_neg_headline", h["n_neg"]),
         "payments": q["payments_in_window"],
         "median_payment": q["median_payment_usd"],
-        "op_fpr": "5%",
-        "op_tpr": f"{op['tpr']:.0%}",
-        "op_ci": [f"{op['tpr_ci'][0]:.0%}", f"{op['tpr_ci'][1]:.0%}"],
-        "op_pay": f"{pay_op['payment_recall']:.0%}",
         "ops": [{"fpr": f"{float(k):.0%}", "tpr": f"{v['tpr']:.0%}",
                  "ci": [f"{v['tpr_ci'][0]:.0%}", f"{v['tpr_ci'][1]:.0%}"]}
                 for k, v in sorted(r["operating_points"].items(), key=lambda x: float(x[0]))],

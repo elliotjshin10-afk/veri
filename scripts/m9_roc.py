@@ -40,6 +40,7 @@ from veridis.config import INTERIM, PROCESSED
 from veridis.features.asof import FeatureEngine
 from veridis.model.address_risk import DEST_FEATURES
 from veridis.model.train import temporal_split
+from veridis.dataset.holdings import all_transfers
 
 DAY_MS = 86_400_000
 HORIZONS = [1, 7, 14, 30, 60, 90, 180]
@@ -75,13 +76,12 @@ def main() -> None:
     rng = np.random.default_rng(SEED)
 
     # ---- everything we hold, for features ----
-    parts = [pl.read_parquet(INTERIM / "leadtime_transfers.parquet")]
-    cols = parts[0].columns
-    for extra in (PROCESSED / "warehouse_transfers.parquet",
-                  INTERIM / "control_transfers.parquet"):
-        if extra.exists():
-            parts.append(pl.read_parquet(extra).select(cols))
-    transfers = pl.concat(parts, how="vertical_relaxed").unique(subset=["tx_hash", "to_address"])
+    # holdings.all_transfers() exists so no script keeps its own list. This one
+    # did, and silently missed control2_transfers - 3,000 freshly fetched
+    # controls had no history here, so they were dropped for having no first
+    # transfer and the ordinary arm stayed at 195 instead of ~750.
+    transfers = all_transfers()
+    print(f"warehouse: {transfers.height:,} transfers")
     span = spans(transfers)
     print(f"warehouse: {transfers.height:,} transfers")
 
@@ -179,9 +179,9 @@ def main() -> None:
     ps = np.sort(g.filter(pl.col("label") == 1)["score"].to_numpy())
     ns = np.sort(g.filter(pl.col("label") == 0)["score"].to_numpy())
     def ci(budget, n=600):
-        """The holdout carries ~190 controls, so a 1% threshold rests on the
-        top two scores. The point estimate is far less certain than it reads,
-        and quoting it bare would repeat a mistake this project has already
+        """Resample both arms. A threshold set far into the tail rests on a
+        handful of control scores, so the point estimate is less certain than
+        it reads - and quoting it bare is a mistake this project has already
         made twice."""
         out = []
         for _ in range(n):
