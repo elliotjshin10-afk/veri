@@ -13,6 +13,7 @@ import json
 import logging
 import time
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 
 import httpx
@@ -64,10 +65,16 @@ class CachedClient:
         backoff_start: float = 1.0,
         headers: dict[str, str] | None = None,
         offline: bool = False,
+        is_refusal: Callable[[Any], bool] | None = None,
+        burst: int | None = None,
     ) -> None:
         self.dir = CACHE / namespace
         self.dir.mkdir(parents=True, exist_ok=True)
-        self.bucket = TokenBucket(rate_per_sec)
+        # burst=1 for an API with a hard per-second cap. The default capacity
+        # equals the rate, so a client idle for a moment fires its whole second
+        # of allowance at once - three requests inside 120ms, which a 3/sec
+        # limit refuses even though the average rate is well under it.
+        self.bucket = TokenBucket(rate_per_sec, burst=burst)
         self.sem = asyncio.Semaphore(concurrency)
         self.max_attempts = max_attempts
         self.backoff_start = backoff_start
@@ -75,10 +82,17 @@ class CachedClient:
         # network. Lets the pipeline be rebuilt from a partial ingest while a
         # quota window is exhausted, instead of blocking on it.
         self.offline = offline
+        # Some APIs refuse INSIDE a 200: Etherscan answers an exceeded rate
+        # limit with HTTP 200 and {status: "0", result: "Max calls per sec..."}.
+        # Status-code retrying never sees it, so without this hook the refusal
+        # is cached as though it were data - and a caller that reads the body
+        # as "end of list" records a cut-short history as a complete one.
+        self.is_refusal = is_refusal
         self._client = httpx.AsyncClient(
             timeout=timeout, headers=headers or {}, follow_redirects=True
         )
-        self.stats = {"hit": 0, "miss": 0, "retry": 0, "error": 0, "absent": 0}
+        self.stats = {"hit": 0, "miss": 0, "retry": 0, "error": 0, "absent": 0,
+                      "refused": 0}
 
     async def __aenter__(self) -> "CachedClient":
         return self
@@ -134,6 +148,16 @@ class CachedClient:
                             log.warning("non-JSON 200 from %s", url)
                             self.stats["error"] += 1
                             return None
+                        if self.is_refusal and self.is_refusal(payload):
+                            # Never cached: a refusal is not an answer, and a
+                            # cached one would be served forever.
+                            self.stats["refused"] += 1
+                            self.stats["retry"] += 1
+                            if attempt == self.max_attempts:
+                                break
+                            await asyncio.sleep(delay)
+                            delay = min(delay * 2, 120.0)
+                            continue
                         self.stats["miss"] += 1
                         self._store(key, payload)
                         return payload

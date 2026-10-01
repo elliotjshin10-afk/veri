@@ -19,6 +19,9 @@ RUNTIME = ["index.html", "scorer.js", "index_compact.json",
            # Fetched at run time so a nightly ledger commit updates the live
            # page without rebuilding the site.
            "ledger.json",
+           # The Ethereum model, now that it has been judged against ordinary
+           # wallets rather than a scam collector's own neighbours.
+           "model_eth.json",
            # Social preview card. A link with no card is a link nobody clicks.
            "og.png"]
 

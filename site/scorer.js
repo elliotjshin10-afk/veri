@@ -450,7 +450,11 @@ const ETHERSCAN = "https://api.etherscan.io/v2/api";
 const ETHERSCAN_KEY = "9QGTZYJ7CW6K4YTWWQCK3I6NHCAN32YXXJ";
 // chainid -> the chains this key reaches on the free tier.
 export const EVM_CHAINS = {Ethereum: 1, Arbitrum: 42161, Polygon: 137};
-const PAGE_SIZE = 200;
+/* Etherscan serves up to 1,000 rows per request - five times what we asked
+   for. It matters more than it looks: the frozen population's 99th percentile
+   has 81 inbound transfers, so one request covers a real scam collector's
+   whole history, where 200-row pages needed four requests to read a slice. */
+const PAGE_SIZE = 1000;
 
 function normaliseEvm(rows) {
   const out = [];
@@ -493,19 +497,50 @@ function esUrl(chainId, params) {
   return `${ETHERSCAN}?chainid=${chainId}&apikey=${ETHERSCAN_KEY}&${q}`;
 }
 
+/* Pace the calls rather than rely on the retry path: backoff after a refusal is
+   slower than simply not being refused.
+
+   Not guessed, and not measured by trial either - the server states it in the
+   refusal body: "Max calls per sec rate limit reached (3/sec)". A free key gets
+   3/s, not the 5/s the docs advertise, so 320ms (3.1/s) sat just over the line
+   and was refused on the fourth page every time. 400ms is 2.5/s, with enough
+   margin that a slow page load cannot bunch two requests into one second. */
+const ES_MIN_GAP_MS = 400;
+let esLast = 0;
+async function esPace() {
+  const wait = ES_MIN_GAP_MS - (Date.now() - esLast);
+  if (wait > 0) await sleep(wait);
+  esLast = Date.now();
+}
+
 async function esGet(url, signal) {
-  let res = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    res = await fetch(url, {signal});
-    if (res.status !== 429) break;
-    await sleep(900 * Math.pow(2, attempt));
+  /* Etherscan refuses INSIDE a 200 response: HTTP 200, body {status: "0",
+     result: "Max calls per sec rate limit reached (3/sec)"}. An earlier version
+     retried only on HTTP 429, which this never is, so a refusal fell straight
+     through to the caller with no backoff and a lookup died on one transient
+     collision. The body has to be read before deciding whether to retry. */
+  let lastErr = "rate_limited";
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await esPace();
+    const res = await fetch(url, {signal});
+    if (res.status === 429) { await sleep(600 * Math.pow(2, attempt)); continue; }
+    if (!res.ok) throw new Error("fetch_failed");
+    const j = await res.json();
+    if (Array.isArray(j.result)) return j.result;
+    /* A non-list result is never data. Returning [] for one made a refusal look
+       exactly like an empty history, which is how a busy exchange wallet came
+       back reading "nothing received yet". Only the documented empty case is
+       allowed through as empty; everything else is an error. */
+    const msg = String(j.result || j.message || "");
+    if (/no transactions found/i.test(msg)) return [];
+    if (/rate limit|max calls|too many/i.test(msg)) {
+      lastErr = "rate_limited";
+      await sleep(600 * Math.pow(2, attempt));
+      continue;
+    }
+    throw new Error("fetch_failed");
   }
-  if (!res || res.status === 429) throw new Error("rate_limited");
-  if (!res.ok) throw new Error("fetch_failed");
-  const j = await res.json();
-  if (j.status !== "1" && /rate limit|max calls/i.test(String(j.result || j.message || "")))
-    throw new Error("rate_limited");
-  return Array.isArray(j.result) ? j.result : [];
+  throw new Error(lastErr);
 }
 
 /** ERC-20 stablecoin history, newest first. Mirrors fetchTransfers. */

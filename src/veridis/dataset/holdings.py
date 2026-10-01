@@ -7,6 +7,25 @@ were scored by nobody and answered no lookups. Coverage is the product - an
 address in the index answers instantly, offline, and in a sandboxed preview -
 so the list of what we hold belongs in one place that every consumer reads.
 
+WHO SHOULD USE THIS, AND WHO SHOULD NOT. Anything scoring, indexing or
+backtesting against current data reads these functions - three scripts kept
+their own lists and each one distorted a published number before it was found
+(m9_roc lost 3,000 controls, build_pit_model shipped an index scored by the
+previous model, check_parity compared the browser against a feature layer fed
+different transfers).
+
+Two kinds of caller are right to read a specific file instead:
+
+  * Ingest steps that mean one dataset. m1b_victims derives victims FROM scam
+    transfers; handing it everything would change what it computes.
+  * check_pair_parity, which compares against events_features.parquet. Those
+    events were computed from warehouse_transfers, so the browser must be given
+    that same warehouse or the comparison is meaningless. Widening it there
+    would break the check rather than fix it.
+
+The test is whether the script is asking "what do we hold now" or "what was
+this artefact built from".
+
 `indexed` means an address whose OWN history we fetched, not one glimpsed as
 somebody else's counterparty. That distinction is load-bearing: an address seen
 once as a peer looks, from our data, like it has a single transfer, and a

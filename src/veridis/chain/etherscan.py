@@ -24,18 +24,45 @@ log = logging.getLogger(__name__)
 
 BASE = "https://api.etherscan.io/v2/api"
 CHAINS = {"ethereum": 1, "arbitrum": 42161, "polygon": 137}
-PAGE = 200
+# 1,000 is the per-request maximum Etherscan honours; asking for more returns
+# 1,000 anyway. Five times fewer requests against a 3/sec cap.
+PAGE = 1000
 
 
-def client(rate_per_sec: float = 4.5, concurrency: int = 3) -> CachedClient:
-    """Free tier is 5 req/s; 4.5 leaves headroom for the retry path."""
+def is_refusal(payload: Any) -> bool:
+    """True when a 200 response is really a rate-limit refusal.
+
+    Etherscan does not use 429 for this. It answers HTTP 200 with
+    {"status": "0", "result": "Max calls per sec rate limit reached (3/sec)"},
+    which is why this has to be matched on the body.
+    """
+    if not isinstance(payload, dict):
+        return False
+    text = str(payload.get("result") or payload.get("message") or "")
+    low = text.lower()
+    return "rate limit" in low or "max calls" in low or "too many" in low
+
+
+def client(rate_per_sec: float = 2.5, concurrency: int = 1) -> CachedClient:
+    """The free tier is 3 req/s, not the 5 the docs advertise - the refusal body
+    states the real figure. An earlier default of 4.5/s with concurrency 3 was
+    refused constantly; 2.5/s serial leaves margin. Sequential matters as much
+    as the rate: three concurrent workers each pacing themselves still put three
+    requests into the same second.
+    """
     return CachedClient(namespace="etherscan", rate_per_sec=rate_per_sec,
-                        concurrency=concurrency)
+                        concurrency=concurrency, is_refusal=is_refusal, burst=1)
 
 
 def _url(chain: str, params: dict[str, Any], key: str) -> str:
     q = urllib.parse.urlencode({**params, "chainid": CHAINS[chain], "apikey": key})
     return f"{BASE}?{q}"
+
+
+def _is_empty(payload: Any) -> bool:
+    """Etherscan's documented empty-history answer."""
+    text = str((payload or {}).get("result") or (payload or {}).get("message") or "")
+    return "no transactions found" in text.lower()
 
 
 def normalise(rows: list[dict], chain: str = "ethereum") -> list[dict]:
@@ -78,9 +105,18 @@ async def token_transfers(c: CachedClient, address: str, key: str, *,
             "page": page, "offset": PAGE, "sort": "desc"}, key), None)
         got = (payload or {}).get("result")
         if not isinstance(got, list):
-            # "No transactions found" is an empty history, not a failure.
-            hit_cap = False
-            break
+            # Only a documented empty history may come back as empty. Any
+            # other non-list result is a failure, and must not be mistaken for
+            # the end of the list: treating a refusal as end-of-history is how
+            # 932 cut-short histories were once recorded as complete, which
+            # corrupts every lifetime feature built on them.
+            if _is_empty(payload):
+                hit_cap = False
+                break
+            raise RuntimeError(
+                f"etherscan refused page {page} for {address}: "
+                f"{str((payload or {}).get('result'))[:120]!r}"
+            )
         rows.extend(got)
         if len(got) < PAGE:
             hit_cap = False

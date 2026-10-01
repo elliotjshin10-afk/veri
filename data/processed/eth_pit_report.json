@@ -1,0 +1,57 @@
+{
+  "results": {
+    "full": {
+      "all": {
+        "roc_auc": 0.9353956315363738,
+        "pr_auc": 0.8436947501992692,
+        "tpr_at_5pct_fpr": 0.797071129707113,
+        "n_pos": 956,
+        "n_neg": 4076
+      },
+      "independent": {
+        "roc_auc": 0.9325129467041634,
+        "pr_auc": 0.8801971992697016,
+        "tpr_at_5pct_fpr": 0.7751046025104602,
+        "n_pos": 956,
+        "n_neg": 2440
+      }
+    },
+    "browser": {
+      "all": {
+        "roc_auc": 0.9349424224257927,
+        "pr_auc": 0.8406840926008662,
+        "tpr_at_5pct_fpr": 0.799163179916318,
+        "n_pos": 956,
+        "n_neg": 4076
+      },
+      "independent": {
+        "roc_auc": 0.9319444920776458,
+        "pr_auc": 0.8786183330005065,
+        "tpr_at_5pct_fpr": 0.7698744769874477,
+        "n_pos": 956,
+        "n_neg": 2440
+      }
+    },
+    "bands": {
+      "high": {
+        "threshold": 0.9853704424003156,
+        "frozen_caught": 0.4790794979079498,
+        "ordinary_flagged": 0.010655737704918032
+      },
+      "elevated": {
+        "threshold": 0.17644008241107093,
+        "frozen_caught": 0.8483263598326359,
+        "ordinary_flagged": 0.1
+      }
+    }
+  },
+  "horizons": [
+    7,
+    30,
+    90,
+    180
+  ],
+  "complete_only": true,
+  "n_pos_addresses": 2584,
+  "n_ctrl_addresses": 3079
+}

@@ -19,8 +19,7 @@ Blockscout endpoint we were using cannot do it.
 import asyncio, json, logging, random, sys, urllib.parse
 sys.path.insert(0, "src")
 import polars as pl
-from veridis.chain.etherscan import client as es_client, token_transfers
-from veridis.chain.http import CachedClient
+from veridis.chain.etherscan import _is_empty, client as es_client, token_transfers
 from veridis.dataset.ingest import TRANSFER_SCHEMA, dedupe_transfers
 from veridis.config import INTERIM, USDT_ETH
 
@@ -41,10 +40,22 @@ TRUNC = INTERIM / "eth_control3_truncated.parquet"
 
 
 async def es(client, params):
+    """Rows, or an exception - never a silent empty list.
+
+    This used to return [] for any non-list result, which made a rate-limit
+    refusal indistinguishable from an empty block window. The symptom was in
+    plain sight in the log: every alternate sampling window reported "0 rows",
+    and a USDT firehose window is never empty. Half the intended vintage spread
+    was being discarded as though those months had no transfers.
+    """
     q = urllib.parse.urlencode({**params, "chainid": 1, "apikey": KEY})
     d = await client.get_json(f"{ES}?{q}", None)
     r = (d or {}).get("result")
-    return r if isinstance(r, list) else []
+    if isinstance(r, list):
+        return r
+    if _is_empty(d):
+        return []
+    raise RuntimeError(f"etherscan refused: {str(r)[:120]!r} for {params}")
 
 
 async def block_at(client, ts):
@@ -55,7 +66,9 @@ async def block_at(client, ts):
     try:
         return int((d or {}).get("result"))
     except (TypeError, ValueError):
-        return None
+        raise RuntimeError(
+            f"etherscan gave no block for {ts}: {str((d or {}).get('result'))[:120]!r}"
+        ) from None
 
 
 def held() -> set[str]:
@@ -75,7 +88,11 @@ async def main() -> None:
     vic = set(pl.read_parquet(INTERIM / "eth_victims.parquet")["from_address"].to_list())
     have = held()
 
-    async with CachedClient(namespace="etherscan", rate_per_sec=4.0, concurrency=2) as c:
+    # es_client() is the only place an Etherscan client is configured. This
+    # line used to build its own at 4.0/s with two workers, above the key's
+    # real 3/s limit and without the refusal hook, which is why the sampling
+    # windows came back empty.
+    async with es_client() as c:
         seeds: list[str] = []
         for year in YEARS:
             for month in (2, 6, 10):

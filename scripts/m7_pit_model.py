@@ -198,6 +198,39 @@ def main() -> None:
                                                "controls": "independent"}},
             separators=(",", ":")))
         print(f"wrote site/model_eth.json (judged on {n_ind:,} independent wallets)")
+        # A sample of held-out rows with LightGBM's own score, so the browser's
+        # tree-walk can be checked against the library that produced it. The
+        # Tron models have had this check since the start; the Ethereum model
+        # shipped without one, which left the live Ethereum verdict resting on
+        # an unverified re-implementation.
+        Xb = feats.select(BROWSER).to_numpy()[is_test]
+        # Nearest an actual band edge, not nearest 0.5: the bands sit at the 90th
+        # and 99th percentile of the control scores, so 0.5 is nowhere near a
+        # decision and rows picked around it would prove the least interesting
+        # part of the range. These are the rows where a disagreement in the last
+        # decimal place changes what a person is told.
+        edge = np.minimum(np.abs(s - thr["elevated"]), np.abs(s - thr["high"]))
+        take = np.argsort(edge)[:400]
+        PROCESSED.joinpath("eth_parity_sample.json").write_text(json.dumps(
+            {"features": BROWSER,
+             "rows": [{"x": [float(v) for v in Xb[i]], "p": float(s[i])}
+                      for i in take]}, separators=(",", ":")))
+        print(f"wrote eth_parity_sample.json ({len(take)} rows for browser parity)")
+
+        # What the SHIPPED bands actually do. tpr_at_5pct_fpr is a comparable
+        # research number, but nobody sees a 5% FPR - they see "high" and
+        # "elevated", set at the 99th and 90th percentile of ordinary wallets.
+        # Those two rows are the ones the product can be held to.
+        ind_mask = np.array([a in independent for a in addr_t])
+        bands = {}
+        for label, lo in (("high", thr["high"]), ("elevated", thr["elevated"])):
+            caught = float((s[yt == 1] >= lo).mean())
+            fp = float((s[(yt == 0) & ind_mask] >= lo).mean()) if ind_mask.any() else None
+            bands[label] = {"threshold": lo, "frozen_caught": caught,
+                            "ordinary_flagged": fp}
+            print(f"  {label:>8} band: catches {caught:6.1%} of frozen addresses, "
+                  f"flags {fp:5.1%} of ordinary ones")
+        out["bands"] = bands
     else:
         print(f"NOT writing site/model_eth.json - only {n_ind} independent "
               f"ordinary wallets in the test, too few to set a band on")
@@ -205,6 +238,20 @@ def main() -> None:
     (PROCESSED / "eth_pit_report.json").write_text(json.dumps(
         {"results": out, "horizons": HORIZONS, "complete_only": True,
          "n_pos_addresses": len(pos), "n_ctrl_addresses": len(ctrl)}, indent=2))
+    # The held-out addresses, written down. Without this list there is no way to
+    # demo the model honestly: every Ethereum address we have is either one it
+    # trained on or one nobody has checked, and picking a frozen address at
+    # random to show off is as likely to pick a training example as not.
+    addr_all = np.array(pr["address"].to_list())
+    holdout = {
+        "cut_freeze_date_ms": int(cut),
+        "frozen": sorted(set(addr_all[is_test & (y == 1)].tolist())),
+        "ordinary": sorted(set(addr_all[is_test & (y == 0)].tolist())),
+    }
+    PROCESSED.joinpath("eth_holdout.json").write_text(json.dumps(holdout, indent=1))
+    print(f"wrote eth_holdout.json ({len(holdout['frozen']):,} frozen, "
+          f"{len(holdout['ordinary']):,} ordinary - none seen in training)")
+
     print(f"\nwrote model_eth_pit.txt and eth_pit_report.json")
 
 
