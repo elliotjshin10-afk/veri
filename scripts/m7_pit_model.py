@@ -26,7 +26,7 @@ import numpy as np
 import polars as pl
 from sklearn.metrics import average_precision_score, roc_auc_score
 
-from veridis.config import INTERIM, PROCESSED
+from veridis.config import INTERIM, PROCESSED, SITE
 from veridis.features.asof import FeatureEngine
 from veridis.model.address_risk import DEST_FEATURES
 
@@ -37,8 +37,27 @@ SEED = 17
 BROWSER = [f for f in DEST_FEATURES if f != "dest_funder_fanout"]
 
 TX = ("eth_scam_transfers", "eth_victim_transfers", "eth_control_transfers",
-      "eth_coverage_transfers", "eth_control2_transfers")
-TR = ("eth_truncated", "eth_coverage_truncated", "eth_control2_truncated")
+      "eth_coverage_transfers", "eth_control2_transfers", "eth_control3_transfers")
+TR = ("eth_truncated", "eth_coverage_truncated", "eth_control2_truncated",
+      "eth_control3_truncated")
+# Two control populations, and the difference between them is the whole test.
+# control2 are counterparties already in our pool - 97% of them counterparties
+# OF FROZEN ADDRESSES, so victims, mules and cash-out points. Separating a
+# collector from its own neighbours is not the question the product asks.
+# control3 are sampled from USDT transfers in historical block windows across
+# five years: ordinary wallets, drawn by a procedure with no knowledge of any
+# scam. The headline comes from control3 alone.
+INDEPENDENT = "eth_control3_truncated"
+
+
+def slim(t):
+    def node(n):
+        if "leaf_value" in n:
+            return {"v": n["leaf_value"]}
+        return {"f": n["split_feature"], "t": n["threshold"],
+                "d": 1 if n.get("default_left") else 0,
+                "l": node(n["left_child"]), "r": node(n["right_child"])}
+    return node(t["tree_structure"])
 
 
 def main() -> None:
@@ -65,11 +84,14 @@ def main() -> None:
            .select("address", pl.col("first_reported_at").alias("mark"))
            .filter(pl.col("address").is_in(list(complete))))
     ctrl: set[str] = set()
-    for n in ("eth_control_seeds", "eth_control_peers", "eth_control2_truncated"):
+    for n in ("eth_control_seeds", "eth_control_peers", "eth_control2_truncated",
+              INDEPENDENT):
         p = INTERIM / f"{n}.parquet"
         if p.exists():
             ctrl |= set(pl.read_parquet(p)["address"].to_list())
     ctrl = (ctrl & complete) - scam
+    ip = INTERIM / f"{INDEPENDENT}.parquet"
+    independent = (set(pl.read_parquet(ip)["address"].to_list()) & ctrl) if ip.exists() else set()
     print(f"complete histories: {len(pos):,} frozen, {len(ctrl):,} ordinary "
           f"({tf.height:,} transfers)")
     # A pseudo-freeze must sit inside the control's own life. Drawing one blind
@@ -121,7 +143,8 @@ def main() -> None:
     engine.close()
 
     out = {}
-    print("\n  arm        ROC-AUC  PR-AUC   TPR@5%FPR")
+    print(f"\nindependent ordinary wallets available: {len(independent):,}")
+    print("\n  arm        ROC-AUC  PR-AUC   TPR@5%FPR   (pos/neg)")
     for name, cols in (("full   ", DEST_FEATURES), ("browser", BROWSER)):
         X = feats.select(cols).to_numpy()
         ytr = y[~is_test]
@@ -133,15 +156,51 @@ def main() -> None:
             "verbose": -1, "seed": SEED, "num_threads": 4,
         }, lgb.Dataset(X[~is_test], label=ytr, feature_name=cols), num_boost_round=400)
         s, yt = b.predict(X[is_test]), y[is_test]
-        thr = float(np.quantile(np.sort(s[yt == 0]), 0.95))
-        res = {"roc_auc": float(roc_auc_score(yt, s)),
-               "pr_auc": float(average_precision_score(yt, s)),
-               "tpr_at_5pct_fpr": float((s[yt == 1] >= thr).mean()),
-               "n_pos": int((yt == 1).sum()), "n_neg": int((yt == 0).sum())}
+        addr_t = np.array(pr["address"].to_list())[is_test]
+        res = {}
+        for tag, mask in (("all", np.ones_like(yt, bool)),
+                          ("independent",
+                           np.array([a in independent for a in addr_t]) | (yt == 1))):
+            if len(set(yt[mask])) < 2:
+                continue
+            sm, ym = s[mask], yt[mask]
+            thr = float(np.quantile(np.sort(sm[ym == 0]), 0.95))
+            res[tag] = {"roc_auc": float(roc_auc_score(ym, sm)),
+                        "pr_auc": float(average_precision_score(ym, sm)),
+                        "tpr_at_5pct_fpr": float((sm[ym == 1] >= thr).mean()),
+                        "n_pos": int((ym == 1).sum()), "n_neg": int((ym == 0).sum())}
         out[name.strip()] = res
-        print(f"  {name}   {res['roc_auc']:.4f}  {res['pr_auc']:.4f}   {res['tpr_at_5pct_fpr']:.1%}")
+        for tag, r in res.items():
+            lab = name if tag == "all" else "   \u21b3 indep"
+            print(f"  {lab}   {r['roc_auc']:.4f}  {r['pr_auc']:.4f}   "
+                  f"{r['tpr_at_5pct_fpr']:.1%}   ({r['n_pos']:,}/{r['n_neg']:,})")
         if name.strip() == "full":
             b.save_model(str(PROCESSED / "model_eth_pit.txt"))
+        else:
+            # Bands from the INDEPENDENT controls only: "high" must mean "in
+            # the top 1% of ordinary wallets", and the scam-adjacent pool is
+            # not that population.
+            ind = np.array([a in independent for a in addr_t]) & (yt == 0)
+            pool = s[ind] if ind.sum() >= 150 else s[yt == 0]
+            thr = {"elevated": float(np.quantile(np.sort(pool), 0.90)),
+                   "high": float(np.quantile(np.sort(pool), 0.99))}
+            browser_export = (b, thr, res.get("independent") or res.get("all"),
+                              int(ind.sum()))
+
+    # Only ship a browser model once it has been judged against ordinary
+    # wallets. Shipping one scored against a scam collector's own neighbours
+    # would be the cross-chain mistake again, wearing a better number.
+    b, thr, ev, n_ind = browser_export
+    if ev and n_ind >= 150:
+        SITE.joinpath("model_eth.json").write_text(json.dumps(
+            {"features": BROWSER, "trees": [slim(t) for t in b.dump_model()["tree_info"]],
+             "thresholds": thr, "evaluation": {**ev, "chain": "ethereum",
+                                               "controls": "independent"}},
+            separators=(",", ":")))
+        print(f"wrote site/model_eth.json (judged on {n_ind:,} independent wallets)")
+    else:
+        print(f"NOT writing site/model_eth.json - only {n_ind} independent "
+              f"ordinary wallets in the test, too few to set a band on")
 
     (PROCESSED / "eth_pit_report.json").write_text(json.dumps(
         {"results": out, "horizons": HORIZONS, "complete_only": True,
