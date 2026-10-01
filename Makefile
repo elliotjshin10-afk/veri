@@ -91,6 +91,8 @@ test:
 	$(PY) -u scripts/check_notes_parity.py
 	@echo '--- two-sided (sender+destination) feature parity ---'
 	$(PY) -u scripts/check_pair_parity.py 300
+	@echo '--- Blockscout normaliser parity (Ethereum) ---'
+	$(PY) -u scripts/check_evm_parity.py 200
 
 clean:
 	rm -rf data/interim/* data/processed/* reports/*

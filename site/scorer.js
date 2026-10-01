@@ -421,3 +421,74 @@ export function isValidTronAddress(a) {
   for (let i = 0; i < 4; i++) if (sum[i] !== bytes[21 + i]) return false;
   return true;
 }
+
+/* ── Ethereum ───────────────────────────────────────────────────────────────
+   Blockscout serves ERC-20 history with access-control-allow-origin: *, so the
+   browser reads it directly, exactly as it reads TronGrid. No key, no proxy.
+
+   One difference is load-bearing. TronGrid can page ASCENDING, so one extra
+   request gives an address's true first transfer and a busy wallet still gets
+   a correct age. Blockscout refuses `sort=asc` (HTTP 422) and only pages
+   newest-first, so for an address busier than the page budget there is no
+   cheap way to learn when it started - and age, being measured from the first
+   transfer, is then wrong at every point in time, along with every lifetime
+   aggregate built on it.
+
+   That is not a rounding error, it is the difference between a 7-day-old
+   collector and a 3-year-old business. So a truncated Ethereum address is
+   reported as unscoreable rather than scored on a fabricated age. The training
+   data is filtered the same way, for the same reason. Lifting this needs a
+   source with an ascending sort (Etherscan has one, behind an API key). */
+const BLOCKSCOUT = "https://eth.blockscout.com/api/v2";
+
+function normaliseEvm(items) {
+  const out = [];
+  for (const r of items || []) {
+    const token = r.token || {};
+    const sym = (token.symbol || "").toUpperCase();
+    if (!STABLES.has(sym)) continue;
+    const total = r.total || {};
+    const dec = Number(total.decimals ?? token.decimals ?? 18);
+    const raw = Number(total.value);
+    const from = (r.from || {}).hash, to = (r.to || {}).hash;
+    const t = Date.parse(r.timestamp || "");
+    if (!from || !to || !isFinite(raw) || !isFinite(t)) continue;
+    const usd = raw / Math.pow(10, dec);
+    if (!(usd > 0)) continue;
+    out.push({from: from.toLowerCase(), to: to.toLowerCase(), usd, t});
+  }
+  return out;
+}
+
+/** ERC-20 stablecoin history. Mirrors fetchTransfers, including `truncated`. */
+export async function fetchTransfersEvm(address, {maxPages = 6, signal} = {}) {
+  const out = [];
+  let url = `${BLOCKSCOUT}/addresses/${address}/token-transfers?type=ERC-20`;
+  let hitCap = true;
+  for (let page = 0; page < maxPages; page++) {
+    let res = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      res = await fetch(url, {signal});
+      if (res.status !== 429) break;
+      await sleep(900 * Math.pow(2, attempt));
+    }
+    if (!res || res.status === 429) throw new Error("rate_limited");
+    if (!res.ok) throw new Error("fetch_failed");
+    const j = await res.json();
+    out.push(...normaliseEvm(j.items));
+    const next = j.next_page_params;
+    if (!next || !(j.items || []).length) { hitCap = false; break; }
+    const qs = Object.entries(next)
+      .filter(([, v]) => v !== null && v !== undefined)
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
+    if (!qs) { hitCap = false; break; }
+    url = `${BLOCKSCOUT}/addresses/${address}/token-transfers?type=ERC-20&${qs}`;
+  }
+  Object.defineProperty(out, "truncated", {value: hitCap, enumerable: false});
+  return out;
+}
+
+/** True only for a checksum-shaped EVM address. */
+export function isValidEvmAddress(a) {
+  return typeof a === "string" && /^0x[0-9a-fA-F]{40}$/.test(a);
+}
