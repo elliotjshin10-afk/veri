@@ -37,6 +37,8 @@ reports/*.png
 # `make test` compares the browser's tree-walk against.
 !data/processed/eth_pair_report.json
 !data/processed/eth_pair_parity_sample.json
+# The measured negative on native ETH, so the question is not re-opened on a hunch.
+!data/processed/eth_native_report.json
 !data/interim/scam_addresses.parquet
 !data/raw/tether_blacklist_tron.json
 

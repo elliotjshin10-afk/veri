@@ -1,0 +1,33 @@
+{
+  "results": {
+    "stablecoins only (ships)": {
+      "roc_auc": 0.9341104570386849,
+      "pr_auc": 0.8106424958893216,
+      "tpr_at_5pct_fpr": 0.7615062761506276
+    },
+    "stablecoins + native ETH": {
+      "roc_auc": 0.9333093744729719,
+      "pr_auc": 0.8187216413510597,
+      "tpr_at_5pct_fpr": 0.7280334728033473
+    },
+    "stablecoins only, >=$1": {
+      "roc_auc": 0.9367064464057694,
+      "pr_auc": 0.8222445585552395,
+      "tpr_at_5pct_fpr": 0.7782426778242678
+    },
+    "stablecoins + ETH, >=$1": {
+      "roc_auc": 0.9332772508613144,
+      "pr_auc": 0.8256489148735943,
+      "tpr_at_5pct_fpr": 0.7552301255230126
+    }
+  },
+  "delta_roc_auc": -0.000801082565712985,
+  "delta_tpr_at_5pct_fpr": -0.03347280334728031,
+  "delta_roc_auc_dust_filtered": -0.003429195544454977,
+  "min_usd": 1.0,
+  "n_frozen": 1500,
+  "n_ordinary": 1398,
+  "n_probes": 8508,
+  "native_rows": 212577,
+  "probes_from": "stablecoin warehouse, identical for both arms"
+}

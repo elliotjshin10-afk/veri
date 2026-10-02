@@ -93,6 +93,90 @@ def normalise(rows: list[dict], chain: str = "ethereum") -> list[dict]:
     return out
 
 
+def normalise_native(rows: list[dict], address: str, price, chain: str = "ethereum",
+                     internal: bool = False) -> list[dict]:
+    """Native ETH movements, shaped exactly like a stablecoin transfer.
+
+    Two things differ from the token path and both matter.
+
+    A value, not a dollar. USDT is a dollar; ETH is not, so every row needs
+    ETH/USD AS OF THAT TRANSFER - see veridis.chain.prices for why the day's own
+    close is the wrong number. A row older than the price series is dropped
+    rather than valued at zero: a scam collector that took 40 ETH is not a
+    collector that took nothing, and feeding the model a zero would say exactly
+    that.
+
+    Most rows are not payments. An external transaction list is mostly contract
+    calls carrying no value, and a failed transaction moved nothing at all.
+    Both are dropped, or the feature layer would count a token approval as
+    somebody paying this address.
+    """
+    out = []
+    for r in rows:
+        try:
+            wei = int(r.get("value") or 0)
+        except (TypeError, ValueError):
+            continue
+        if wei <= 0:
+            continue
+        # A reverted call moved no ether. Internal rows report this as
+        # `isError`; external rows carry `isError` and `txreceipt_status`.
+        if str(r.get("isError") or "0") != "0":
+            continue
+        if not internal and str(r.get("txreceipt_status") or "1") == "0":
+            continue
+        try:
+            ts = int(r["timeStamp"]) * 1000
+        except (TypeError, ValueError, KeyError):
+            continue
+        usd_per_eth = price.at(ts)
+        if usd_per_eth is None:
+            continue
+        frm = (r.get("from") or "").lower()
+        to = (r.get("to") or "").lower()
+        if not frm or not to:
+            continue
+        out.append({"chain": chain, "tx_hash": r.get("hash"),
+                    "from_address": frm, "to_address": to,
+                    "amount_usd": (wei / 1e18) * usd_per_eth,
+                    "asset": "ETH", "block_time": ts})
+    return out
+
+
+async def native_transfers(c: CachedClient, address: str, key: str, price, *,
+                           chain: str = "ethereum",
+                           max_pages: int = 8) -> tuple[list[dict], bool]:
+    """Native ETH in and out of `address`, newest first, plus truncation.
+
+    Two endpoints, because ether moves two ways and reading only the first
+    misses most of what an exchange or a contract-mediated collector does:
+    `txlist` is transactions the address sent or received directly, and
+    `txlistinternal` is ether moved by a contract on someone's behalf.
+    """
+    rows: list[dict] = []
+    hit_cap = False
+    for action, internal in (("txlist", False), ("txlistinternal", True)):
+        for page in range(1, max_pages + 1):
+            payload = await c.get_json(_url(chain, {
+                "module": "account", "action": action, "address": address,
+                "startblock": 0, "endblock": 99999999,
+                "page": page, "offset": PAGE, "sort": "desc"}, key), None)
+            got = (payload or {}).get("result")
+            if not isinstance(got, list):
+                if _is_empty(payload):
+                    break
+                raise RuntimeError(
+                    f"etherscan refused {action} page {page} for {address}: "
+                    f"{str((payload or {}).get('result'))[:120]!r}"
+                )
+            rows.extend(normalise_native(got, address, price, chain, internal))
+            if len(got) < PAGE:
+                break
+            if page == max_pages:
+                hit_cap = True
+    return rows, hit_cap
+
+
 async def token_transfers(c: CachedClient, address: str, key: str, *,
                           chain: str = "ethereum",
                           max_pages: int = 8) -> tuple[list[dict], bool]:

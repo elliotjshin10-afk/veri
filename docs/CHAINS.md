@@ -76,6 +76,46 @@ The signal did not carry. Ethereum needed a model fitted on Ethereum's own
 labels, which is what it has. Arbitrum would need the same, and has nothing to
 fit one on.
 
+## Native ETH: measured, and it does not help
+
+80% of frozen Ethereum addresses also receive native ether, which we never
+read. That looked like an obvious gap. It was measured rather than assumed, on
+one cohort with one set of probes and two warehouses - stablecoins alone, and
+the same addresses read fully:
+
+    warehouse                   ROC-AUC  PR-AUC  TPR@5%FPR
+    stablecoins only (ships)     0.9341  0.8106     76.2%
+    stablecoins + native ETH     0.9333  0.8187     72.8%
+    stablecoins only, >=$1       0.9367  0.8222     77.8%
+    stablecoins + ETH,   >=$1    0.9333  0.8256     75.5%
+
+Reading ether moves ROC-AUC -0.0008 and costs 3.3 points of recall at a 5%
+false-alarm budget. Removing sub-$1 dust from both assets in both arms widens
+the gap rather than closing it, so this is not a spam artifact.
+
+The reason is visible in the counterparties. Among frozen addresses there are
+14,173 distinct ether payers against 7,635 stablecoin payers, and they overlap
+by **7%**. The ether coming into a collection point is almost entirely a
+different population from the victims - gas funding, operational wallets,
+dusting - so adding it nearly triples `dest_senders_all` with traffic that is
+not people being defrauded. That feature carries more signal than any other,
+and the dilution is asymmetric: frozen addresses gain 2.7x more payers, ordinary
+ones 1.3x, which compresses exactly the gap the model reads.
+
+"The address receives ether" and "someone paid this address" are different
+events. Counting the first as the second makes the model worse.
+
+Worth being clear about what this does NOT mean. Checking an address before
+sending it ETH already works, and needs nothing from this: the verdict is about
+the destination's behaviour, and a collection point is a collection point
+whatever you are about to send it. What was tested here is narrower - whether
+ether belongs in the FEATURES - and the answer is no.
+
+The price layer built for this is kept regardless (`veridis.chain.prices`): any
+non-dollar asset needs point-in-time USD, and the rule it encodes - value a
+transfer at the last candle that had already CLOSED, never the close of the day
+it happened in - is the kind of lookahead that makes a backtest unreproducible.
+
 ## Bitcoin
 
 No issuer, so nobody can freeze an output. There is no label to learn from and
