@@ -23,7 +23,7 @@ from veridis.chain.tron import tron_client, PAGE
 from veridis.config import INTERIM, PROCESSED, ROOT, TRONGRID_BASE, USDT_TRON
 from veridis.dataset.ingest import fetch_histories
 from veridis.features.asof import FeatureEngine
-from veridis.ledger import Ledger, predictions_path
+from veridis.ledger import Ledger, predictions_path, utc_now, utc_stamp
 from veridis.model.address_risk import DEST_FEATURES
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
@@ -40,7 +40,7 @@ MAX_PAGES = int(sys.argv[2]) if len(sys.argv) > 2 else 4
 async def sample_recent(client, n: int) -> list[str]:
     """Addresses receiving USDT in the last few hours."""
     url = f"{TRONGRID_BASE}/v1/contracts/{USDT_TRON}/events"
-    now = int(dt.datetime.utcnow().timestamp() * 1000)
+    now = int(utc_now().timestamp() * 1000)
     seen: list[str] = []
     for hours_back in (1, 4, 10, 20, 36):
         lo = now - hours_back * 3_600_000
@@ -101,7 +101,7 @@ async def main() -> None:
         print("no transfer history fetched; nothing to score")
         return
 
-    now_ms = int(dt.datetime.utcnow().timestamp() * 1000)
+    now_ms = int(utc_now().timestamp() * 1000)
     ev = (pl.DataFrame({"destination": fresh})
           .with_columns(pl.lit(now_ms).alias("event_time"), pl.lit("tron").alias("chain"),
                         pl.lit("__probe__").alias("sender"), pl.lit(1000.0).alias("amount_usd"))
@@ -111,7 +111,7 @@ async def main() -> None:
     engine.close()
     scores = booster.predict(feats.select(DEST_FEATURES).to_numpy())
 
-    stamp = dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    stamp = utc_stamp()
     flagged = 0
     for row, score in zip(feats.iter_rows(named=True), scores):
         if score < threshold:

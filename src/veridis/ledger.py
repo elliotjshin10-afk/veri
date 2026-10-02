@@ -84,6 +84,26 @@ class Ledger:
         return True, f"{len(self._entries)} entries, chain intact, head {prev[:16]}"
 
 
+def utc_now() -> "dt.datetime":
+    """Timezone-aware UTC now.
+
+    Not datetime.utcnow(). That returns a NAIVE datetime holding UTC wall-clock,
+    and .timestamp() then reinterprets it as LOCAL time - so on a machine four
+    hours behind UTC it yields an epoch four hours in the FUTURE. The ledger
+    records that number as predicted_at_ms, which anchors the point-in-time
+    feature computation and is the baseline every lead-time figure is measured
+    from. CI runs in UTC so the bug never surfaced there; it made the script
+    unrunnable anywhere else, because the chain APIs refuse a future timestamp.
+    """
+    import datetime as dt
+    return dt.datetime.now(dt.timezone.utc)
+
+
+def utc_stamp() -> str:
+    """UTC, to the second, in the form the ledger has always written."""
+    return utc_now().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def predictions_path(root: Path) -> Path:
     return root / "data" / "ledger" / "predictions.jsonl"
 

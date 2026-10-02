@@ -14,7 +14,7 @@ import datetime as dt, json, pathlib, sys
 sys.path.insert(0, "src")
 import polars as pl
 from veridis.config import INTERIM, ROOT
-from veridis.ledger import Ledger, predictions_path, resolutions_path
+from veridis.ledger import Ledger, predictions_path, resolutions_path, utc_stamp
 
 DAY_MS = 86_400_000
 
@@ -46,7 +46,7 @@ def main() -> None:
 
     frozen = freeze_times()
     done = {e["address"] for e in res}
-    stamp = dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    stamp = utc_stamp()
 
     new = 0
     for p in preds:

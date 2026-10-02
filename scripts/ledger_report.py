@@ -33,7 +33,7 @@ from __future__ import annotations
 import datetime as dt, json, sys
 sys.path.insert(0, "src")
 from veridis.config import PROCESSED, ROOT, SITE
-from veridis.ledger import Ledger, predictions_path, resolutions_path
+from veridis.ledger import Ledger, predictions_path, resolutions_path, utc_now, utc_stamp
 
 DAY_MS = 86_400_000
 COHORTS = [(90, None, "90+ days old"), (30, 90, "30-90 days old"), (0, 30, "under 30 days")]
@@ -59,7 +59,7 @@ def main() -> None:
             sys.exit(f"{name} ledger broken: {msg}")
 
     hits = {e["address"]: e for e in res if e["valid"]}
-    now = dt.datetime.utcnow().timestamp() * 1000
+    now = utc_now().timestamp() * 1000
     rows = []
     for p in preds:
         age = (now - p["predicted_at_ms"]) / DAY_MS
@@ -72,7 +72,7 @@ def main() -> None:
                      "lead_days": hits.get(p["address"], {}).get("lead_days")})
 
     out = {
-        "generated_at": dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        "generated_at": utc_stamp(),
         "predictions": len(rows),
         "head": preds.head,
         "resolutions_head": res.head,
