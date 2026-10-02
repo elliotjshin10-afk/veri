@@ -131,8 +131,31 @@ def main() -> None:
            .join(span, on="address", how="left")
            .with_columns(pl.col("truncated").fill_null(False))
            .filter(pl.col("first_seen").is_not_null()))
-    neg = neg.with_columns(
-        pl.Series("mark_at", rng.choice(marks, size=neg.height, replace=True).astype("int64")))
+    # Age-match the pseudo-freeze, as the trainers now do.
+    #
+    # A random mark lands long after an ordinary address first transacted, while
+    # a frozen address is short-lived - so the two arms differed by age as much
+    # as by behaviour, and "old means ordinary" inflated every figure below. The
+    # same change on the two trainers moved Ethereum from 0.932 to 0.857 and
+    # Tron from 0.955 to 0.930, and took the live false-positive rate from 10%
+    # of sampled recipients to 0 of 207. The lead-time claim is the headline on
+    # the site, so it is the last place that should keep the flattering version.
+    marks_sorted = np.sort(marks)
+    pos_age = np.sort(np.array([
+        r["mark_at"] - r["first_seen"] for r in pos.iter_rows(named=True)
+        if r.get("first_seen") is not None]))
+    pos_age = pos_age[pos_age > 0]
+    picked = []
+    for r in neg.iter_rows(named=True):
+        f = r["first_seen"]
+        usable = marks_sorted[marks_sorted - min(HORIZONS) * DAY_MS > f]
+        if not len(usable):
+            picked.append(None)
+            continue
+        want = f + int(rng.choice(pos_age))
+        picked.append(int(usable[np.abs(usable - want).argmin()]))
+    neg = (neg.with_columns(pl.Series("mark_at", picked, dtype=pl.Int64))
+           .filter(pl.col("mark_at").is_not_null()))
 
     print(f"positives {pos.height:,} (never trained on)   negatives {neg.height:,}")
 
