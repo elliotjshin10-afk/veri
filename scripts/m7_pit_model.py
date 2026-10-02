@@ -200,9 +200,16 @@ def main() -> None:
         # decimal place changes what a person is told.
         edge = np.minimum(np.abs(s - thr["elevated"]), np.abs(s - thr["high"]))
         take = np.argsort(edge)[:400]
+        # null, not Python's bare NaN, which JSON.parse rejects outright - the
+        # destination features happen to be finite today, so this never fired,
+        # but the sample would have become unreadable the first time one was not.
+        def jsonable(v):
+            v = float(v)
+            return v if v == v and v not in (float("inf"), float("-inf")) else None
+
         PROCESSED.joinpath("eth_parity_sample.json").write_text(json.dumps(
             {"features": BROWSER,
-             "rows": [{"x": [float(v) for v in Xb[i]], "p": float(s[i])}
+             "rows": [{"x": [jsonable(v) for v in Xb[i]], "p": float(s[i])}
                       for i in take]}, separators=(",", ":")))
         print(f"wrote eth_parity_sample.json ({len(take)} rows for browser parity)")
 

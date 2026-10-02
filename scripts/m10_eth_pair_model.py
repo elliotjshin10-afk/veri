@@ -46,7 +46,8 @@ from veridis.dataset.events import (MAX_EVENTS_PER_PAIR, RETAIL_MAX_SENDERS,
                                     RETAIL_MAX_USD_PER_SENDER,
                                     RETAIL_MIN_INBOUND_USD, RETAIL_MIN_SENDERS)
 from veridis.dataset.holdings import eth_complete, eth_transfers
-from veridis.dataset.matching import match_controls_nn, standardised_mean_difference
+from veridis.dataset.matching import (MATCH_COVARIATES, match_controls_nn,
+                                      standardised_mean_difference)
 from veridis.features.asof import FEATURE_COLUMNS, FEATURE_FAMILY, FeatureEngine
 
 SEED = 17
@@ -164,12 +165,51 @@ def main() -> None:
     # scam" would score well here and be useless in a send flow, where most
     # honest first payments are also first transfers.
     unmatched = feats
-    feats = match_controls_nn(feats, ratio=CONTROL_RATIO)
-    print(f"\nmatched {feats.height:,} of {unmatched.height:,} events "
-          f"({int((feats['label'] == 1).sum()):,} scam / "
+
+    # Pick the ratio that actually balances, rather than assuming Tron's.
+    #
+    # Matching without replacement at 10:1 against a pool holding under 2
+    # controls per positive does almost nothing: the matcher exhausts the pool
+    # and takes every control, poor matches included, so the "matched" set is
+    # the raw set wearing a different name. Asking for fewer, closer controls
+    # is what buys balance - at the cost of negatives, and therefore of
+    # resolution at low false-alarm rates. So try the ratios in order and keep
+    # the largest one that balances, instead of picking either end blind.
+    TARGET_SMD = 0.1
+    best, best_ratio, best_worst = None, None, None
+    for r in (CONTROL_RATIO, 5, 3, 2, 1):
+        if best is not None and r >= best_ratio:
+            continue
+        cand = match_controls_nn(unmatched, ratio=r)
+        bal = standardised_mean_difference(cand)
+        # Judge balance on the covariates matching actually controls. amount_usd
+        # is reported alongside them but never matched on, here or on Tron: it is
+        # a FEATURE the model is meant to use, and victims really do send larger,
+        # rounder sums than ordinary payers. Counting it as a matching failure
+        # would be holding Ethereum to a bar the shipped Tron model does not meet
+        # either - its own matched set sits at |SMD| 0.54 on amount.
+        worst = float(bal.filter(pl.col("covariate").is_in(MATCH_COVARIATES))
+                      ["abs_smd"].max())
+        n_neg = int((cand["label"] == 0).sum())
+        print(f"  ratio {r:>2}: {cand.height:>6,} events, {n_neg:>6,} controls, "
+              f"worst |SMD| {worst:.3f}" + ("  <- balanced" if worst < TARGET_SMD else ""))
+        if best_worst is None or worst < best_worst:
+            best, best_ratio, best_worst = cand, r, worst
+        if worst < TARGET_SMD:
+            best, best_ratio, best_worst = cand, r, worst
+            break
+    feats = best
+    print(f"\nmatched at {best_ratio}:1 - {feats.height:,} of {unmatched.height:,} "
+          f"events ({int((feats['label'] == 1).sum()):,} scam / "
           f"{int((feats['label'] == 0).sum()):,} ordinary)")
-    print("covariate balance after matching (|SMD| < 0.1 is balanced):")
+    print("covariate balance (|SMD| < 0.1 is balanced; amount_usd is reported "
+          "but not matched on):")
     print(standardised_mean_difference(feats))
+    if best_worst >= TARGET_SMD:
+        print(f"\n  WARNING: worst matched |SMD| is {best_worst:.3f}, above "
+              f"{TARGET_SMD}. The classes are still partly separable on sender\n"
+              f"  profile rather than on behaviour alone, so the figures below are "
+              f"optimistic. More control senders in the thin strata is the fix.")
 
     # Forward in time: the test set is the LATEST events, so nothing is scored
     # using behaviour that had not happened yet.
@@ -232,15 +272,26 @@ def main() -> None:
     edge = np.minimum(np.abs(s - thr["elevated"]), np.abs(s - thr["high"]))
     take = np.argsort(edge)[:400]
     Xt = X[is_test]
+    # NaN is written as null, not as the bare NaN Python's json emits. Bare NaN
+    # is valid to Python and rejected by JSON.parse, so the sample could not be
+    # read by the very browser it exists to check. null is also the right value
+    # rather than a convenient one: the browser's tree walk sends null, undefined
+    # and NaN down the same default branch LightGBM uses for a missing value, so
+    # a missing feature is scored identically on both sides.
+    def jsonable(v):
+        v = float(v)
+        return v if v == v and v not in (float("inf"), float("-inf")) else None
+
     (PROCESSED / "eth_pair_parity_sample.json").write_text(json.dumps(
         {"features": PAIR_FEATURES,
-         "rows": [{"x": [float(v) for v in Xt[i]], "p": float(s[i])}
+         "rows": [{"x": [jsonable(v) for v in Xt[i]], "p": float(s[i])}
                   for i in take]}, separators=(",", ":")))
 
     (PROCESSED / "eth_pair_report.json").write_text(json.dumps(
         {"results": results, "split_event_time_ms": int(cut),
          "n_events": int(feats.height), "n_events_unmatched": int(unmatched.height),
-         "max_events_per_pair": MAX_EVENTS_PER_PAIR, "control_ratio": CONTROL_RATIO,
+         "max_events_per_pair": MAX_EVENTS_PER_PAIR, "control_ratio": best_ratio,
+         "worst_abs_smd": best_worst, "balanced": bool(best_worst < TARGET_SMD),
          "matched": "nearest-neighbour, exact on is_first_send_to_dest",
          "complete_only": True, "controls": "independent"}, indent=2))
     print("wrote eth_pair_report.json and eth_pair_parity_sample.json")

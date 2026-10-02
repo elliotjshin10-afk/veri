@@ -1,0 +1,41 @@
+{
+  "results": {
+    "destination only": {
+      "n": 2002,
+      "n_scam": 1237,
+      "n_control": 765,
+      "roc_auc": 0.8035136663126583,
+      "pr_auc": 0.8446285544500991,
+      "tpr_at_1pct_fpr": 0.09943411479385611,
+      "tpr_at_10pct_fpr": 0.38884397736459175
+    },
+    "+ context + relationship": {
+      "n": 2002,
+      "n_scam": 1237,
+      "n_control": 765,
+      "roc_auc": 0.825141471301536,
+      "pr_auc": 0.8725248646753934,
+      "tpr_at_1pct_fpr": 0.15683104284559418,
+      "tpr_at_10pct_fpr": 0.5173807599029911
+    },
+    "+ sender as well": {
+      "n": 2002,
+      "n_scam": 1237,
+      "n_control": 765,
+      "roc_auc": 0.8253258727365914,
+      "pr_auc": 0.8747061026366107,
+      "tpr_at_1pct_fpr": 0.14470493128536782,
+      "tpr_at_10pct_fpr": 0.4939369442198868
+    }
+  },
+  "split_event_time_ms": 1724240495000,
+  "n_events": 6671,
+  "n_events_unmatched": 11143,
+  "max_events_per_pair": 10,
+  "control_ratio": 1,
+  "worst_abs_smd": 0.053449724472258764,
+  "balanced": true,
+  "matched": "nearest-neighbour, exact on is_first_send_to_dest",
+  "complete_only": true,
+  "controls": "independent"
+}

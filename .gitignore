@@ -33,6 +33,10 @@ reports/*.png
 !data/processed/eth_pit_report.json
 !data/processed/eth_holdout.json
 !data/processed/eth_parity_sample.json
+# The two-sided Ethereum model's equivalents: the measured result, and the rows
+# `make test` compares the browser's tree-walk against.
+!data/processed/eth_pair_report.json
+!data/processed/eth_pair_parity_sample.json
 !data/interim/scam_addresses.parquet
 !data/raw/tether_blacklist_tron.json
 
