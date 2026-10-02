@@ -38,6 +38,27 @@ USDT_ETH_DECIMALS = 6
 # deliberate simplification: the product scores stablecoin sends.
 STABLE_SYMBOLS = {"USDT", "USDC", "TUSD", "USDD", "DAI", "FDUSD", "PYUSD"}
 
+# The real contracts, because a symbol is not an identity.
+#
+# Anyone can deploy a token whose symbol is exactly "USDT" - not a Cyrillic
+# lookalike, the actual ASCII string - and send it to whoever they like. Matching
+# on the symbol let 996 such transfers into the Ethereum warehouse, one of them
+# claiming to move $9e39, which is more money than has ever existed. All 368
+# addresses that received one would clear the $100m institutional guard on that
+# fake inflow alone, so the page would call a scam collection point "an exchange,
+# bridge or trading desk". That is not noise, it is an evasion vector: mint a
+# fake USDT, send yourself a trillion of it, and the risk check vouches for you.
+#
+# Each address below was verified against Etherscan - symbol and decimals both.
+STABLE_CONTRACTS_ETH = {
+    "0xdac17f958d2ee523a2206206994597c13d831ec7": "USDT",
+    "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": "USDC",
+    "0x6b175474e89094c44da98b954eedeac495271d0f": "DAI",
+    "0x0000000000085d4780b73119b644ae5ecd22b376": "TUSD",
+    "0x6c3ea9036406852006290770bedfcaba0e23a0e8": "PYUSD",
+    "0xc5f0f7b66764f6ec8c8dff7ba683102295e16409": "FDUSD",
+}
+
 # ------------------------------------------------------------ pipeline params
 # Corroboration: an address needs this much independent support to be a positive.
 MIN_CORROBORATION = 2

@@ -79,8 +79,27 @@ ETH_TRUNCATED_SETS = (
 ETH_INDEPENDENT_SET = "eth_control3_truncated"
 
 
+# A single real USDT transfer has never approached this. Tether's entire supply
+# is on the order of $140bn, and the largest genuine transfers are around $1bn.
+COUNTERFEIT_USD = 1e10
+
+
 def eth_transfers() -> pl.DataFrame:
-    """Every Ethereum transfer we hold, deduplicated the same way."""
+    """Every Ethereum transfer we hold, deduplicated, counterfeits removed.
+
+    The ingest matched tokens on their SYMBOL, and anyone can deploy a contract
+    whose symbol is the real ASCII "USDT". 996 such transfers reached the
+    warehouse, one claiming to move $9e39. Both normalisers now match on the
+    contract address instead, so nothing new arrives this way - but the rows
+    already stored carry no contract address to filter on, and re-deriving them
+    means re-reading every cached payload.
+
+    So they are dropped here by amount, which is crude and is stated rather than
+    hidden: a handful of genuine whale transfers may go with them. That costs a
+    little recall on addresses nobody mistakes for retail; keeping the fakes
+    costs the institutional guard, which 368 addresses would have cleared on
+    counterfeit inflow alone.
+    """
     frames = []
     for name in ETH_TRANSFER_SETS:
         p = INTERIM / f"{name}.parquet"
@@ -89,8 +108,9 @@ def eth_transfers() -> pl.DataFrame:
             frames.append(df if not frames else df.select(frames[0].columns))
     if not frames:
         raise SystemExit("no Ethereum transfer data found - run the ingest first")
-    return pl.concat(frames, how="vertical_relaxed").unique(
+    out = pl.concat(frames, how="vertical_relaxed").unique(
         subset=["tx_hash", "to_address"])
+    return out.filter(pl.col("amount_usd") < COUNTERFEIT_USD)
 
 
 def eth_complete() -> set[str]:
@@ -124,7 +144,16 @@ def eth_fetched() -> set[str]:
 
 
 def all_transfers() -> pl.DataFrame:
-    """Every transfer we hold, deduplicated on (tx_hash, to_address).
+    """Every Tron transfer we hold, deduplicated on (tx_hash, to_address).
+
+    Counterfeits are dropped by amount here as they are on Ethereum. Tron's
+    normaliser matches on the token's SYMBOL too, so the same vector exists -
+    deploy a TRC-20 calling itself USDT, send yourself a trillion, and the
+    institutional guard vouches for you. In practice only one stored row exceeds
+    the bound, because Tron carries far fewer impersonation tokens than Ethereum
+    does, but the hole is the same shape. Filtering TRC-20 transfers on their
+    contract address is the proper fix and wants each contract verified first;
+    only USDT's is pinned in config today, and it is 99.98% of what we hold.
 
     A single transaction can carry several transfers, so the hash alone is not
     a key; the pair is what the ingest has always deduplicated on.
@@ -137,7 +166,9 @@ def all_transfers() -> pl.DataFrame:
             frames.append(df if not frames else df.select(frames[0].columns))
     if not frames:
         raise SystemExit("no transfer data found - run the ingest first")
-    return pl.concat(frames, how="vertical_relaxed").unique(subset=["tx_hash", "to_address"])
+    out = pl.concat(frames, how="vertical_relaxed").unique(
+        subset=["tx_hash", "to_address"])
+    return out.filter(pl.col("amount_usd") < COUNTERFEIT_USD)
 
 
 def all_indexed() -> set[str]:

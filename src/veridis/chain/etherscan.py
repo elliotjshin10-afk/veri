@@ -18,7 +18,7 @@ import urllib.parse
 from typing import Any
 
 from veridis.chain.http import CachedClient
-from veridis.config import STABLE_SYMBOLS
+from veridis.config import STABLE_CONTRACTS_ETH, STABLE_SYMBOLS
 
 log = logging.getLogger(__name__)
 
@@ -75,8 +75,11 @@ def normalise(rows: list[dict], chain: str = "ethereum") -> list[dict]:
     """
     out = []
     for r in rows:
-        sym = (r.get("tokenSymbol") or "").upper()
-        if sym not in STABLE_SYMBOLS:
+        # The CONTRACT decides what a token is; the symbol is a label its author
+        # chose. See STABLE_CONTRACTS_ETH for what matching on the symbol let in.
+        contract = (r.get("contractAddress") or "").lower()
+        sym = STABLE_CONTRACTS_ETH.get(contract)
+        if sym is None:
             continue
         try:
             dec = int(r.get("tokenDecimal") or 18)

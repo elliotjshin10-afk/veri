@@ -54,8 +54,12 @@ class _Stub:
         return self.payloads.pop(0) if self.payloads else {"status": "1", "result": []}
 
 
+USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+
+
 def _rows(n):
-    return [{"tokenSymbol": "USDT", "tokenDecimal": "6", "value": "1000000",
+    return [{"contractAddress": USDT,
+             "tokenSymbol": "USDT", "tokenDecimal": "6", "value": "1000000",
              "timeStamp": str(1600000000 + i), "hash": f"0x{i:064x}",
              "from": f"0x{i:040x}", "to": f"0x{9:040x}"} for i in range(n)]
 
@@ -83,6 +87,19 @@ def test_exhausting_the_page_budget_reports_truncated():
         es.token_transfers(c, "0xabc", "key", max_pages=2))
     assert len(rows) == 2 * es.PAGE
     assert truncated is True
+
+
+def test_a_token_is_identified_by_its_contract_not_its_symbol():
+    """Anyone can deploy a token whose symbol is the real ASCII "USDT". One such
+    transfer claimed $9e39, and every address that received one cleared the
+    $100m institutional guard on that fake inflow - so the page called a scam
+    collection point an exchange. That is an evasion vector, not noise."""
+    fake = [{"contractAddress": "0x" + "f" * 40, "tokenSymbol": "USDT",
+             "tokenDecimal": "0", "value": "9" + "0" * 39,
+             "timeStamp": "1700000000", "hash": "0xdead",
+             "from": "0x" + "c" * 40, "to": "0x" + "9" * 40}]
+    assert es.normalise(fake) == []
+    assert len(es.normalise(_rows(1))) == 1
 
 
 def test_short_page_ends_the_history_as_complete():

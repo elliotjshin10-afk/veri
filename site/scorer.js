@@ -456,11 +456,35 @@ export const EVM_CHAINS = {Ethereum: 1, Arbitrum: 42161, Polygon: 137};
    whole history, where 200-row pages needed four requests to read a slice. */
 const PAGE_SIZE = 1000;
 
+/* The real contracts, because a symbol is not an identity.
+   Anyone can deploy a token whose symbol is exactly "USDT" - the real ASCII
+   string, not a lookalike - and send it wherever they like. Matching on the
+   symbol let one transfer claiming $9e39 into the warehouse, and every address
+   that received such a token cleared the institutional guard on the fake inflow
+   alone, so the page called it an exchange. That is an evasion vector, not
+   noise: mint a fake USDT, send yourself a trillion, and the check vouches for
+   you. Verified against Etherscan, symbol and decimals both. */
+const STABLE_CONTRACTS = new Map(Object.entries({
+  "0xdac17f958d2ee523a2206206994597c13d831ec7": "USDT",
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": "USDC",
+  "0x6b175474e89094c44da98b954eedeac495271d0f": "DAI",
+  "0x0000000000085d4780b73119b644ae5ecd22b376": "TUSD",
+  "0x6c3ea9036406852006290770bedfcaba0e23a0e8": "PYUSD",
+  "0xc5f0f7b66764f6ec8c8dff7ba683102295e16409": "FDUSD"
+}));
+
 function normaliseEvm(rows) {
   const out = [];
   for (const r of rows || []) {
-    const sym = (r.tokenSymbol || "").toUpperCase();
-    if (!STABLES.has(sym)) continue;            // exact match, see above
+    // The CONTRACT decides what a token is; the symbol is a label its author
+    // chose. Anyone can deploy a token whose symbol is exactly "USDT" - the real
+    // ASCII string, not a Cyrillic lookalike - and send it wherever they like.
+    // Matching on the symbol let in a transfer claiming to move $9e39, and every
+    // address that received one cleared the institutional guard on that fake
+    // inflow alone, so this page called a collection point "an exchange, bridge
+    // or trading desk". That is an evasion vector rather than noise: mint a fake
+    // USDT, send yourself a trillion of it, and the risk check vouches for you.
+    if (!STABLE_CONTRACTS.has((r.contractAddress || "").toLowerCase())) continue;
     const dec = Number(r.tokenDecimal ?? 18);
     const raw = Number(r.value);
     if (!isFinite(raw) || !isFinite(dec)) continue;

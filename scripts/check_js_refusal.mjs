@@ -16,8 +16,11 @@ const REFUSAL = {status: "0", message: "NOTOK",
 const EMPTY = {status: "0", message: "No transactions found",
                result: "No transactions found"};
 
+const USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+
 function rows(n) {
   return Array.from({length: n}, (_, i) => ({
+    contractAddress: USDT,
     tokenSymbol: "USDT", tokenDecimal: "6", value: "1000000",
     timeStamp: String(1600000000 + i), hash: "0x" + String(i).padStart(64, "0"),
     from: "0x" + String(i).padStart(40, "0"), to: "0x" + "9".repeat(40),
@@ -116,6 +119,22 @@ for (let i = 1; i < stamps.length; i++) tightest = Math.min(tightest, stamps[i] 
 check("concurrent fetches share one pacing queue",
       stamps.length >= 2 && tightest >= 333,
       `${stamps.length} requests, tightest gap ${tightest}ms`);
+
+/* 9. A counterfeit token is not a stablecoin, whatever it calls itself.
+ *    Anyone can deploy a contract whose symbol is the real ASCII "USDT". One
+ *    such transfer claimed $9e39, and every address that received one cleared
+ *    the institutional guard on that fake inflow, so the page called a
+ *    collection point an exchange. The contract decides, not the label. */
+const fakeRow = {
+  contractAddress: "0x" + "f".repeat(40), tokenSymbol: "USDT",
+  tokenDecimal: "0", value: "9" + "0".repeat(39), timeStamp: "1700000000",
+  hash: "0xdead", from: "0x" + "c".repeat(40), to: "0x" + "9".repeat(40),
+};
+serve([{status: "1", result: [...rows(2), fakeRow]}]);
+tx = await fetchTransfersEvm(A, {maxPages: 1});
+check("a counterfeit USDT is rejected on its contract",
+      tx.length === 2 && tx.every(r => r.usd < 1e6),
+      `kept ${tx.length} rows, max usd ${Math.max(0, ...tx.map(r => r.usd))}`);
 
 console.log(fails.length
   ? `\n${fails.length} refusal check(s) FAILED`

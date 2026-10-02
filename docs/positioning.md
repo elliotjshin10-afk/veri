@@ -90,10 +90,10 @@ from the reports, so the page cannot carry a number the code no longer produces.
 
 | | Tron | Ethereum |
 |---|---|---|
-| Address lookup, ROC-AUC | **0.930** | **0.857** |
-| Recall at a 1% false-alarm budget | 26% | 30% |
+| Address lookup, ROC-AUC | **0.928** | **0.861** |
+| Recall at a 1% false-alarm budget | 25% | 30% |
 | With the sender known (two-sided) | 0.975 | 0.872 |
-| Lead time: caught 90 days before the freeze, at 1% false alarms | **42%** (CI 34-52%) | not yet measured |
+| Lead time: caught 90 days before the freeze, at 1% false alarms | **39%** (CI 33-53%) | not yet measured |
 
 **These numbers are lower than the ones this repo carried until 2026-10-02, and
 the correction matters more than the figures.** Control addresses used to draw a
@@ -112,6 +112,17 @@ of the apparent performance was age, and what is left transfers.
 Say this out loud in a diligence conversation rather than waiting to be asked.
 A number a buyer's data team can reproduce is worth more than a higher one they
 cannot, and the ability to find this in our own work is the product.
+
+**A second correction, the same day.** Tokens were matched on their SYMBOL, and
+anyone can deploy a contract whose symbol is the real ASCII "USDT". 996 such
+transfers were in the Ethereum data, one claiming to move $9e39, and all 368
+addresses that received one would have cleared the $100m institutional guard on
+that fake inflow alone - so the page would have called a scam collection point
+"an exchange, bridge or trading desk". That is an evasion vector rather than a
+data-quality nuisance: mint a fake USDT, send yourself a trillion, and the risk
+check vouches for you. Tokens are now identified by contract address, verified
+against Etherscan, in both the ingest and the browser. Accuracy barely moved,
+which is the point - it was a security bug, not a modelling one.
 
 **What is not yet established:**
 
