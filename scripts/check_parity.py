@@ -92,7 +92,41 @@ if res.returncode != 0:
     raise SystemExit("node runner failed")
 js = {r["address"]: r for r in json.loads(res.stdout)}
 
+# What this check guarantees, and what it cannot.
+#
+# The BAND is gated at zero tolerance, because it is what a person is told. The
+# SCORE is not, and cannot honestly be: a feature like dest_forward_ratio is a
+# ratio of two sums over thousands of transfers, DuckDB and JavaScript
+# accumulate those in different orders, and the results differ in the last few
+# ulps - about 7e-14 relative. Tree splits are exact comparisons, so a value
+# that lands on one takes a different branch in each language and the summed
+# score moves. Measured over 1,500 addresses: features agree to 7.45e-14, bands
+# agree exactly, and the worst score divergence is 3.1e-02.
+#
+# The gate below is set to catch a real regression - a changed formula, a
+# mis-ported feature - rather than to assert a bit-identity that two floating
+# point implementations cannot provide. Making the scores identical would mean
+# quantising every feature to a fixed precision on both sides before scoring,
+# which is a deliberate change to what the model sees and has not been made.
+#
+# One consequence worth knowing: the ledger scores in Python and the site scores
+# in the browser, so an address sitting within ~0.03 of a band threshold can be
+# called differently by the two. No such case appeared in 1,500 addresses.
+SCORE_TOL = 0.05
 worst_feat, worst_score, checked, mismatches = 0.0, 0.0, 0, []
+# Which feature, not just how much. A score that diverges while every feature
+# agrees to 1e-14 means a value landed exactly on a tree split and took the
+# other branch - worth naming the feature rather than reporting a number nobody
+# can act on.
+worst_feat_name, worst_feat_pair = None, None
+score_detail = []
+bands_differ = []
+THR = model["thresholds"]
+
+
+def band(p):
+    return ("high" if p >= THR["high"]
+            else "elevated" if p >= THR["elevated"] else "ordinary")
 for c in cases:
     j = js.get(c["address"])
     if not j or not j["js"]:
@@ -105,20 +139,45 @@ for c in cases:
             continue
         denom = max(abs(a), abs(b), 1.0)
         rel = abs(a - b) / denom
-        worst_feat = max(worst_feat, rel)
+        if rel > worst_feat:
+            worst_feat, worst_feat_name, worst_feat_pair = rel, f, (a, b)
         if rel > 1e-6:
             mismatches.append((c["address"], f"{f}: py={a!r} js={b!r}"))
     ds = abs(c["py_score"] - j["js_score"])
     worst_score = max(worst_score, ds)
-    if ds > 1e-6:
+    # The band is what a person is told. Scores are sums of many floats, and two
+    # languages will not agree on the last bit of a large sum - when such a value
+    # sits exactly on a tree split the branch flips and the score moves. That is
+    # tolerable; a different VERDICT is not. So the band is checked with no
+    # tolerance at all, and the score divergence is reported as a diagnostic.
+    if band(c["py_score"]) != band(j["js_score"]):
+        bands_differ.append((c["address"], c["py_score"], j["js_score"],
+                             band(c["py_score"]), band(j["js_score"])))
+    if ds > SCORE_TOL:
+        worst_in_row = max(
+            ((abs(c["py"][f] - j["js"][f]) / max(abs(c["py"][f]), abs(j["js"][f]), 1.0), f)
+             for f in FEATS if c["py"][f] is not None and j["js"][f] is not None),
+            default=(0.0, "-"))
+        score_detail.append((c["address"], c["py_score"], j["js_score"], worst_in_row))
         mismatches.append((c["address"], f"score py={c['py_score']:.8f} js={j['js_score']:.8f}"))
 
 print(f"compared {checked} addresses across {len(FEATS)} features")
+print(f"  band disagreements (zero tolerated): {len(bands_differ)}")
 print(f"  worst relative feature difference: {worst_feat:.2e}")
 print(f"  worst absolute score difference:   {worst_score:.2e}")
+if worst_feat_name:
+    print(f"  worst feature: {worst_feat_name} "
+          f"(py={worst_feat_pair[0]!r} js={worst_feat_pair[1]!r})")
+for addr, pys, jss, (rel, f) in score_detail:
+    print(f"  {addr}: py={pys:.9f} js={jss:.9f}; "
+          f"largest feature gap in that row {rel:.2e} on {f}")
+for a, pys, jss, pb, jb in bands_differ:
+    mismatches.append((a, f"BAND {pb} vs {jb} (py={pys:.9f} js={jss:.9f})"))
+
 if mismatches:
     print(f"\nPARITY FAILED - {len(mismatches)} mismatches:")
     for a, m in mismatches[:12]:
         print(f"  {a[:14]}  {m}")
     raise SystemExit(1)
-print("\nPARITY OK - the browser scores identically to the Python feature layer.")
+print("\nPARITY OK - the browser and the Python feature layer agree on every band, "
+      "and on every feature to within float reproducibility.")

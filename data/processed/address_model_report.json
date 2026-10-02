@@ -1,20 +1,20 @@
 {
   "evaluation": {
-    "n": 2706,
-    "n_scam": 1794,
-    "n_control": 912,
-    "roc_auc": 0.9553274560425591,
-    "pr_auc": 0.9754124959505356,
-    "tpr_at_1pct_fpr": 0.5312151616499443,
+    "n": 2836,
+    "n_scam": 2243,
+    "n_control": 593,
+    "roc_auc": 0.929988670016292,
+    "pr_auc": 0.9773399228373374,
+    "tpr_at_1pct_fpr": 0.31654034774855105,
     "tpr_at_1pct_fpr_ci": [
-      0.3862597547380156,
-      0.6187430323299888
+      0.18898796255015604,
+      0.4957757467677218
     ],
     "held_out": true
   },
   "thresholds": {
-    "elevated": 0.7421246407590214,
-    "high": 0.9779236145873217
+    "elevated": 0.6084320981227389,
+    "high": 0.9770765178763813
   },
   "features": [
     "dest_age_days",
@@ -37,5 +37,5 @@
     "dest_funder_fanout"
   ],
   "trained_on": "point-in-time address probes",
-  "holdout_addresses": 2706
+  "holdout_addresses": 2836
 }

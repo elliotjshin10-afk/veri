@@ -34,27 +34,13 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 N_CANDIDATES = int(sys.argv[1]) if len(sys.argv) > 1 else 400
 MAX_PAGES = int(sys.argv[2]) if len(sys.argv) > 2 else 4
-# Tron by default, Ethereum only when asked for explicitly.
-#
-# The Ethereum arm works - it samples the live USDT stream, scores with the
-# model the site serves, and appends. It is not in the nightly run because a
-# trial pass flagged 19 of 189 live candidates (10%), where the held-out
-# evaluation puts the false-positive rate at 2%, and eleven of the nineteen had
-# fewer than five payers and under $1,000 received.
-#
-# The cause is in the control arm, not the model. Control probes require
-# `mark - 180d > first_seen`, so every ordinary address in the evaluation
-# predates its pseudo-freeze by six months: median control age 999 days against
-# 138 for frozen. Frozen addresses carry no such requirement, because collectors
-# are short-lived. The model therefore had "old means ordinary" available as a
-# shortcut, which holds in the evaluation and fails on live traffic, where a
-# young address is usually just a new wallet.
-#
-# A ledger entry is a public claim. Until the control arm resembles the
-# population the product actually sees, this one would fill the record with
-# calls we have no reason to believe. Run it by hand with `... 2000 4 ethereum`
-# to reproduce the finding.
-CHAINS = (sys.argv[3].split(",") if len(sys.argv) > 3 else ["tron"])
+# Both chains. Ethereum was held back while a trial pass flagged 19 of 189 live
+# candidates (10%) against a 2% measured false-positive rate - the model had
+# learned "old means ordinary", because control probes were drawn at marks long
+# after the address appeared while frozen addresses are short-lived. With the
+# control arm age-matched to the positives the same trial flags 0 of 207, and
+# the evaluation and production now agree about what the model does.
+CHAINS = (sys.argv[3].split(",") if len(sys.argv) > 3 else ["tron", "ethereum"])
 
 ETHERSCAN_KEY = os.environ.get("ETHERSCAN_API_KEY") or \
     "9QGTZYJ7CW6K4YTWWQCK3I6NHCAN32YXXJ"

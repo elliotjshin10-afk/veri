@@ -89,17 +89,38 @@ def main() -> None:
     # silent failure that reads as a LightGBM error about scale_pos_weight.
     marks = np.sort(pos["mark"].to_numpy())
     first = dict(zip(span["address"].to_list(), span["first_seen"].to_list()))
+    # Choose each control's pseudo-freeze to MATCH the positives on age.
+    #
+    # Two bugs lived here. The first was requiring the mark to sit a full 180
+    # days after the control's first transfer, which no positive had to satisfy,
+    # so every ordinary address was at least six months old. Relaxing that to
+    # one horizon helped and did not fix it: drawing the mark at random still
+    # left the median control 767 days old against 151 for frozen, because the
+    # control pool itself is old and a random mark is usually long after the
+    # address appeared.
+    #
+    # Age is the confounder, so match on it. Each control draws a target age
+    # from the positives' own age-at-freeze distribution and takes the usable
+    # mark that lands closest to it. The arms then differ by behaviour rather
+    # than by how long the address has existed - which is the only reason the
+    # evaluation transfers to production, where a young address is usually a
+    # new wallet and not a collector.
+    pos_age = np.sort((pos["mark"].to_numpy()
+                       - np.array([first.get(a, 0) for a in pos["address"].to_list()])))
+    pos_age = pos_age[pos_age > 0]
     rowsn, skipped = [], 0
     for a in sorted(ctrl):
         f = first.get(a)
         if f is None:
             skipped += 1
             continue
-        usable = marks[marks - max(HORIZONS) * DAY > f]
+        usable = marks[marks - min(HORIZONS) * DAY > f]
         if not len(usable):
             skipped += 1
             continue
-        rowsn.append({"address": a, "mark": int(rng.choice(usable))})
+        want = f + int(rng.choice(pos_age))
+        rowsn.append({"address": a,
+                      "mark": int(usable[np.abs(usable - want).argmin()])})
     neg = pl.DataFrame(rowsn)
     print(f"ordinary wallets usable: {neg.height:,} "
           f"({skipped:,} too young for any pseudo-freeze date)")
@@ -120,6 +141,18 @@ def main() -> None:
     cut = float(np.quantile(pr["mark"].to_numpy(), 1 - TEST_FRAC))
     is_test = pr["mark"].to_numpy() >= cut
     y = pr["label"].to_numpy()
+    # Age by arm, printed every run: this is the axis the two arms silently
+    # diverged on, and a number nobody looks at is a number that drifts.
+    agecol = ((pr["event_time"] - pr["address"].replace_strict(first, default=None))
+              / DAY).to_numpy()
+    ya = pr["label"].to_numpy()
+    print(f"\n  address age at scoring   frozen    ordinary")
+    for q in (0.25, 0.5, 0.75):
+        print(f"    p{int(q*100):<20}{np.quantile(agecol[ya==1], q):>7.0f} d"
+              f"{np.quantile(agecol[ya==0], q):>11.0f} d")
+    print(f"    under 30 days        {(agecol[ya==1]<30).mean()*100:>6.0f}%"
+          f"{(agecol[ya==0]<30).mean()*100:>11.0f}%\n")
+
     print(f"probes {pr.height:,} over {pr['address'].n_unique():,} addresses; "
           f"test {int(is_test.sum()):,} "
           f"({int((y[is_test]==1).sum()):,} frozen / {int((y[is_test]==0).sum()):,} ordinary)")

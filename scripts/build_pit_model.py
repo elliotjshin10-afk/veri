@@ -93,9 +93,34 @@ def main() -> None:
                            & pl.col("first_reported_at").is_not_null())
            .select("address", pl.col("first_reported_at").alias("mark"))
            .filter(pl.col("address").is_in(list(held))))
-    marks = pos["mark"].to_numpy()
-    neg = pl.DataFrame({"address": sorted(ctrl & held)}).with_columns(
-        pl.Series("mark", rng.choice(marks, size=len(ctrl & held), replace=True).astype("int64")))
+    marks = np.sort(pos["mark"].to_numpy())
+    # Match each control's pseudo-freeze to the positives on AGE.
+    #
+    # Drawing the mark uniformly looks neutral and is not. A frozen address is
+    # short-lived - median 239 days old when Tether freezes it - while a random
+    # mark lands long after an ordinary address first appeared, median 833 days.
+    # Under 30 days old: 13% of frozen probes against 1% of ordinary. The model
+    # could then separate the arms on age alone, which holds in the evaluation
+    # and fails in production, where a young address is usually a new wallet.
+    # On the Ethereum side this showed up as 10% of live candidates flagged
+    # against a 2% measured false-positive rate; age-matching took it to 0 of
+    # 207.
+    first_seen = dict(zip(span["address"].to_list(), span["first_seen"].to_list()))
+    pos_age = np.sort(np.array([
+        r["mark"] - first_seen[r["address"]] for r in pos.iter_rows(named=True)
+        if first_seen.get(r["address"]) is not None]))
+    pos_age = pos_age[pos_age > 0]
+    neg_rows = []
+    for a in sorted(ctrl & held):
+        f = first_seen.get(a)
+        if f is None:
+            continue
+        usable = marks[marks - min(HORIZONS) * DAY > f]
+        if not len(usable):
+            continue
+        want = f + int(rng.choice(pos_age))
+        neg_rows.append({"address": a, "mark": int(usable[np.abs(usable - want).argmin()])})
+    neg = pl.DataFrame(neg_rows)
 
     rows = []
     for df, label in ((pos, 1), (neg, 0)):

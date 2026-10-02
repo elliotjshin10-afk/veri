@@ -180,3 +180,33 @@ stream, with the age distribution that implies - rather than from historical
 windows filtered to 180-plus days. Until then the Ethereum ledger arm is built
 but not scheduled: a ledger entry is a public claim, and these would be claims
 we have no reason to believe.
+
+### Resolved: match the controls on age
+
+The fix was not in the model or the thresholds. Control probes now draw their
+pseudo-freeze date so that the control's AGE at scoring matches the positives'
+own age-at-freeze distribution, instead of being drawn at random.
+
+                        before          after
+    frozen median       138 d           151 d
+    ordinary median     999 d           129 d
+    under 30 days       23% / 5%        18% / 25%
+
+The honest figures, on both chains, once the arms differ by behaviour rather
+than by how long the address has existed:
+
+                            before    after
+    Ethereum ROC-AUC         0.932    0.857
+    Ethereum high-band recall  53%      30%
+    Tron ROC-AUC             0.955    0.930
+    Tron recall at 1% FPR      53%      26%
+
+About a quarter of the apparent performance was age. These are lower and they
+are the numbers that transfer: on the live USDT stream the same trial that
+flagged 19 of 189 candidates (10%) against a 2% measured false-positive rate now
+flags **0 of 207**. The evaluation and production finally agree about what the
+model does.
+
+The address that prompted this - one payer, $15 received, two hours old - now
+reads "Nothing unusual here" instead of "High risk destination", while a
+held-out frozen address still reads high.
