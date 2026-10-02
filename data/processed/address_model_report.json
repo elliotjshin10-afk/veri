@@ -1,0 +1,41 @@
+{
+  "evaluation": {
+    "n": 2706,
+    "n_scam": 1794,
+    "n_control": 912,
+    "roc_auc": 0.9553274560425591,
+    "pr_auc": 0.9754124959505356,
+    "tpr_at_1pct_fpr": 0.5312151616499443,
+    "tpr_at_1pct_fpr_ci": [
+      0.3862597547380156,
+      0.6187430323299888
+    ],
+    "held_out": true
+  },
+  "thresholds": {
+    "elevated": 0.7421246407590214,
+    "high": 0.9779236145873217
+  },
+  "features": [
+    "dest_age_days",
+    "dest_inbound_count",
+    "dest_outbound_count",
+    "dest_senders_all",
+    "dest_senders_1d",
+    "dest_senders_7d",
+    "dest_senders_30d",
+    "dest_inbound_usd_7d",
+    "dest_inbound_usd_30d",
+    "dest_inbound_count_7d",
+    "dest_distinct_out",
+    "dest_consolidation_ratio",
+    "dest_median_hold_secs",
+    "dest_p25_hold_secs",
+    "dest_forward_ratio",
+    "dest_in_out_ratio",
+    "dest_usd_per_sender",
+    "dest_funder_fanout"
+  ],
+  "trained_on": "point-in-time address probes",
+  "holdout_addresses": 2706
+}

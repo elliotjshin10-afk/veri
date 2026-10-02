@@ -24,6 +24,11 @@ reports/*.png
 !data/ledger/
 !data/ledger/*.jsonl
 !data/processed/model_dest_latest.txt
+# ledger_predict reads the shipped model's own banding threshold from here. It
+# is 956 bytes and the nightly job cannot run without it - leaving it untracked
+# crashed the ledger every night for four nights before anyone noticed, because
+# a failed scheduled workflow is silent.
+!data/processed/address_model_report.json
 !data/processed/leadtime_roc.json
 # The Ethereum side of the same bargain. eth_pit_report.json is the measured
 # result, eth_holdout.json names the addresses it was measured on (so anyone can
