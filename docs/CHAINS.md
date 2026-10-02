@@ -127,3 +127,56 @@ it yet.
 An Arbitrum-native label source: a freeze list reflecting what an address did
 *on Arbitrum*. Until one exists, the honest position is that Arbitrum is
 unsupported — not "coming soon".
+
+## The control arm is older than the world the product lives in
+
+Found while adding the Ethereum arm to the nightly ledger, and it bears on every
+Ethereum figure in this repo.
+
+A trial pass flagged **19 of 189** live USDT recipients (10%) at the high band.
+The held-out evaluation puts the false-positive rate at **2%**. Eleven of the
+nineteen had fewer than five payers and under $1,000 received - a 0.1-day-old
+address holding $15 is not a collection point.
+
+The first suspicion was that the model is overconfident on thin histories. It is
+not. On the held-out set it is at its BEST there:
+
+    payers   frozen  ordinary   HIGH|frozen  HIGH|ordinary  precision
+    1-2         465     1,458           62%             2%        89%
+    3-4         202       648           43%             0%        99%
+    5-19        263     1,124           31%             0%        95%
+    20+          26       682           12%             0%       100%
+
+The asymmetry is age, and it comes from how control probes are built. A control
+needs `mark - 180d > first_seen`, so every ordinary address in the evaluation
+predates its pseudo-freeze by six months. Frozen addresses carry no such
+requirement, because collectors are short-lived and get frozen soon after they
+appear. The result:
+
+    address age at scoring time    frozen     ordinary
+      p25                           34 d        370 d
+      median                       138 d        999 d
+      p75                          497 d      1,455 d
+      under 30 days                  23%           5%
+
+The median ordinary address in the evaluation is **two and three quarter years
+old**. The median live USDT recipient is nothing like that. So the model had
+"old means ordinary" available as a shortcut - true in the evaluation, false in
+production, where a young address is usually a new wallet or a fresh deposit
+address.
+
+This does not make the held-out ROC-AUC wrong. It makes it an answer to a
+narrower question than the product asks: *can you separate a frozen address from
+a wallet that has existed for three years?* rather than *can you separate it from
+the addresses people actually pay?*
+
+What it costs today: the live site returns "High risk destination" for an
+address with one payer, $15 received and two hours of history. Verified on the
+deployed site, not locally.
+
+The fix is in the control arm, not the model or the thresholds. Controls should
+be sampled the way the product encounters addresses - from the recent transfer
+stream, with the age distribution that implies - rather than from historical
+windows filtered to 180-plus days. Until then the Ethereum ledger arm is built
+but not scheduled: a ledger entry is a public claim, and these would be claims
+we have no reason to believe.
