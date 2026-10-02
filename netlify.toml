@@ -13,6 +13,18 @@
 [build]
   command = "python3 scripts/build_dist.py"
   publish = "dist"
+  # Do not spend a build on a commit the site cannot notice. Every push to main
+  # built regardless of what changed; of 24 commits in one billing cycle, 4
+  # touched only scripts, tests or docs - work the published site is identical
+  # before and after. That proportion grows, because most work here is pipeline
+  # and model code rather than page changes.
+  #
+  # `ignore` runs before the build: exit 0 SKIPS, non-zero BUILDS. So the
+  # default is to build, and a path not named here is treated as
+  # site-affecting - the failure mode is a wasted build, never a change that
+  # silently fails to ship. data/ledger is included because the nightly entries
+  # are what site/ledger.json is rebuilt from.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- site/ netlify.toml scripts/build_dist.py data/ledger/"
 
 [build.environment]
   PYTHON_VERSION = "3.11"
