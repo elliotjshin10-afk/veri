@@ -1,39 +1,39 @@
 {
   "results": {
     "destination only": {
-      "n": 2002,
-      "n_scam": 1237,
-      "n_control": 765,
-      "roc_auc": 0.8035136663126583,
-      "pr_auc": 0.8446285544500991,
-      "tpr_at_1pct_fpr": 0.09943411479385611,
-      "tpr_at_10pct_fpr": 0.38884397736459175
+      "n": 2020,
+      "n_scam": 1199,
+      "n_control": 821,
+      "roc_auc": 0.8478142057073546,
+      "pr_auc": 0.870870477343854,
+      "tpr_at_1pct_fpr": 0.13261050875729774,
+      "tpr_at_10pct_fpr": 0.6246872393661385
     },
     "+ context + relationship": {
-      "n": 2002,
-      "n_scam": 1237,
-      "n_control": 765,
-      "roc_auc": 0.825141471301536,
-      "pr_auc": 0.8725248646753934,
-      "tpr_at_1pct_fpr": 0.15683104284559418,
-      "tpr_at_10pct_fpr": 0.5173807599029911
+      "n": 2020,
+      "n_scam": 1199,
+      "n_control": 821,
+      "roc_auc": 0.8714560144009573,
+      "pr_auc": 0.9019367379551707,
+      "tpr_at_1pct_fpr": 0.23853211009174313,
+      "tpr_at_10pct_fpr": 0.6080066722268557
     },
     "+ sender as well": {
-      "n": 2002,
-      "n_scam": 1237,
-      "n_control": 765,
-      "roc_auc": 0.8253258727365914,
-      "pr_auc": 0.8747061026366107,
-      "tpr_at_1pct_fpr": 0.14470493128536782,
-      "tpr_at_10pct_fpr": 0.4939369442198868
+      "n": 2020,
+      "n_scam": 1199,
+      "n_control": 821,
+      "roc_auc": 0.8766054537937116,
+      "pr_auc": 0.9079708287635557,
+      "tpr_at_1pct_fpr": 0.25771476230191825,
+      "tpr_at_10pct_fpr": 0.6196830692243537
     }
   },
-  "split_event_time_ms": 1724240495000,
-  "n_events": 6671,
-  "n_events_unmatched": 11143,
+  "split_event_time_ms": 1725647066600,
+  "n_events": 6734,
+  "n_events_unmatched": 14019,
   "max_events_per_pair": 10,
   "control_ratio": 1,
-  "worst_abs_smd": 0.053449724472258764,
+  "worst_abs_smd": 0.01539095866932651,
   "balanced": true,
   "matched": "nearest-neighbour, exact on is_first_send_to_dest",
   "complete_only": true,
