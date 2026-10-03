@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Veridis — the 83 hours</title>
+<meta name="description" content="One real victim, scored at each transfer as it happened. Every blocklist said the address was clean for another 215 days.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#F9FAF9; --surface:#FFFFFF; --sunk:#F1F3F2;
+  --ink:#16191B; --ink2:#4A5157; --ink3:#727A80;
+  --rule:#E0E4E3; --rule2:#C4CAC9;
+  --crit:#A82A20; --crit-bg:#F9EDEB; --crit-rule:#E4C3BE;
+  --warn:#8A5A08; --warn-bg:#FAF2E2; --warn-rule:#E3D2AC;
+  --ok:#1F6B3E;   --ok-bg:#ECF4EF;   --ok-rule:#BFD8CA;
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+  --s6:32px; --s7:48px; --s8:64px; --s9:88px;
+  --measure:38rem;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  color-scheme: dark;
+  --paper:#0E1112; --surface:#161A1B; --sunk:#121516;
+  --ink:#E9ECEB; --ink2:#A5ADAC; --ink3:#7C8482;
+  --rule:#242A2A; --rule2:#39403F;
+  --crit:#E98275; --crit-bg:#291A17; --crit-rule:#4A2C27;
+  --warn:#D9A03F; --warn-bg:#241D11; --warn-rule:#44351A;
+  --ok:#5CBB83;   --ok-bg:#122119;   --ok-rule:#22402F;
+}}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0E1112; --surface:#161A1B; --sunk:#121516;
+  --ink:#E9ECEB; --ink2:#A5ADAC; --ink3:#7C8482;
+  --rule:#242A2A; --rule2:#39403F;
+  --crit:#E98275; --crit-bg:#291A17; --crit-rule:#4A2C27;
+  --warn:#D9A03F; --warn-bg:#241D11; --warn-rule:#44351A;
+  --ok:#5CBB83;   --ok-bg:#122119;   --ok-rule:#22402F;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:var(--measure);margin:0 auto;padding-inline:var(--s5)}
+
+/* Newsreader for headlines: a measurement report is set in serif. */
+h1,h2,h3{font-family:Newsreader,Georgia,"Times New Roman",serif;font-weight:400;
+  margin:0;letter-spacing:-.011em;text-wrap:balance;line-height:1.14}
+h1{font-size:clamp(34px,6vw,46px)}
+h2{font-size:clamp(23px,3.6vw,27px)}
+h3{font-size:19px}
+
+/* Every figure and every address is monospace - they are data, not prose. */
+.mono,.num{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-variant-numeric:tabular-nums}
+/* Mono eyebrows label a section the way a document labels a field. */
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink3);font-weight:500;margin:0 0 var(--s3)}
+a{color:inherit;text-decoration-color:var(--rule2);text-underline-offset:3px}
+a:hover{text-decoration-color:currentColor}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums}
+.wrap{max-width:46rem;margin:0 auto;padding-inline:var(--s5)}
+h1,h2{font-family:Newsreader,Georgia,"Times New Roman",serif;font-weight:400;margin:0;
+  letter-spacing:-.011em;text-wrap:balance;line-height:1.12}
+h1{font-size:clamp(32px,5.6vw,46px)}
+h2{font-size:clamp(20px,3vw,25px)}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink3);font-weight:500;margin:0 0 var(--s3)}
+a{color:inherit;text-decoration-color:var(--rule2);text-underline-offset:3px}
+
+header{padding-block:var(--s5);border-bottom:1px solid var(--rule);
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s4)}
+.mark{font-family:Newsreader,serif;font-size:19px;text-decoration:none;color:var(--ink)}
+.mark b{font-weight:500}
+.back{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink3);text-decoration:none}
+
+.hero{padding-block:var(--s8) var(--s6)}
+.lede{color:var(--ink2);font-size:17px;margin:var(--s4) 0 0;max-width:34em}
+.lede b{color:var(--ink);font-weight:500}
+
+/* the control strip */
+.bar{display:flex;align-items:center;gap:var(--s4);flex-wrap:wrap;
+  padding-block:var(--s4);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+button.go{font:inherit;font-weight:600;font-size:14px;background:var(--ink);color:var(--paper);
+  border:0;border-radius:3px;padding:11px 22px;cursor:pointer}
+button.go:hover{background:var(--ink2)}
+button.go[disabled]{opacity:.45;cursor:default}
+.counter{margin-left:auto;text-align:right}
+.counter .n{font-family:"IBM Plex Mono",monospace;font-size:27px;font-weight:500;
+  letter-spacing:-.02em;display:block;line-height:1.1}
+.counter .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);
+  font-family:"IBM Plex Mono",monospace}
+
+/* the two columns of verdicts */
+.heads{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4);margin-top:var(--s6)}
+.heads .h{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3)}
+.heads .h b{display:block;font-family:"IBM Plex Sans",sans-serif;font-size:13.5px;
+  letter-spacing:0;text-transform:none;color:var(--ink2);font-weight:400;margin-top:2px}
+
+.step{border-top:1px solid var(--rule);padding-block:var(--s4);opacity:0;
+  transform:translateY(6px);transition:opacity .45s ease,transform .45s ease}
+.step.on{opacity:1;transform:none}
+.step:last-of-type{border-bottom:1px solid var(--rule)}
+.when{display:flex;align-items:baseline;gap:var(--s3);margin-bottom:var(--s3)}
+.when .t{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink3)}
+.when .amt{font-family:"IBM Plex Mono",monospace;font-size:21px;font-weight:500;
+  letter-spacing:-.02em;margin-left:auto}
+.verdicts{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4)}
+@media(max-width:560px){.verdicts,.heads{grid-template-columns:1fr}}
+.v{border:1px solid var(--rule);border-radius:3px;padding:11px 13px}
+.v .b{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;font-weight:500}
+.v .s{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink3);margin-top:3px}
+.v.high{border-color:var(--crit-rule);background:var(--crit-bg)}
+.v.high .b{color:var(--crit)}
+.v.elevated{border-color:var(--warn-rule);background:var(--warn-bg)}
+.v.elevated .b{color:var(--warn)}
+.v.ordinary{border-color:var(--ok-rule);background:var(--ok-bg)}
+.v.ordinary .b{color:var(--ok)}
+.why{list-style:none;margin:var(--s3) 0 0;padding:0;display:grid;gap:5px}
+.why li{font-size:12.5px;color:var(--ink2);display:grid;grid-template-columns:auto 1fr;
+  gap:8px;line-height:1.45}
+.why .d{color:var(--ink3);font-family:"IBM Plex Mono",monospace;font-size:11px;line-height:1.7}
+.seen{font-size:11.5px;color:var(--ink3);margin-top:var(--s3);
+  font-family:"IBM Plex Mono",monospace}
+
+.freeze{margin-top:var(--s6);border:1px solid var(--rule2);border-radius:3px;
+  padding:var(--s5);opacity:0;transition:opacity .6s ease}
+.freeze.on{opacity:1}
+.freeze .eyebrow{margin-bottom:var(--s2)}
+.freeze p{margin:var(--s2) 0 0;color:var(--ink2);max-width:40em}
+.freeze .big{font-family:"IBM Plex Mono",monospace;font-size:31px;font-weight:500;
+  letter-spacing:-.02em;color:var(--ink)}
+
+.how{margin-top:var(--s8);padding-top:var(--s5);border-top:1px solid var(--rule)}
+.how dl{display:grid;grid-template-columns:auto 1fr;gap:10px var(--s4);margin:var(--s4) 0 0}
+.how dt{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink3);white-space:nowrap}
+.how dd{margin:0;font-size:13.5px;color:var(--ink2)}
+.how dd b{color:var(--ink);font-weight:500}
+@media(max-width:560px){.how dl{grid-template-columns:1fr;gap:3px var(--s4)}
+  .how dd{margin-bottom:var(--s3)}}
+footer{padding-block:var(--s6) var(--s8);font-size:12px;color:var(--ink3)}
+@media(prefers-reduced-motion:reduce){.step,.freeze{transition:none}}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="mark" href="/">Veridis<b>.</b></a>
+    <a class="back" href="/">Check an address &rarr;</a>
+  </header>
+
+  <section class="hero">
+    <p class="eyebrow">One relationship, replayed</p>
+    <h1>83 hours, $215,170,<br>and the list arrived in June.</h1>
+    <p class="lede">A real wallet paid a real address five times. The address was on
+      no list we hold, and Tether did not freeze it for another <b>214 days</b>.
+      This is what we would have said, at each transfer, using only what was
+      knowable at that second.</p>
+  </section>
+
+  <div class="bar">
+    <button class="go" id="play" type="button">Replay it</button>
+    <span class="mono" id="status" style="font-size:12px;color:var(--ink3)"></span>
+    <span class="counter"><span class="n" id="lost">$0</span>
+      <span class="l">gone so far</span></span>
+  </div>
+
+  <div class="heads">
+    <div class="h">Paste the address<b>What a lookup can see</b></div>
+    <div class="h">Wallet connected<b>Sender, amount and relationship</b></div>
+  </div>
+
+  <div id="steps"></div>
+  <div class="freeze" id="freeze"></div>
+
+  <section class="how">
+    <p class="eyebrow">How this was built</p>
+    <h2>The parts that make it worth believing</h2>
+    <dl id="prov"></dl>
+  </section>
+
+  <footer>
+    Every figure is public chain data. The scores come from the models this site
+    serves, run over the transfers that preceded each moment &mdash; nothing here
+    is re-fitted for the demo.
+  </footer>
+</div>
+
+<script type="module">
+const $ = s => document.querySelector(s);
+const usd = n => "$" + Math.round(n).toLocaleString();
+const when = ms => new Date(ms).toISOString().replace("T", " ").slice(0, 16) + "Z";
+
+const data = await fetch("replay.json").then(r => r.json());
+const LABEL = {high: "High risk", elevated: "Some risk signals", ordinary: "Nothing unusual"};
+const ACTION = {high: "a wallet would stop here", elevated: "a wallet would warn",
+                ordinary: "would pass"};
+
+/* Rendered once, hidden, then revealed in sequence. Building the DOM up front
+   keeps the replay from reflowing the page as it plays, and means the whole
+   story is present for anyone who lands with motion reduced or JS half-loaded. */
+const steps = $("#steps");
+data.steps.forEach((s, i) => {
+  const el = document.createElement("div");
+  el.className = "step";
+  el.innerHTML =
+    '<div class="when"><span class="t">' + when(s.at) + "</span>"
+    + '<span class="amt">' + usd(s.amount) + "</span></div>"
+    + '<div class="verdicts">'
+    +   '<div class="v ' + s.dest.band + '"><div class="b">' + LABEL[s.dest.band]
+    +     '</div><div class="s">' + s.dest.score.toFixed(3) + " &middot; " + ACTION[s.dest.band] + "</div></div>"
+    +   '<div class="v ' + s.pair.band + '"><div class="b">' + LABEL[s.pair.band]
+    +     '</div><div class="s">' + s.pair.score.toFixed(3) + " &middot; " + ACTION[s.pair.band] + "</div></div>"
+    + "</div>"
+    + (s.why.length
+        ? '<ul class="why">' + s.why.map(w => '<li><span class="d">&mdash;</span><span>'
+            + w + "</span></li>").join("") + "</ul>"
+        : "")
+    + '<div class="seen">computed from ' + s.evidence.transfers_known.toLocaleString()
+    + " transfers that existed before this moment &middot; "
+    + s.evidence.payers.toLocaleString() + " wallets had paid it by then</div>";
+  steps.appendChild(el);
+});
+
+const frozen = data.frozen_at;
+// Floor, not round. The gap is 214.5 days; rounding it to 215 would be
+// rounding in our own favour, which is the one direction this page cannot
+// afford to be wrong in.
+const lead = Math.floor((frozen - data.steps.at(-1).at) / 86400000);
+$("#freeze").innerHTML =
+  '<p class="eyebrow">What happened next</p>'
+  + '<span class="big">' + lead + " days later</span>"
+  + "<p>Tether froze the address on " + when(frozen).slice(0, 10)
+  + " &mdash; " + lead + " days after the last dollar left. A check that waits for "
+  + "a list could not have said anything until then. The money had been gone for "
+  + "seven months.</p>";
+
+const p = data.provenance;
+$("#prov").innerHTML = [
+  ["Held out", "This destination never appeared in training. The first case considered "
+    + "was a better story &mdash; a $10 test transfer, then $181,714 inside two hours "
+    + "&mdash; and was discarded because the model had seen it."],
+  ["Point in time", "Each score reads only the transfers timestamped before it. The "
+    + "same feature layer runs in training, in this page and in the live product, so "
+    + "there is one definition of every number rather than three."],
+  ["Two models", "The left column is the destination model, 17 features from the "
+    + "receiving address alone. The right adds the sender and the amount &mdash; 37 "
+    + "features including the relationship between the two wallets."],
+  ["Provenance", "Scored by <b>model_browser " + p.dest_model_sha256_16 + "</b> and "
+    + "<b>model_pair " + p.pair_model_sha256_16 + "</b>. The hashes are in the "
+    + "prediction ledger, so a reader can check the numbers came from these models "
+    + "and not ones fitted afterwards."],
+].map(([k, v]) => "<dt>" + k + "</dt><dd>" + v + "</dd>").join("");
+
+/* The replay. Reduced motion gets the whole thing at once rather than a
+   sequence it did not ask for. */
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const els = [...document.querySelectorAll(".step")];
+let timers = [];
+
+function show(upto) {
+  els.forEach((el, i) => el.classList.toggle("on", i < upto));
+  const spent = data.steps.slice(0, upto).reduce((a, s) => a + s.amount, 0);
+  $("#lost").textContent = usd(spent);
+  $("#freeze").classList.toggle("on", upto >= els.length);
+}
+
+function play() {
+  timers.forEach(clearTimeout); timers = [];
+  show(0);
+  $("#play").disabled = true;
+  $("#status").textContent = "replaying\u2026";
+  els.forEach((_, i) => {
+    timers.push(setTimeout(() => {
+      show(i + 1);
+      if (i === els.length - 1) {
+        $("#play").disabled = false;
+        $("#status").textContent = "$" + Math.round(data.total).toLocaleString()
+          + " over " + Math.round((data.steps.at(-1).at - data.steps[0].at) / 3600000)
+          + " hours";
+      }
+    }, 900 * (i + 1)));
+  });
+}
+
+$("#play").addEventListener("click", play);
+if (reduce) { show(els.length); $("#status").textContent = "full sequence shown"; }
+else play();
+</script>
+</body>
+</html>

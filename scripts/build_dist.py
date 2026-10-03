@@ -24,6 +24,10 @@ RUNTIME = ["index.html", "scorer.js", "index_compact.json",
            "model_eth.json",
            # The Ethereum two-sided model. Optional (see OPTIONAL below).
            "model_pair_eth.json",
+           # The replay: one victim, scored at each transfer as it happened.
+           # A lookup page cannot show the minutes the product exists for,
+           # because there is no "before" on a page you visit afterwards.
+           "replay.html", "replay.json",
            # Social preview card. A link with no card is a link nobody clicks.
            "og.png"]
 
