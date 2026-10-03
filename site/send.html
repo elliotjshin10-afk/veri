@@ -116,6 +116,16 @@ button[disabled]{opacity:.5;cursor:default}
 .warn li{font-size:13px;color:var(--ink2);display:grid;grid-template-columns:auto 1fr;
   gap:8px;line-height:1.45}
 .warn li .d{color:var(--ink3);font-family:"IBM Plex Mono",monospace;font-size:11px;line-height:1.6}
+.sum{font-size:13px;color:var(--ink2);margin:0 0 6px}
+.read{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink3);
+  margin:0 0 var(--s4)}
+.warn{animation:rise .32s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+button.wallet{display:flex;align-items:center;gap:10px;justify-content:flex-start;
+  margin-bottom:var(--s2)}
+button.wallet img{width:20px;height:20px;border-radius:4px}
+#msg{font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){.warn{animation:none}}
 .note{font-size:12px;color:var(--ink3);margin:var(--s3) 0 0;text-align:center}
 .note a{color:var(--ink3)}
 .msg{font-size:13px;color:var(--ink3);margin-top:var(--s3);text-align:center;min-height:1.2em}
@@ -141,6 +151,17 @@ const chainOf = a => /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a) ? "Tron"
   : /^0x[0-9a-fA-F]{40}$/.test(a) ? "Ethereum" : null;
 
 let from = null, fromChain = null;
+
+/* window.ethereum is one slot every injected wallet overwrites, so with
+   MetaMask and Rabby installed you get whichever loaded last. EIP-6963 has each
+   announce itself. One wallet connects straight through; several get named
+   buttons, which is the only time this page asks a second question. */
+const WALLETS = [];
+addEventListener("eip6963:announceProvider", e => {
+  const d = e.detail;
+  if (d && d.info && !WALLETS.some(w => w.info.uuid === d.info.uuid)) WALLETS.push(d);
+});
+try { dispatchEvent(new Event("eip6963:requestProvider")); } catch (e) {}
 const models = {};
 async function model(name) {
   if (!models[name]) models[name] = await fetch(name).then(r => r.json());
@@ -165,16 +186,32 @@ function sheet(msg) {
     + '<div class="msg" id="msg">' + (msg || "") + "</div>";
   if (!from) $("#connect").onclick = connect;
   $("#send").onclick = check;
+  // Money should look like money as it is typed, not after.
+  const a = $("#amt");
+  a.oninput = () => {
+    const raw = a.value.replace(/[^0-9.]/g, "");
+    if (!raw) { a.value = ""; return; }
+    const [w, d] = raw.split(".");
+    a.value = Number(w || 0).toLocaleString() + (d !== undefined ? "." + d : "");
+  };
+  $("#to").onkeydown = e => { if (e.key === "Enter") check(); };
+  a.onkeydown = e => { if (e.key === "Enter") check(); };
+}
+
+async function useProvider(prov) {
+  const a = await prov.request({method: "eth_requestAccounts"});
+  if (a && a[0]) { from = a[0].toLowerCase(); fromChain = "Ethereum"; sheet(); return true; }
+  return false;
 }
 
 async function connect() {
-  const evm = window.ethereum, tron = window.tronLink || window.tronWeb;
+  const tron = window.tronLink || window.tronWeb;
   $("#msg").textContent = "waiting for your wallet\u2026";
   try {
-    if (evm && evm.request) {
-      const a = await evm.request({method: "eth_requestAccounts"});
-      if (a && a[0]) { from = a[0].toLowerCase(); fromChain = "Ethereum"; return sheet(); }
-    }
+    if (WALLETS.length > 1) return pick();
+    if (WALLETS.length === 1 && await useProvider(WALLETS[0].provider)) return;
+    const evm = window.ethereum;
+    if (evm && evm.request && await useProvider(evm)) return;
     if (tron && tron.request) {
       await tron.request({method: "tron_requestAccounts"});
       const a = window.tronWeb && window.tronWeb.defaultAddress
@@ -191,6 +228,18 @@ async function connect() {
   sheet("No wallet connected. You can still check the address on its own.");
 }
 
+function pick() {
+  card.innerHTML = '<label>Which wallet?</label>'
+    + WALLETS.map((w, i) => '<button class="ghost wallet" data-i="' + i + '">'
+        + (w.info.icon ? '<img src="' + w.info.icon + '" alt="">' : "")
+        + w.info.name + "</button>").join("")
+    + '<button class="ghost" id="cancelpick" style="margin-top:var(--s3)">Back</button>';
+  card.querySelectorAll(".wallet").forEach(b => b.onclick = async () => {
+    await useProvider(WALLETS[+b.dataset.i].provider).catch(() => sheet(""));
+  });
+  $("#cancelpick").onclick = () => sheet("");
+}
+
 let prefill = "", amt = "";
 
 async function check() {
@@ -200,6 +249,26 @@ async function check() {
   const chain = chainOf(to);
   if (!chain) return sheet("That is not a Tron or Ethereum address.");
   $("#send").disabled = true;
+  /* A spinner tells you to wait. A count of what is coming off the chain tells
+     you the thing is actually happening, which is the only claim this page
+     needs to make for itself. */
+  let rows = 0, calls = 0;
+  const real = window.fetch;
+  window.fetch = async (u, o) => {
+    const r = await real(u, o);
+    if (/etherscan|trongrid/.test(String(u))) {
+      calls += 1;
+      try {
+        const j = await r.clone().json();
+        const got = Array.isArray(j.result) ? j.result
+          : Array.isArray(j.data) ? j.data : [];
+        rows += got.length;
+        $("#msg").textContent = "reading the chain \u00b7 "
+          + rows.toLocaleString() + " transfers";
+      } catch (e) {}
+    }
+    return r;
+  };
   $("#msg").textContent = "reading the chain\u2026";
   try {
     const evm = chain === "Ethereum";
@@ -232,10 +301,11 @@ async function check() {
       feats = computeFeatures(tx, dest, Date.now(), {firstSeen: firstSeen});
       p = score(m, feats); thr = m.thresholds;
     }
-    verdict(to, amount, band(p, thr), feats, both);
+    verdict(to, amount, band(p, thr), feats, both, {rows, calls});
   } catch (e) {
     sheet("Could not read that address just now. Try again in a moment.");
   } finally {
+    window.fetch = real;
     const b = $("#send"); if (b) b.disabled = false;
   }
 }
@@ -264,7 +334,7 @@ function reasons(f, both) {
   return out.slice(0, 3);
 }
 
-function verdict(to, amount, b, f, both) {
+function verdict(to, amount, b, f, both, read) {
   const [title, body] = COPY[b];
   const why = reasons(f, both);
   card.innerHTML =
@@ -274,10 +344,14 @@ function verdict(to, amount, b, f, both) {
     + (why.length ? "<ul>" + why.map(w => '<li><span class="d">&mdash;</span><span>'
         + w + "</span></li>").join("") + "</ul>" : "")
     + "</div>"
-    + '<p style="font-size:13px;color:var(--ink2);margin:0 0 var(--s3)">'
+    + '<p class="sum">'
     + (isFinite(amount) && amount > 0 ? usd(amount) + " to " : "To ") + short(to)
     + (both ? " \u2014 checked against your wallet too." : " \u2014 destination only.")
     + "</p>"
+    + '<p class="read">read ' + read.rows.toLocaleString() + " transfers off the chain "
+    + "just now \u00b7 " + (f.dest_senders_all || 0).toLocaleString() + " wallets have "
+    + "paid it \u00b7 " + Math.max(1, Math.round(f.dest_age_days || 0)).toLocaleString()
+    + " days old</p>"
     + '<div class="pair"><button class="ghost" id="anyway">Send anyway</button>'
     + '<button id="back">Cancel</button></div>';
   $("#anyway").onclick = () => sheet("Nothing was sent. This is a demo of the check.");
