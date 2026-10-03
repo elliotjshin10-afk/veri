@@ -28,6 +28,9 @@ RUNTIME = ["index.html", "scorer.js", "index_compact.json",
            # A lookup page cannot show the minutes the product exists for,
            # because there is no "before" on a page you visit afterwards.
            "replay.html", "replay.json",
+           # The send sheet: connect, send, warning. The whole product in three
+           # beats, run live against the chain rather than against fixtures.
+           "send.html",
            # Social preview card. A link with no card is a link nobody clicks.
            "og.png"]
 
