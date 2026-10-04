@@ -27,6 +27,7 @@ from veridis.features.asof import FeatureEngine
 from veridis.chain.etherscan import BASE as ETHERSCAN_BASE
 from veridis.ledger import Ledger, predictions_path, utc_now, utc_stamp
 from veridis.model import browser_model
+from veridis.model.quantise import quantise_matrix
 from veridis.model.address_risk import DEST_FEATURES
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
@@ -181,7 +182,10 @@ async def predict_tron(ledger, listed, already) -> None:
     engine = FeatureEngine(tx)
     feats = engine.compute(ev)
     engine.close()
-    scores = booster.predict(feats.select(DEST_FEATURES).to_numpy())
+    # The ledger is a public claim, and it must be the same claim the site
+    # would make about the same address. See veridis.model.quantise.
+    scores = booster.predict(
+        quantise_matrix(feats.select(DEST_FEATURES).to_numpy()))
     n = append_flagged(ledger, feats, scores, chain="tron", threshold=threshold,
                        model_sha=model_sha, features=DEST_FEATURES,
                        now_ms=now_ms, stamp=utc_stamp())

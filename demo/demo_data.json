@@ -1,0 +1,230 @@
+{
+  "scenarios": [
+    {
+      "title": "A victim being talked into a transfer",
+      "blurb": "A real wallet, mid-way through a real pig-butchering sequence. The destination was on no public list on this date.",
+      "ground_truth": "scam",
+      "request": {
+        "chain": "tron",
+        "sender": "TYXR3dTFkegTwGPRSiHAMeEiU9AStFd9ja",
+        "destination": "TAsEmVi1UeL43z1iCZcG1pso9AuZ1r6nnh",
+        "amount_usd": 223000.0,
+        "asset": "USDT"
+      },
+      "response": {
+        "score": 0.9348,
+        "band": "high_risk",
+        "reasons": [
+          "This transfer is 350x your typical transfer size",
+          "Wallets that send here average $29,549 each before stopping",
+          "This transfer is 350x larger than your previous one to it",
+          "7 unrelated wallets have sent to it in the past 30 days",
+          "5 unrelated wallets have sent to it in the past 7 days"
+        ],
+        "model_version": "latest",
+        "computed_at": "2026-09-26T00:29:54+00:00",
+        "latency_ms": 2.2
+      },
+      "context": {
+        "dest_age_days": 13.8,
+        "dest_senders_7d": 5,
+        "prior_sends": 1,
+        "transfer_k": 2,
+        "sender_median_out_usd": 638.0
+      }
+    },
+    {
+      "title": "The same pattern, on the very first transfer",
+      "blurb": "No prior relationship to read, and the scam has not started escalating. This is the hardest and most valuable case to catch.",
+      "ground_truth": "scam",
+      "request": {
+        "chain": "tron",
+        "sender": "TMPshyAUVXE3fAei2XA7CuSong9XxVxAFX",
+        "destination": "TAwss6F14DXgVt1UGNoghkBrBLo7XjYvMv",
+        "amount_usd": 24580.0,
+        "asset": "USDT"
+      },
+      "response": {
+        "score": 0.9987,
+        "band": "high_risk",
+        "reasons": [
+          "16 unrelated wallets have sent to it in the past 30 days",
+          "The wallet that funded this address has also funded 296 others",
+          "Wallets that send here average $21,317 each before stopping",
+          "This address keeps almost nothing it receives - 99% is forwarded out",
+          "7 unrelated wallets have sent to it in the past 7 days"
+        ],
+        "model_version": "latest",
+        "computed_at": "2026-09-26T00:29:54+00:00",
+        "latency_ms": 1.0
+      },
+      "context": {
+        "dest_age_days": 455.0,
+        "dest_senders_7d": 7,
+        "prior_sends": 0,
+        "transfer_k": 1,
+        "sender_median_out_usd": 14059.5
+      }
+    },
+    {
+      "title": "A large legitimate payment",
+      "blurb": "Six figures moving between established counterparties. A model that learned 'big transfer = fraud' would stop this; a wallet would drop us.",
+      "ground_truth": "legitimate",
+      "request": {
+        "chain": "tron",
+        "sender": "TRceFmphEsyp2PNiq2zGZvA5y6Xo5Nmcdg",
+        "destination": "THYDav7UNbBpkT5hSuPvLvAJ4jrkXoowWA",
+        "amount_usd": 1498875.84,
+        "asset": "USDT"
+      },
+      "response": {
+        "score": 0.0428,
+        "band": "safe",
+        "reasons": [
+          "This transfer is 15x your typical transfer size",
+          "This transfer moves 55% of your remaining balance"
+        ],
+        "model_version": "latest",
+        "computed_at": "2026-09-26T00:29:54+00:00",
+        "latency_ms": 1.0
+      },
+      "context": {
+        "dest_age_days": 168.7,
+        "dest_senders_7d": 1,
+        "prior_sends": 44,
+        "transfer_k": 0,
+        "sender_median_out_usd": 99990.0
+      }
+    },
+    {
+      "title": "Paying a brand-new address, legitimately",
+      "blurb": "A first-ever transfer to an address this wallet has never used. Novelty alone must not be enough to interrupt someone.",
+      "ground_truth": "legitimate",
+      "request": {
+        "chain": "tron",
+        "sender": "TRkiLwa4CUG9VUzXkJdAoTQt7QmpZxxKcy",
+        "destination": "TKEEP67jctFJ7VKrTW8Q3u41v4GRhi45u6",
+        "amount_usd": 437073.0,
+        "asset": "USDT"
+      },
+      "response": {
+        "score": 0.1508,
+        "band": "safe",
+        "reasons": [
+          "Wallets that send here average $42,876 each before stopping",
+          "This transfer moves 55% of your remaining balance",
+          "This address keeps almost nothing it receives - 99% is forwarded out",
+          "You have made 3 transfers in the past 24 hours",
+          "This transfer is 5x your typical transfer size"
+        ],
+        "model_version": "latest",
+        "computed_at": "2026-09-26T00:29:54+00:00",
+        "latency_ms": 0.9
+      },
+      "context": {
+        "dest_age_days": 283.9,
+        "dest_senders_7d": 0,
+        "prior_sends": 0,
+        "transfer_k": 0,
+        "sender_median_out_usd": 82030.5
+      }
+    }
+  ],
+  "operating_curve": [
+    {
+      "budget": 0.001,
+      "threshold": 0.9771300014800552,
+      "fpr": 0.0008206811653672548,
+      "recall": 0.17936694021101993,
+      "precision": 0.9745222929936306,
+      "early_k1": 0.12844036697247707,
+      "early_k3": 0.16972477064220184,
+      "interrupted_per_1000": 0.8206811653672548
+    },
+    {
+      "budget": 0.0025,
+      "threshold": 0.9127373104975848,
+      "fpr": 0.0024620434961017644,
+      "recall": 0.24267291910902697,
+      "precision": 0.9452054794520548,
+      "early_k1": 0.17889908256880735,
+      "early_k3": 0.2798165137614679,
+      "interrupted_per_1000": 2.4620434961017645
+    },
+    {
+      "budget": 0.005,
+      "threshold": 0.7052394418203384,
+      "fpr": 0.004924086992203529,
+      "recall": 0.34466588511137164,
+      "precision": 0.9245283018867925,
+      "early_k1": 0.27522935779816515,
+      "early_k3": 0.42660550458715596,
+      "interrupted_per_1000": 4.924086992203529
+    },
+    {
+      "budget": 0.01,
+      "threshold": 0.4703113760209375,
+      "fpr": 0.009848173984407058,
+      "recall": 0.4372801875732708,
+      "precision": 0.8859857482185273,
+      "early_k1": 0.3532110091743119,
+      "early_k3": 0.536697247706422,
+      "interrupted_per_1000": 9.848173984407058
+    },
+    {
+      "budget": 0.02,
+      "threshold": 0.2098283144814813,
+      "fpr": 0.019901518260155928,
+      "recall": 0.5287221570926143,
+      "precision": 0.822992700729927,
+      "early_k1": 0.4036697247706422,
+      "early_k3": 0.6605504587155964,
+      "interrupted_per_1000": 19.901518260155928
+    },
+    {
+      "budget": 0.03,
+      "threshold": 0.12292721123968432,
+      "fpr": 0.029954862535904802,
+      "recall": 0.5779601406799532,
+      "precision": 0.7715179968701096,
+      "early_k1": 0.4724770642201835,
+      "early_k3": 0.7201834862385321,
+      "interrupted_per_1000": 29.9548625359048
+    },
+    {
+      "budget": 0.05,
+      "threshold": 0.05701277706518769,
+      "fpr": 0.04985638079606073,
+      "recall": 0.6541617819460727,
+      "precision": 0.6966292134831461,
+      "early_k1": 0.5871559633027523,
+      "early_k3": 0.7752293577981652,
+      "interrupted_per_1000": 49.85638079606073
+    },
+    {
+      "budget": 0.08,
+      "threshold": 0.01991439692714147,
+      "fpr": 0.07981124333196553,
+      "recall": 0.7397420867526378,
+      "precision": 0.6186274509803922,
+      "early_k1": 0.7018348623853211,
+      "early_k3": 0.8577981651376146,
+      "interrupted_per_1000": 79.81124333196553
+    },
+    {
+      "budget": 0.12,
+      "threshold": 0.0054792720077648654,
+      "fpr": 0.11981945014361921,
+      "recall": 0.8311840562719812,
+      "precision": 0.5483372003093581,
+      "early_k1": 0.8119266055045872,
+      "early_k3": 0.9174311926605505,
+      "interrupted_per_1000": 119.8194501436192
+    }
+  ],
+  "thresholds": {
+    "caution": 0.0559265896790383,
+    "high_risk": 0.45240336081210497
+  },
+  "target_fpr": 0.01
+}

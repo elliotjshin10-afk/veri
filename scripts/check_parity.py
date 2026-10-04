@@ -16,6 +16,7 @@ import polars as pl
 
 from veridis.features.asof import FeatureEngine
 from veridis.dataset.holdings import all_indexed, all_transfers
+from veridis.model.quantise import quantise_matrix
 from veridis.config import INTERIM, PROCESSED
 
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 60
@@ -49,7 +50,9 @@ engine.close()
 
 import lightgbm as lgb
 booster = lgb.Booster(model_file=str(PROCESSED / "model_browser.txt"))
-py_scores = booster.predict(pyf.select(FEATS).to_numpy())
+# Quantised exactly as the browser does, or the two disagree on a band
+# whenever a feature lands on a tree split. See veridis.model.quantise.
+py_scores = booster.predict(quantise_matrix(pyf.select(FEATS).to_numpy()))
 pyf = pyf.with_columns(pl.Series("py_score", py_scores))
 
 # --- JS side: the exact transfers the browser would have fetched ---
@@ -92,27 +95,27 @@ if res.returncode != 0:
     raise SystemExit("node runner failed")
 js = {r["address"]: r for r in json.loads(res.stdout)}
 
-# What this check guarantees, and what it cannot.
+# Both sides must agree on the band exactly, and on the score to machine
+# precision.
 #
-# The BAND is gated at zero tolerance, because it is what a person is told. The
-# SCORE is not, and cannot honestly be: a feature like dest_forward_ratio is a
-# ratio of two sums over thousands of transfers, DuckDB and JavaScript
-# accumulate those in different orders, and the results differ in the last few
-# ulps - about 7e-14 relative. Tree splits are exact comparisons, so a value
-# that lands on one takes a different branch in each language and the summed
-# score moves. Measured over 1,500 addresses: features agree to 7.45e-14, bands
-# agree exactly, and the worst score divergence is 3.1e-02.
+# This gate was loosened once, to 0.05, on the view that bit-identity was not
+# available: a feature like dest_forward_ratio is a ratio of two sums over
+# thousands of transfers, DuckDB and JavaScript accumulate them in different
+# orders, and the results differ by about 7e-14 relative. Tree splits are exact
+# comparisons, so a value landing on one took a different branch in each
+# language and the score moved by up to 3e-02.
 #
-# The gate below is set to catch a real regression - a changed formula, a
-# mis-ported feature - rather than to assert a bit-identity that two floating
-# point implementations cannot provide. Making the scores identical would mean
-# quantising every feature to a fixed precision on both sides before scoring,
-# which is a deliberate change to what the model sees and has not been made.
+# That was the wrong conclusion. The features cannot be made bit-identical, but
+# the DECISION can: quantising to twelve significant figures before scoring - far
+# more precision than these features carry - makes both sides see the same double
+# and branch the same way. See veridis.model.quantise.
 #
-# One consequence worth knowing: the ledger scores in Python and the site scores
-# in the browser, so an address sitting within ~0.03 of a band threshold can be
-# called differently by the two. No such case appeared in 1,500 addresses.
-SCORE_TOL = 0.05
+# The loose gate was not harmless while it stood. It passed an address the ledger
+# scored 0.649936 and the browser 0.644155, straddling the 0.644543 elevated
+# threshold: the same model giving a public prediction and the live page two
+# different verdicts. Quantised, the worst score difference across 400 addresses
+# is 2.2e-16.
+SCORE_TOL = 1e-9
 worst_feat, worst_score, checked, mismatches = 0.0, 0.0, 0, []
 # Which feature, not just how much. A score that diverges while every feature
 # agrees to 1e-14 means a value landed exactly on a tree split and took the

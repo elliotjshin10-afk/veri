@@ -48,6 +48,7 @@ from veridis.dataset.events import (MAX_EVENTS_PER_PAIR, RETAIL_MAX_SENDERS,
 from veridis.dataset.holdings import eth_complete, eth_transfers
 from veridis.dataset.matching import (MATCH_COVARIATES, match_controls_nn,
                                       standardised_mean_difference)
+from veridis.model.quantise import quantise_matrix
 from veridis.features.asof import FEATURE_COLUMNS, FEATURE_FAMILY, FeatureEngine
 
 SEED = 17
@@ -269,9 +270,12 @@ def main() -> None:
 
     # The rows nearest a band edge, with LightGBM's own score, so the browser's
     # tree-walk can be checked against the library that produced it.
+    # Same reason as the destination sample: reference scores must come from the
+    # features the serving path actually sees, which are quantised.
+    Xt = quantise_matrix(X[is_test])
+    s = b.predict(Xt)
     edge = np.minimum(np.abs(s - thr["elevated"]), np.abs(s - thr["high"]))
     take = np.argsort(edge)[:400]
-    Xt = X[is_test]
     # NaN is written as null, not as the bare NaN Python's json emits. Bare NaN
     # is valid to Python and rejected by JSON.parse, so the sample could not be
     # read by the very browser it exists to check. null is also the right value

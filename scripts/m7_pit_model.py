@@ -29,6 +29,7 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 from veridis.config import INTERIM, PROCESSED, SITE
 from veridis.dataset.holdings import (ETH_INDEPENDENT_SET, eth_complete,
                                       eth_transfers)
+from veridis.model.quantise import quantise_matrix
 from veridis.features.asof import FeatureEngine
 from veridis.model.address_risk import DEST_FEATURES
 
@@ -225,7 +226,11 @@ def main() -> None:
         # Tron models have had this check since the start; the Ethereum model
         # shipped without one, which left the live Ethereum verdict resting on
         # an unverified re-implementation.
-        Xb = feats.select(BROWSER).to_numpy()[is_test]
+        # Quantised before the reference scores are taken, because the serving
+        # path quantises: a sample scored on raw features would hold LightGBM
+        # answering a question neither the browser nor the ledger ever asks.
+        Xb = quantise_matrix(feats.select(BROWSER).to_numpy()[is_test])
+        s = b.predict(Xb)
         # Nearest an actual band edge, not nearest 0.5: the bands sit at the 90th
         # and 99th percentile of the control scores, so 0.5 is nowhere near a
         # decision and rows picked around it would prove the least interesting

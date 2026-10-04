@@ -4,36 +4,36 @@
       "n": 2020,
       "n_scam": 1199,
       "n_control": 821,
-      "roc_auc": 0.8478142057073546,
-      "pr_auc": 0.870870477343854,
-      "tpr_at_1pct_fpr": 0.13261050875729774,
-      "tpr_at_10pct_fpr": 0.6246872393661385
+      "roc_auc": 0.8472915411645312,
+      "pr_auc": 0.8676028653984103,
+      "tpr_at_1pct_fpr": 0.10008340283569642,
+      "tpr_at_10pct_fpr": 0.6238532110091743
     },
     "+ context + relationship": {
       "n": 2020,
       "n_scam": 1199,
       "n_control": 821,
-      "roc_auc": 0.8714560144009573,
-      "pr_auc": 0.9019367379551707,
-      "tpr_at_1pct_fpr": 0.23853211009174313,
-      "tpr_at_10pct_fpr": 0.6080066722268557
+      "roc_auc": 0.8703019873443053,
+      "pr_auc": 0.9020757142273572,
+      "tpr_at_1pct_fpr": 0.27522935779816515,
+      "tpr_at_10pct_fpr": 0.6180150125104253
     },
     "+ sender as well": {
       "n": 2020,
       "n_scam": 1199,
       "n_control": 821,
-      "roc_auc": 0.8766054537937116,
-      "pr_auc": 0.9079708287635557,
-      "tpr_at_1pct_fpr": 0.25771476230191825,
-      "tpr_at_10pct_fpr": 0.6196830692243537
+      "roc_auc": 0.8727644535285698,
+      "pr_auc": 0.9015195910039273,
+      "tpr_at_1pct_fpr": 0.18682235195996663,
+      "tpr_at_10pct_fpr": 0.6438698915763136
     }
   },
-  "split_event_time_ms": 1725647066600,
+  "split_event_time_ms": 1725651479000,
   "n_events": 6734,
   "n_events_unmatched": 14019,
   "max_events_per_pair": 10,
   "control_ratio": 1,
-  "worst_abs_smd": 0.01539095866932651,
+  "worst_abs_smd": 0.01547638414522803,
   "balanced": true,
   "matched": "nearest-neighbour, exact on is_first_send_to_dest",
   "complete_only": true,

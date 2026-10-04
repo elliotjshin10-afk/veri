@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 data/cache/
+# DuckDB scratch from the feature engine. A stray `git add -A` committed 19 of
+# these; they are regenerated on every run and belong to nobody.
+.tmp/
 data/raw/*
 data/interim/*
 data/processed/*

@@ -212,8 +212,26 @@ function walk(node, x) {
   return node.v;
 }
 
+/* Quantise before the walk, so two languages take the same branch.
+
+   A feature like dest_forward_ratio is a ratio of two sums over thousands of
+   transfers. DuckDB and JavaScript accumulate those in different orders and the
+   results differ in the last few ulps - about 1e-14 relative. Tree splits are
+   exact comparisons, so a value landing on one goes left in Python and right
+   here, and the summed score moves far enough to change the BAND: an address
+   scored 0.6499 by the ledger and 0.6442 by this page straddles the 0.6445
+   elevated threshold and gets two different verdicts from the same model.
+   
+   Twelve significant digits is far more precision than any feature carries
+   meaningfully, and `toPrecision(12)` and Python's `%.12g` round identically,
+   so after this both sides see the same double and decide the same way. */
+export function quantise(v) {
+  return (v === null || v === undefined || Number.isNaN(v) || !isFinite(v))
+    ? v : Number(v.toPrecision(12));
+}
+
 export function score(model, features) {
-  const x = model.features.map(f => features[f]);
+  const x = model.features.map(f => quantise(features[f]));
   let raw = 0;
   for (const t of model.trees) raw += walk(t, x);
   return 1 / (1 + Math.exp(-raw));       // LightGBM binary objective

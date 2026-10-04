@@ -1,0 +1,10 @@
+{
+  "name": "@veridis/sdk",
+  "version": "0.1.0",
+  "description": "Pre-send risk scoring for irreversible stablecoin transfers",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": { "build": "tsc" },
+  "devDependencies": { "typescript": "^5.4.0" },
+  "license": "UNLICENSED"
+}

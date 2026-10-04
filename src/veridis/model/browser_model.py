@@ -19,6 +19,8 @@ import math
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from veridis.model.quantise import quantise
+
 
 def load(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text())
@@ -37,6 +39,9 @@ def _walk(node: Mapping[str, Any], x: Sequence[float | None]) -> float:
 
 
 def score_row(model: Mapping[str, Any], x: Sequence[float | None]) -> float:
+    # Same quantisation the browser applies, for the same reason: a feature on a
+    # split boundary must take the same branch in both. See veridis.model.quantise.
+    x = [None if v is None else quantise(v) for v in x]
     raw = sum(_walk(t, x) for t in model["trees"])
     return 1.0 / (1.0 + math.exp(-raw))
 

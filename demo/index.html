@@ -1,0 +1,132 @@
+<!doctype html><html><head><meta charset=utf-8>
+<title>Veridis replay &mdash; pre-send scam detection</title><style>
+*{box-sizing:border-box}
+body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+margin:0;background:#0f1115;color:#e7e9ee}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 20px 60px}
+h1{font-size:24px;margin:0 0 6px}
+.sub{color:#9aa3b2;margin-bottom:22px}
+.addr{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+background:#171a21;padding:3px 7px;border-radius:5px;color:#c8cede;text-decoration:none}
+.addr:hover{color:#fff}
+.banner{background:#171a21;border:1px solid #242938;border-radius:10px;padding:14px 16px;margin-bottom:22px}
+.head{display:grid;grid-template-columns:44px 130px 1fr 1.6fr;gap:14px;
+padding:10px 14px;color:#9aa3b2;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.row{display:grid;grid-template-columns:44px 130px 1fr 1.6fr;gap:14px;padding:14px;
+border-top:1px solid #1d222d;align-items:start}
+.row.flag{background:rgba(220,60,70,.09)}
+.row.warn{background:rgba(230,160,40,.07)}
+.k{color:#6f7787;font-weight:600}
+.cell ul{margin:8px 0 6px;padding-left:18px}
+.cell li{margin:2px 0}
+.muted{color:#79818f;font-size:12px}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.04em}
+.pill.ok{background:#16301f;color:#4ade80}
+.pill.bad{background:#3a1519;color:#f87171}
+.pill.mid{background:#3a2e12;color:#fbbf24}
+.bar{height:6px;background:#1d222d;border-radius:4px;overflow:hidden;margin-bottom:6px}
+.bar span{display:block;height:100%;background:linear-gradient(90deg,#3b82f6,#ef4444)}
+.scoreline{display:flex;gap:8px;align-items:center;margin-bottom:4px}
+.panel{background:#12151b;border:1px solid #1d222d;border-radius:12px;overflow:hidden}
+.foot{margin-top:22px;background:#171a21;border:1px solid #242938;border-radius:10px;padding:18px}
+.big{font-size:30px;font-weight:700;color:#f87171}
+a{color:#7aa2f7}
+</style></head><body><div class=wrap>
+<h1>One real victim, replayed transfer by transfer</h1>
+<div class=sub>Every address and transaction below is real and verifiable on Tronscan.</div>
+<div class=banner>
+  <div>Victim <a class=addr href="https://tronscan.org/#/address/TQJbQwiK2SY4hg7t3zapLcz9T8H5FbG2Pj" target=_blank>TQJbQwiK2SY4hg7t3zapLcz9T8H5FbG2Pj</a>
+   &rarr; destination <a class=addr href="https://tronscan.org/#/address/TAGjwGdZJ2UGHMjXyQeowFSEa1BKFCRnsE" target=_blank>TAGjwGdZJ2UGHMjXyQeowFSEa1BKFCRnsE</a></div>
+  <div class=muted style="margin-top:8px">This address was not on any public list until 2026-06-11 20:43 (source: tether_freeze) &mdash; after every transfer below.</div>
+</div>
+<div class=panel>
+<div class=head><div>#</div><div>When / amount</div><div>Blocklist check</div><div>Veridis score</div></div>
+
+<div class="row warn">
+  <div class="k">#1</div>
+  <div class="when">2025-11-05 11:19<br><span class=muted>$100</span></div>
+  <div class="cell block">
+    <span class="pill ok">CLEAN</span>
+    <div class=muted>no sanctions or scam-list hit</div>
+  </div>
+  <div class="cell ours">
+    <div class="bar"><span style="width:60%"></span></div>
+    <div class="scoreline"><b>0.61</b>
+      <span class="pill mid">CAUTION</span></div>
+    <ul><li>Wallets that send here average $69,343 each before stopping</li><li>Everything it receives is forwarded to only 3 address(es)</li></ul>
+    <div class=muted>dest age 228.8d &middot; 2 senders/7d
+      &middot; <a href="https://tronscan.org/#/transaction/09c4cb48ac5b61973aace34e21337f856d8f3b4fa60da3be503f3fb3011d19e7" target=_blank>tx</a></div>
+  </div>
+</div>
+<div class="row flag">
+  <div class="k">#2</div>
+  <div class="when">2025-11-06 18:39<br><span class=muted>$36,010</span></div>
+  <div class="cell block">
+    <span class="pill ok">CLEAN</span>
+    <div class=muted>no sanctions or scam-list hit</div>
+  </div>
+  <div class="cell ours">
+    <div class="bar"><span style="width:91%"></span></div>
+    <div class="scoreline"><b>0.92</b>
+      <span class="pill bad">HIGH RISK</span></div>
+    <ul><li>This transfer moves 100% of your remaining balance</li><li>Wallets that send here average $57,803 each before stopping</li><li>Everything it receives is forwarded to only 3 address(es)</li><li>This transfer is 360x larger than your previous one to it</li></ul>
+    <div class=muted>dest age 230.1d &middot; 3 senders/7d
+      &middot; <a href="https://tronscan.org/#/transaction/3cf3c4e67623922596718af65e23b5736c57bdde0b40ed1ba5d675d156dcee71" target=_blank>tx</a></div>
+  </div>
+</div>
+<div class="row flag">
+  <div class="k">#3</div>
+  <div class="when">2025-11-08 16:08<br><span class=muted>$14,005</span></div>
+  <div class="cell block">
+    <span class="pill ok">CLEAN</span>
+    <div class=muted>no sanctions or scam-list hit</div>
+  </div>
+  <div class="cell ours">
+    <div class="bar"><span style="width:91%"></span></div>
+    <div class="scoreline"><b>0.92</b>
+      <span class="pill bad">HIGH RISK</span></div>
+    <ul><li>This transfer moves 96% of your remaining balance</li><li>Wallets that send here average $42,537 each before stopping</li><li>6 unrelated wallets have sent to it in the past 30 days</li><li>6 unrelated wallets have sent to it in the past 7 days</li></ul>
+    <div class=muted>dest age 232.0d &middot; 6 senders/7d
+      &middot; <a href="https://tronscan.org/#/transaction/4fd857c5d51e759c95e630b984aa41d20b1d1a19b6ab01e4767eb5b8621ca6ac" target=_blank>tx</a></div>
+  </div>
+</div>
+<div class="row flag">
+  <div class="k">#4</div>
+  <div class="when">2025-11-08 22:41<br><span class=muted>$165,030</span></div>
+  <div class="cell block">
+    <span class="pill ok">CLEAN</span>
+    <div class=muted>no sanctions or scam-list hit</div>
+  </div>
+  <div class="cell ours">
+    <div class="bar"><span style="width:90%"></span></div>
+    <div class="scoreline"><b>0.90</b>
+      <span class="pill bad">HIGH RISK</span></div>
+    <ul><li>This transfer moves 100% of your remaining balance</li><li>This transfer is 27x your typical transfer size</li><li>6 unrelated wallets have sent to it in the past 30 days</li><li>Wallets that send here average $44,093 each before stopping</li></ul>
+    <div class=muted>dest age 232.2d &middot; 5 senders/7d
+      &middot; <a href="https://tronscan.org/#/transaction/d4c29f5feb4ca75ee65e057139f0ea1ae600f5f2321cc651febc160db9cbf0a2" target=_blank>tx</a></div>
+  </div>
+</div>
+<div class="row warn">
+  <div class="k">#5</div>
+  <div class="when">2025-11-08 22:43<br><span class=muted>$25</span></div>
+  <div class="cell block">
+    <span class="pill ok">CLEAN</span>
+    <div class=muted>no sanctions or scam-list hit</div>
+  </div>
+  <div class="cell ours">
+    <div class="bar"><span style="width:58%"></span></div>
+    <div class="scoreline"><b>0.58</b>
+      <span class="pill mid">CAUTION</span></div>
+    <ul><li>Wallets that send here average $62,430 each before stopping</li><li>6 unrelated wallets have sent to it in the past 30 days</li><li>5 unrelated wallets have sent to it in the past 7 days</li></ul>
+    <div class=muted>dest age 232.2d &middot; 5 senders/7d
+      &middot; <a href="https://tronscan.org/#/transaction/282102f0131bc0cd8c63f4a8ae1f6fbc18616b0e70b6e097c114961d6c7eda83" target=_blank>tx</a></div>
+  </div>
+</div>
+</div>
+<div class=foot>
+  <div class=muted>Model crossed the high-risk threshold at transfer #2. Money that moved at or after that first flag:</div>
+  <div class=big>$215,070</div>
+  <div class=muted>of $215,170 total sent to this address.
+  A blocklist flagged none of it &mdash; the address was listed only 2026-06-11 20:43.</div>
+  <div class=muted style="margin-top:10px">Generated 2026-09-26 00:29 UTC</div>
+</div></div></body></html>

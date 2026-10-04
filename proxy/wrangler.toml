@@ -1,0 +1,7 @@
+name = "veridis-trongrid-proxy"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# The key is a secret, never a var - `wrangler secret put TRONGRID_API_KEY`.
+# Putting it in [vars] would commit it to the repo, which is the mistake this
+# whole directory exists to avoid.

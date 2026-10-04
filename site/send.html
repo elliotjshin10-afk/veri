@@ -286,7 +286,18 @@ async function check() {
 
     const amount = parseFloat(amt);
     const both = from && chainOf(from) === chain && isFinite(amount) && amount > 0;
-    let p, thr, feats;
+
+    /* Always score the DESTINATION, whatever else we do.
+       "Is this transfer risky" and "is this address a collection point" are
+       different questions, and a $1 send answers the first with "no" while
+       leaving the second untouched. Showing only the first let $1 into an
+       address that had taken $1.6m from 83 strangers come back "nothing
+       unusual" - the exact reassurance a test transfer is sent to get. */
+    const dm = await model(evm ? "model_eth.json" : "model_dest.json");
+    const dfeats = computeFeatures(tx, dest, Date.now(), {firstSeen: firstSeen});
+    const dband = band(score(dm, dfeats), dm.thresholds);
+
+    let feats = dfeats, b = dband, pband = null;
     if (both) {
       const m = await model(evm ? "model_pair_eth.json" : "model_pair.json");
       const src = evm ? from.toLowerCase() : from;
@@ -295,13 +306,15 @@ async function check() {
       feats = computePairFeatures({senderTransfers: stx, destTransfers: tx,
         sender: src, destination: dest, amountUsd: amount, asOfMs: Date.now(),
         destFirstSeen: firstSeen});
-      p = score(m, feats); thr = m.thresholds;
-    } else {
-      const m = await model(evm ? "model_eth.json" : "model_dest.json");
-      feats = computeFeatures(tx, dest, Date.now(), {firstSeen: firstSeen});
-      p = score(m, feats); thr = m.thresholds;
+      pband = band(score(m, feats), m.thresholds);
+      // The destination is a floor. The relationship may raise the verdict and
+      // never lowers it: a needless warning costs a moment, a missed collection
+      // point costs someone their savings.
+      const RANK = {ordinary: 0, elevated: 1, high: 2};
+      b = RANK[dband] > RANK[pband] ? dband : pband;
     }
-    verdict(to, amount, band(p, thr), feats, both, {rows, calls});
+    verdict(to, amount, b, feats, both, {rows, calls},
+            {dband, pband, small: amount < 250});
   } catch (e) {
     sheet("Could not read that address just now. Try again in a moment.");
   } finally {
@@ -331,12 +344,20 @@ function reasons(f, both) {
     out.push("it forwards almost everything it receives, and keeps nothing");
   if ((f.dest_age_days || 0) < 30)
     out.push("the address is " + Math.max(1, Math.round(f.dest_age_days)) + " days old");
-  return out.slice(0, 3);
+  return out.slice(0, 2);
 }
 
-function verdict(to, amount, b, f, both, read) {
+function verdict(to, amount, b, f, both, read, split) {
   const [title, body] = COPY[b];
   const why = reasons(f, both);
+  // If the amount is the only thing making this look acceptable, lead with that.
+  const RANK = {ordinary: 0, elevated: 1, high: 2};
+  if (split && split.pband && RANK[split.dband] > RANK[split.pband]) {
+    why.unshift(split.small
+      ? "the amount is small, but this address is what it is \u2014 a small first "
+        + "transfer is how most of these start"
+      : "this transfer on its own looks unremarkable; the address receiving it does not");
+  }
   card.innerHTML =
     '<div class="warn ' + b + '"><div class="band">'
     + (b === "high" ? "High risk" : b === "elevated" ? "Some risk signals" : "Looks ordinary")
