@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Veridis — decided cases</title>
+<meta name="description" content="What we said before a transfer, and what the chain did afterwards.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#F9FAF9; --surface:#FFFFFF; --sunk:#F1F3F2;
+  --ink:#16191B; --ink2:#4A5157; --ink3:#727A80;
+  --rule:#E0E4E3; --rule2:#C4CAC9;
+  --crit:#A82A20; --crit-bg:#F9EDEB; --crit-rule:#E4C3BE;
+  --warn:#8A5A08; --warn-bg:#FAF2E2; --warn-rule:#E3D2AC;
+  --ok:#1F6B3E;   --ok-bg:#ECF4EF;   --ok-rule:#BFD8CA;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+  --s6:32px; --s7:48px; --s8:64px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  color-scheme: dark;
+  --paper:#0E1112; --surface:#161A1B; --sunk:#121516;
+  --ink:#E9ECEB; --ink2:#A5ADAC; --ink3:#7C8482;
+  --rule:#242A2A; --rule2:#39403F;
+  --crit:#E98275; --crit-bg:#291A17; --crit-rule:#4A2C27;
+  --warn:#D9A03F; --warn-bg:#241D11; --warn-rule:#44351A;
+  --ok:#5CBB83;   --ok-bg:#122119;   --ok-rule:#22402F;
+}}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0E1112; --surface:#161A1B; --sunk:#121516;
+  --ink:#E9ECEB; --ink2:#A5ADAC; --ink3:#7C8482;
+  --rule:#242A2A; --rule2:#39403F;
+  --crit:#E98275; --crit-bg:#291A17; --crit-rule:#4A2C27;
+  --warn:#D9A03F; --warn-bg:#241D11; --warn-rule:#44351A;
+  --ok:#5CBB83;   --ok-bg:#122119;   --ok-rule:#22402F;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums}
+.wrap{max-width:46rem;margin:0 auto;padding-inline:var(--s5);padding-block:var(--s6) var(--s8)}
+h1,h2{font-family:Newsreader,Georgia,"Times New Roman",serif;font-weight:400;margin:0;
+  letter-spacing:-.011em;text-wrap:balance;line-height:1.14}
+h1{font-size:clamp(30px,5vw,40px)}
+h2{font-size:21px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink3);font-weight:500;margin:0 0 var(--s3)}
+a{color:inherit;text-decoration-color:var(--rule2);text-underline-offset:3px}
+a:hover{text-decoration-color:currentColor}
+a:focus-visible,button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+.mark{font-family:Newsreader,Georgia,serif;font-size:19px;text-decoration:none;
+  display:inline-block;margin-bottom:var(--s5)}
+.mark b{font-weight:500}
+.lede{color:var(--ink2);margin:var(--s3) 0 0;max-width:34rem}
+section{margin-top:var(--s8)}
+.sechead{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s4);
+  flex-wrap:wrap;border-bottom:1px solid var(--rule);padding-bottom:var(--s2);
+  margin-bottom:var(--s4)}
+.sechead .count{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink3);
+  letter-spacing:.08em;text-transform:uppercase}
+
+/* the rates, as one object: same scale, same meaning, both rows */
+.rates{margin:0 0 var(--s6)}
+.rate{display:grid;grid-template-columns:7.5rem 1fr;gap:var(--s3);align-items:center;
+  margin-bottom:var(--s3)}
+.rate .what{font-size:13px;color:var(--ink2)}
+.rate .what b{font-weight:600;color:var(--ink)}
+.bar{display:flex;height:10px;border-radius:2px;overflow:hidden;background:var(--sunk);gap:2px}
+.bar span{display:block}
+.bar .b-high{background:var(--crit)}
+.bar .b-elev{background:var(--warn)}
+.bar .b-ord{background:var(--rule2)}
+.key{display:flex;gap:var(--s4);flex-wrap:wrap;font-size:12px;color:var(--ink3);
+  margin-top:var(--s3)}
+.key i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;
+  vertical-align:baseline}
+
+/* one case */
+.case{display:grid;grid-template-columns:8.5rem 1fr auto;gap:var(--s3) var(--s4);
+  padding:var(--s4) 0;border-bottom:1px solid var(--rule);align-items:start}
+.meta{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink3);line-height:1.5}
+.meta .amt{display:block;font-size:14px;color:var(--ink);font-weight:500}
+.body .to{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink2);
+  margin:0 0 var(--s1);word-break:break-all}
+.body .why{margin:0;font-size:14px;color:var(--ink)}
+.body .out{margin:var(--s1) 0 0;font-size:13px;color:var(--ink2)}
+.tag{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3);border:1px solid var(--rule);
+  border-radius:2px;padding:1px 5px;margin-left:6px;white-space:nowrap}
+.chip{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;font-weight:500;border-radius:2px;padding:3px 7px;
+  white-space:nowrap;border:1px solid}
+.chip.high{color:var(--crit);background:var(--crit-bg);border-color:var(--crit-rule)}
+.chip.elevated{color:var(--warn);background:var(--warn-bg);border-color:var(--warn-rule)}
+.chip.ordinary{color:var(--ink3);background:var(--sunk);border-color:var(--rule)}
+@media (max-width:560px){
+  /* Stacked, but the verdict stays on the first line with the amount. Left to
+     auto-placement the chip drops to a row of its own and stretches across the
+     full width, which reads as a banner rather than a label. */
+  .case{grid-template-columns:1fr auto}
+  .meta{grid-column:1;grid-row:1;font-size:11px}
+  .chip{grid-column:2;grid-row:1;justify-self:end;align-self:start}
+  .body{grid-column:1 / -1;grid-row:2}
+  .rate{grid-template-columns:1fr;gap:var(--s1)}
+}
+.empty{color:var(--ink3);font-size:14px;margin:0}
+.note{font-size:12.5px;color:var(--ink3);margin-top:var(--s6);max-width:34rem}
+.note a{color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="mark" href="/">Veridis<b>.</b></a>
+
+  <h1>What we said, and what happened</h1>
+  <p class="lede">A score is a claim about the future. These are real transfers,
+    each scored from only the history that existed at that minute, set beside what
+    the chain did afterwards.</p>
+
+  <section>
+    <div class="sechead"><h2>Your checks</h2>
+      <span class="count" id="yourcount"></span></div>
+    <div id="yours"></div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>Decided cases</h2>
+      <span class="count" id="casecount"></span></div>
+    <div class="rates" id="rates"></div>
+    <div id="cases"></div>
+    <p class="note" id="method"></p>
+  </section>
+</div>
+
+<script type="module">
+const $ = s => document.querySelector(s);
+const usd = n => "$" + Number(n).toLocaleString(undefined, {maximumFractionDigits: 0});
+const short = a => a.length > 14 ? a.slice(0, 7) + "…" + a.slice(-5) : a;
+const day = ms => new Date(ms).toLocaleDateString(undefined,
+  {day: "numeric", month: "short", year: "numeric"});
+const esc = s => String(s).replace(/[&<>"]/g, c =>
+  ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const CHIP = {high: "Stopped", elevated: "Warned", ordinary: "Went through"};
+const explorer = (a, chain) => chain === "Ethereum" || /^0x/.test(a)
+  ? "https://etherscan.io/address/" + a
+  : "https://tronscan.org/#/address/" + a;
+
+/* A day count nobody has to decode: 6 days stays 6 days, 674 becomes a year
+   and ten months, because "frozen 674 days later" makes a reader do arithmetic
+   in the middle of a sentence. */
+function span(d) {
+  if (d < 1) return "the same day";
+  if (d < 45) return Math.round(d) + " day" + (Math.round(d) === 1 ? "" : "s") + " later";
+  if (d < 365) return Math.round(d / 30) + " months later";
+  const y = Math.floor(d / 365), m = Math.round((d - y * 365) / 30);
+  return y + (y === 1 ? " year" : " years") + (m ? " " + m + " months" : "") + " later";
+}
+
+function caseRow(c) {
+  const wrong = (c.scam && c.band === "ordinary") ? "missed"
+    : (!c.scam && c.band !== "ordinary") ? "false alarm" : null;
+  const out = c.froze
+    ? "Tether froze the address " + span(c.lead_days) + "."
+    : "Still on no blacklist, " + span(c.unlisted_days).replace(" later", " on") + ".";
+  return '<div class="case">'
+    + '<div class="meta"><span class="amt">' + usd(c.amt) + "</span>"
+    + esc(day(c.t)) + "</div>"
+    + '<div class="body"><p class="to">to <a href="' + explorer(c.to)
+    + '" target="_blank" rel="noopener">' + esc(short(c.to)) + "</a></p>"
+    + '<p class="why">' + esc(c.why) + ".</p>"
+    + '<p class="out">' + esc(out)
+    + (wrong ? '<span class="tag">' + wrong + "</span>" : "") + "</p></div>"
+    + '<span class="chip ' + c.band + '">' + CHIP[c.band] + "</span></div>";
+}
+
+function rates(s) {
+  const row = (label, n, hi, el, or, line) => {
+    const t = Math.max(n, 1);
+    return '<div class="rate"><div class="what"><b>' + label + "</b><br>"
+      + n.toLocaleString() + " transfers</div>"
+      + '<div><div class="bar" role="img" aria-label="' + esc(line) + '">'
+      + '<span class="b-high" style="width:' + (100 * hi / t) + '%"></span>'
+      + '<span class="b-elev" style="width:' + (100 * el / t) + '%"></span>'
+      + '<span class="b-ord" style="width:' + (100 * or / t) + '%"></span></div>'
+      + '<div class="what" style="margin-top:6px">' + esc(line) + "</div></div></div>";
+  };
+  const pc = (a, b) => (100 * a / Math.max(b, 1)).toFixed(1) + "%";
+  return row("Scam", s.n_scam, s.scam_high, s.scam_elevated, s.scam_ordinary,
+      "stopped " + pc(s.scam_high, s.n_scam) + " · warned "
+      + pc(s.scam_elevated, s.n_scam) + " · " + pc(s.scam_ordinary, s.n_scam)
+      + " went through unflagged")
+    + row("Ordinary", s.n_control, s.control_high, s.control_elevated, s.control_ordinary,
+      "stopped " + pc(s.control_high, s.n_control) + " · warned "
+      + pc(s.control_elevated, s.n_control) + " · "
+      + pc(s.control_ordinary, s.n_control) + " went through")
+    + '<div class="key"><span><i class="b-high" style="background:var(--crit)"></i>Stopped</span>'
+    + '<span><i class="b-elev" style="background:var(--warn)"></i>Warned</span>'
+    + '<span><i class="b-ord" style="background:var(--rule2)"></i>Went through</span></div>';
+}
+
+/* The viewer's own checks live in this browser and nowhere else - they are not
+   sent anywhere, which is also why they do not follow them to another device. */
+function yours() {
+  let mine = [];
+  try { mine = JSON.parse(localStorage.getItem("veridis.checks") || "[]"); } catch (e) {}
+  if (!Array.isArray(mine) || !mine.length) {
+    $("#yours").innerHTML = '<p class="empty">Nothing yet. Every check you run on '
+      + 'the <a href="send.html">send sheet</a> is kept here, in this browser only.</p>';
+    return;
+  }
+  $("#yourcount").textContent = mine.length + (mine.length === 1 ? " check" : " checks")
+    + " · this browser only";
+  $("#yours").innerHTML = mine.slice(0, 25).map(c =>
+    '<div class="case"><div class="meta"><span class="amt">'
+    + (c.amt > 0 ? usd(c.amt) : "—") + "</span>" + esc(day(c.t)) + "</div>"
+    + '<div class="body"><p class="to">to <a href="' + explorer(c.to, c.chain)
+    + '" target="_blank" rel="noopener">' + esc(short(c.to)) + "</a>"
+    + (c.chain ? " · " + esc(c.chain) : "") + "</p>"
+    + '<p class="why">' + esc(c.why || "No single signal stood out") + ".</p></div>"
+    + '<span class="chip ' + (CHIP[c.band] ? c.band : "ordinary") + '">'
+    + (CHIP[c.band] || "Checked") + "</span></div>").join("");
+}
+
+yours();
+
+fetch("history.json").then(r => r.json()).then(d => {
+  const s = d.summary;
+  $("#casecount").textContent = d.cases.length + " of " + s.n.toLocaleString()
+    + " · Tron · USDT";
+  $("#rates").innerHTML = rates(s);
+  $("#cases").innerHTML = d.cases.map(caseRow).join("");
+  $("#method").innerHTML = "Every transfer above is held out: its destination "
+    + "never appeared in training, and every feature is computed from the chain "
+    + "as it stood before the transfer, so nothing here is scored with knowledge "
+    + "of the freeze that followed. Scores come from <span class=\"mono\">"
+    + esc(d.model.file) + "</span> (<span class=\"mono\">"
+    + esc(d.model.sha256_16) + "</span>) — the same file the send sheet runs "
+    + "in your browser. The eighteen cases are drawn at random inside each "
+    + "verdict, including both kinds of mistake; the percentages above are over "
+    + "all " + s.n.toLocaleString() + ". <b>Missed</b> marks a transfer we let "
+    + "through to an address that was frozen later — however much later, so "
+    + "read it with the lead time beside it: at three years out it is a weak "
+    + "counterfactual, at sixteen days it is not. Blacklists current to "
+    + esc(day(d.labels_current_to)) + ".";
+}).catch(() => {
+  $("#cases").innerHTML = '<p class="empty">Could not load the case log.</p>';
+});
+</script>
+</body>
+</html>

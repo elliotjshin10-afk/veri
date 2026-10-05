@@ -127,6 +127,29 @@ check vouches for you. Tokens are now identified by contract address, verified
 against Etherscan, in both the ingest and the browser. Accuracy barely moved,
 which is the point - it was a security bug, not a modelling one.
 
+**The operating point, published rather than described.** `site/history.html`
+shows what the shipped two-sided model did on the 4,337 held-out transfers whose
+destination never appeared in training, at the bands the site actually serves:
+
+| | stopped | warned | went through |
+|---|---|---|---|
+| Transfers to an address later frozen (853) | 40.6% | 56.2% | **3.3%** |
+| Transfers to an address never listed (3,484) | 1.1% | 12.0% | 86.9% |
+
+Read it as one number: at roughly one stop per hundred ordinary transfers, 97%
+of the money heading into a collection point meets something, and 41% of it
+meets a stop rather than a warning. The 1.1% is slightly above the 1% the bands
+were cut for, because those thresholds were set on the whole held-out set and
+this is the stricter unseen-destination subset of it.
+
+Eighteen of those cases are listed individually, drawn at random inside each
+verdict with a fixed seed and including both kinds of mistake - the scams that
+read ordinary and the ordinary transfers that drew a warning. The page exists
+because a score is a claim about the future and almost nobody shows one beside
+the future it claimed; a buyer who wants to know whether to trust the model can
+read the misses rather than take the AUC on faith. Rebuilt by `make history`,
+and `tests/test_history.py` fails if it stops matching the model the site ships.
+
 **What is not yet established:**
 
 - The two-sided figures were the open question after the correction above, since

@@ -4,7 +4,7 @@
 PY := $(shell [ -x ./.venv/bin/python ] && echo ./.venv/bin/python || echo python3)
 export DYLD_LIBRARY_PATH := /opt/homebrew/opt/libomp/lib:$(DYLD_LIBRARY_PATH)
 
-.PHONY: setup labels scam-history victims controls harvest features train eval crosschain api demo bench ui research browser-model parity site test dataset clean
+.PHONY: history setup labels scam-history victims controls harvest features train eval crosschain api demo bench ui research browser-model parity site test dataset clean
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv
@@ -59,6 +59,12 @@ parity:
 
 site:
 	$(PY) -u scripts/build_site.py
+
+## The decided-cases log: held-out transfers, the verdict each got before it
+## settled, and what the chain did next. Rebuild it whenever model_pair.json is
+## retrained, or the page cites a model it no longer ships.
+history:
+	$(PY) -u scripts/build_history.py
 
 # Only the five files the page fetches at runtime. Deploy dist/, not site/.
 dist: site

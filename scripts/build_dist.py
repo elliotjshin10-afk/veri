@@ -31,6 +31,11 @@ RUNTIME = ["index.html", "scorer.js", "index_compact.json",
            # The send sheet: connect, send, warning. The whole product in three
            # beats, run live against the chain rather than against fixtures.
            "send.html",
+           # The decided-cases log: held-out transfers, the verdict each got
+           # before it settled, and what the chain did afterwards. A score is a
+           # claim about the future and this is the only page that shows one
+           # beside the future it claimed.
+           "history.html", "history.json",
            # Social preview card. A link with no card is a link nobody clicks.
            "og.png"]
 

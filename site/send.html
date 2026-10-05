@@ -137,6 +137,7 @@ button.wallet img{width:20px;height:20px;border-radius:4px}
   <div class="card" id="card"></div>
   <p class="note">A real check, run against the live chain. Nothing is sent &mdash;
     this is the moment before.</p>
+  <p class="note"><a href="history.html">What we said before, and what happened &rarr;</a></p>
 </div>
 
 <script type="module">
@@ -347,6 +348,18 @@ function reasons(f, both) {
   return out.slice(0, 2);
 }
 
+/* Keep the check where the person can find it again. A warning you have
+   already clicked past is still the only record that it was ever shown, and it
+   lives in this browser alone - nothing about what anyone checks leaves it. */
+function remember(rec) {
+  try {
+    const key = "veridis.checks";
+    const prev = JSON.parse(localStorage.getItem(key) || "[]");
+    const keep = (Array.isArray(prev) ? prev : []).slice(0, 49);
+    localStorage.setItem(key, JSON.stringify([rec].concat(keep)));
+  } catch (e) { /* private window, or storage declined - not worth a message */ }
+}
+
 function verdict(to, amount, b, f, both, read, split) {
   const [title, body] = COPY[b];
   const why = reasons(f, both);
@@ -358,6 +371,9 @@ function verdict(to, amount, b, f, both, read, split) {
         + "transfer is how most of these start"
       : "this transfer on its own looks unremarkable; the address receiving it does not");
   }
+  remember({t: Date.now(), to: to, chain: chainOf(to), band: b,
+            amt: isFinite(amount) && amount > 0 ? amount : 0,
+            why: why.length ? why[0].charAt(0).toUpperCase() + why[0].slice(1) : ""});
   card.innerHTML =
     '<div class="warn ' + b + '"><div class="band">'
     + (b === "high" ? "High risk" : b === "elevated" ? "Some risk signals" : "Looks ordinary")

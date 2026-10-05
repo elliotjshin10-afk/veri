@@ -148,3 +148,92 @@ class ReasonEngine:
                     break
             out.append(reasons)
         return out
+
+    def reassure(self, X: np.ndarray, rows: list[dict], top_n: int = 3) -> list[list[str]]:
+        """The mirror of explain(): what held the score DOWN on this event.
+
+        Same contributions, read from the other end. A log that says "stopped"
+        and "went through" has to account for both, and the honest account of
+        "went through" is the feature that actually argued for it.
+        """
+        contrib = self._shap(X)
+        out: list[list[str]] = []
+        for i, row in enumerate(rows):
+            order = np.argsort(contrib[i])  # most risk-DECREASING first
+            texts: list[str] = []
+            for j in order:
+                if contrib[i][j] >= 0:
+                    break
+                name = self.feature_names[j]
+                text = render_clear(name, row.get(name), row)
+                if text and text not in texts:
+                    texts.append(text)
+                if len(texts) >= top_n:
+                    break
+            out.append(texts)
+        return out
+
+
+# The templates above only ever explain a WARNING. A log of past decisions has
+# to explain the other verdict too - why a transfer went through - and "no
+# reasons fired" is not an explanation. These are the mirror image: statements
+# that are true when the feature pushed the score DOWN, rendered from the same
+# SHAP contributions so the sentence names the thing that actually decided it.
+CLEAR_TEMPLATES: dict[str, dict] = {
+    "sender_prior_sends_to_dest": {
+        "text": "This wallet had already paid the address {value:.0f} times",
+        "guard": lambda v, r: v is not None and v >= 1,
+    },
+    "dest_forward_ratio": {
+        "text": "The address keeps most of what it receives instead of forwarding it on",
+        "guard": lambda v, r: v is not None and 0 <= v < 0.7,
+    },
+    "dest_senders_30d": {
+        "text": "Only {value:.0f} wallets paid it in the previous 30 days",
+        "guard": lambda v, r: v is not None and v <= 2,
+    },
+    "dest_senders_all": {
+        "text": "Only {value:.0f} wallets had ever paid it",
+        "guard": lambda v, r: v is not None and 0 < v <= 25,
+    },
+    "dest_median_hold_secs": {
+        "text": "Money that arrives here sits for {mins} rather than moving straight on",
+        "guard": lambda v, r: v is not None and v >= 86_400,
+    },
+    "dest_age_days": {
+        "text": "The address had been active for {value:,.0f} days",
+        "guard": lambda v, r: v is not None and v >= 180,
+    },
+    "escalation_ratio": {
+        "text": "No escalation - about the size of the last transfer to it",
+        "guard": lambda v, r: v is not None and 0 < v <= 1.5,
+    },
+    "amount_vs_sender_median": {
+        "text": "The amount was ordinary for this wallet",
+        "guard": lambda v, r: v is not None and 0.2 <= v <= 2.0,
+    },
+    "shared_counterparties": {
+        "text": "{value:.0f} counterparties in common with wallets it already dealt with",
+        "guard": lambda v, r: v is not None and v >= 1,
+    },
+    "pair_span_days": {
+        "text": "The two addresses had been transacting for {value:,.0f} days",
+        "guard": lambda v, r: v is not None and v >= 30,
+    },
+}
+
+
+def render_clear(feature: str, value: float, row: dict) -> str | None:
+    spec = CLEAR_TEMPLATES.get(feature)
+    if spec is None or value is None:
+        return None
+    try:
+        if not spec["guard"](value, row):
+            return None
+    except Exception:
+        return None
+    return spec["text"].format(
+        value=value,
+        pct=min(value, 1.0) * 100 if value <= 1.5 else value,
+        mins=_humanise_secs(value),
+    )

@@ -48,6 +48,7 @@ make controls       # M2  matched control population
 make features       # M3  as-of-time feature layer
 make train          # M4  temporal+grouped evaluation
 make demo           # M6  replay harness -> demo/index.html
+make history        #     decided-cases log -> site/history.json
 make api            # M5  serve on :8000
 make test           # leakage gate
 ```
