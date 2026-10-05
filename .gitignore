@@ -11,6 +11,17 @@ data/processed/*
 *.duckdb
 .pytest_cache/
 reports/*.png
+# Generated artifacts that a stray `git add -A` swept in. The source they are
+# built from is tracked; the output is not, for the same reason data/processed
+# is not - it is reproducible, it is large, and a diff of it tells nobody
+# anything. demo/address_index.json alone is 7MB and is rewritten by
+# build_address_index.py on every retrain.
+demo/address_index.json
+demo/demo_data.json
+demo/replay.json
+demo/veridis_demo.html
+reports/*.json
+reports/*.md
 
 # secrets
 .env

@@ -92,8 +92,11 @@ from the reports, so the page cannot carry a number the code no longer produces.
 |---|---|---|
 | Address lookup, ROC-AUC | **0.928** | **0.861** |
 | Recall at a 1% false-alarm budget | 25% | 30% |
-| With the sender known (two-sided) | 0.975 | 0.872 |
+| With the sender known (two-sided) | 0.975 † | 0.872 † |
 | Lead time: caught 90 days before the freeze, at 1% false alarms | **39%** (CI 33-53%) | not yet measured |
+
+† Recall at 1% false alarms is about three points optimistic on these two; see
+the destination-age note below.
 
 **These numbers are lower than the ones this repo carried until 2026-10-02, and
 the correction matters more than the figures.** Control addresses used to draw a
@@ -126,9 +129,18 @@ which is the point - it was a security bug, not a modelling one.
 
 **What is not yet established:**
 
-- The two-sided figures use controls matched on the SENDER's profile. They have
-  not been re-examined for the destination-age effect above, so treat 0.975 and
-  0.872 as provisional until they have been.
+- The two-sided figures were the open question after the correction above, since
+  their controls are matched on the SENDER's profile and nothing was matching on
+  the destination's age. They have now been checked, and they hold. The pair
+  model's events are real transfers to real destinations, so the ages line up on
+  their own: median destination age 76 days against 103 for controls, |SMD|
+  0.147, against the 3.5x distortion the destination model carried. Rebalancing
+  the test set on destination age moves ROC-AUC 0.9746 to 0.9716 and recall at a
+  1% false-alarm budget 40.9% to 37.4%. So read the two-sided recall as roughly
+  three points optimistic, and the ranking as sound. The shipped model is kept
+  rather than retrained on the balanced subset: that subset is less than half the
+  size, and trading real data for a 0.003 difference buys a noisier estimate, not
+  a truer one.
 - Ethereum has no lead-time measurement yet; the ledger arm went live
   2026-10-02 and needs to age before it can produce one.
 - The live prediction ledger holds 27 entries and none old enough to resolve.
