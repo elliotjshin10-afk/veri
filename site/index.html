@@ -148,10 +148,20 @@ button.go:hover{background:var(--ink2)}
   padding-top:var(--s4);border-top:1px solid var(--rule)}
 .proofline b{color:var(--ink);font-weight:600;font-family:"IBM Plex Mono",monospace}
 .proofline a{color:var(--ink3)}
-/* One line, under the proof figures, for the thing a lookup cannot show. */
-.replaylink{margin:var(--s3) 0 0;font-size:13px}
-.replaylink a{color:var(--ink2);text-decoration-color:var(--rule2)}
-.replaylink a:hover{color:var(--ink)}
+/* One primary step, then the quiet ones. Three stacked underlined links all
+   read as equally important, which is the same as none of them being. */
+.next{display:flex;align-items:center;gap:var(--s4) var(--s5);flex-wrap:wrap;
+  margin-top:var(--s5)}
+/* Outlined, not filled. Check is the filled button on this page because the
+   form is the product; a second solid button beside it would ask the reader to
+   choose between two primaries, which is how a page stops having one. */
+.next .go{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;
+  text-decoration:none;color:var(--ink);background:transparent;
+  border:1px solid var(--rule2);border-radius:3px;padding:11px 16px;white-space:nowrap}
+.next .go:hover{border-color:var(--ink);background:var(--sunk)}
+.next .quiet{display:flex;gap:var(--s4);flex-wrap:wrap;font-size:13px}
+.next .quiet a{color:var(--ink3);text-decoration-color:var(--rule2)}
+.next .quiet a:hover{color:var(--ink)}
 
 /* ── suggestions and examples ── */
 .sugg{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;background:var(--surface);
@@ -328,10 +338,13 @@ footer p{margin:0 0 var(--s3);max-width:46em;line-height:1.55}
     <div class="rows" id="picks"></div>
 
     <p class="proofline" id="proofline"></p>
-    <p class="replaylink"><a href="send.html">See the warning a wallet would
-      show &mdash; connect, send, stop &rarr;</a></p>
-    <p class="replaylink"><a href="history.html">What we said before a transfer,
-      and what the chain did next &rarr;</a></p>
+    <div class="next">
+      <a class="go" href="send.html">See it stop a transfer &rarr;</a>
+      <span class="quiet">
+        <a href="history.html">What we got right, and wrong</a>
+        <a href="#/ledger">How that was measured</a>
+      </span>
+    </div>
   </main>
 
   <!-- ── one address, in full ────────────────────────────────────────── -->
@@ -1220,8 +1233,10 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
       "<b>" + lt.payment_pct + "</b> of the payments into the addresses Tether froze last "
       + "half-year would have carried a warning from us &mdash; " + lt.headline_days
       + " days before any of them appeared on a list, at a " + lt.fpr_pct
-      + " false-alarm rate. "
-      + '<a href="#/ledger">How that was measured, and what we are predicting now &rarr;</a>';
+      + " false-alarm rate.";
+    // The link to the record lives in .next now. It used to sit here as well,
+    // so the same destination was offered twice within two lines, plus a third
+    // time in the footer nav.
   }
 
   function renderProof() {
