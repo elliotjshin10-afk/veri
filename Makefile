@@ -4,7 +4,7 @@
 PY := $(shell [ -x ./.venv/bin/python ] && echo ./.venv/bin/python || echo python3)
 export DYLD_LIBRARY_PATH := /opt/homebrew/opt/libomp/lib:$(DYLD_LIBRARY_PATH)
 
-.PHONY: freezes history setup labels scam-history victims controls harvest features train eval crosschain api demo bench ui research browser-model parity site test dataset clean
+.PHONY: freezes fresh-freezes history setup labels scam-history victims controls harvest features train eval crosschain api demo bench ui research browser-model parity site test dataset clean
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv
@@ -132,6 +132,11 @@ ledger:
 ## Bring the Tether freeze lists up to date on their own (both chains).
 freezes:
 	$(PY) -u scripts/refresh_freezes.py
+
+## The shipped model against freezes that happened AFTER it shipped - the one
+## piece of evidence here that is not a backtest. Run `make freezes` first.
+fresh-freezes:
+	$(PY) -u scripts/m11_fresh_freezes.py
 
 ledger-verify:
 	$(PY) -u scripts/ledger_verify.py

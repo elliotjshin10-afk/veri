@@ -150,6 +150,33 @@ the future it claimed; a buyer who wants to know whether to trust the model can
 read the misses rather than take the AUC on faith. Rebuilt by `make history`,
 and `tests/test_history.py` fails if it stops matching the model the site ships.
 
+**The first evidence that is not a backtest.** Refreshing the freeze lists on
+2026-10-06 turned up 163 Tron addresses Tether had frozen *since the labels were
+cut* — absent from training, from the held-out set, and from the shipped index.
+They are the model's first genuine out-of-sample population: it was built before
+any of them was listed. Fetching their histories and truncating each to a point
+before its own freeze, the shipped `model_dest.json` says:
+
+| days before the freeze | n | high band | elevated or high |
+|---|---|---|---|
+| 1 | 157 | 21.7% | 80.9% |
+| 7 | 138 | 22.5% | 81.2% |
+| 30 | 97 | 21.6% | 80.4% |
+| 90 | 75 | 21.3% | 76.0% |
+
+Two things matter here. The high-band rate of ~21.7% sits just under the
+backtested 24.5%, so the backtest is mildly optimistic and not wildly so — which
+is the first independent check that the age-matching correction actually took.
+And the rate is **flat across the horizons**: as good ninety days before the
+freeze as one day before it, which is the whole proposition, since a warning on
+the day the money leaves is worth nothing. Four in five of these addresses would
+have shown the user something.
+
+It is recall only — no control arm, so no false-alarm rate comes from it. Read
+it against the bands, cut at the top 1% of held-out ordinary wallets, where the
+live trial flagged 0 of 207. Reproduce with `make fresh-freezes`; `n` shrinks at
+the longer horizons because not every address existed that far back.
+
 **What is not yet established:**
 
 - The two-sided figures were the open question after the correction above, since
