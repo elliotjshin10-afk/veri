@@ -4,7 +4,7 @@
 PY := $(shell [ -x ./.venv/bin/python ] && echo ./.venv/bin/python || echo python3)
 export DYLD_LIBRARY_PATH := /opt/homebrew/opt/libomp/lib:$(DYLD_LIBRARY_PATH)
 
-.PHONY: history setup labels scam-history victims controls harvest features train eval crosschain api demo bench ui research browser-model parity site test dataset clean
+.PHONY: freezes history setup labels scam-history victims controls harvest features train eval crosschain api demo bench ui research browser-model parity site test dataset clean
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv
@@ -115,10 +115,23 @@ clean:
 # fast the ledger accrues: 2,000 a night is roughly 20 entries, ~10 minutes of
 # fetching, and about 1,800 calls on the record by the end of a quarter.
 N ?= 2000
+# The leading `-` on the refresh is deliberate. Resolution needs a freeze list
+# newer than the predictions it checks, and for nine nights it had one fetched
+# before the ledger even started - so every run reported "0 resolved" and that
+# read as evidence rather than as a broken loop. But a third-party outage must
+# not also cost a night of PREDICTIONS, which is the half that only accrues with
+# calendar time. So a failed refresh is tolerated here and caught instead by
+# tests/test_ledger_resolve.py, which fails once the lists stop reaching past
+# the ledger: a transient miss is absorbed, a persistent one is loud.
 ledger:
+	-$(PY) -u scripts/refresh_freezes.py
 	$(PY) -u scripts/ledger_predict.py $(N)
 	$(PY) -u scripts/ledger_resolve.py
 	$(PY) -u scripts/ledger_report.py
+
+## Bring the Tether freeze lists up to date on their own (both chains).
+freezes:
+	$(PY) -u scripts/refresh_freezes.py
 
 ledger-verify:
 	$(PY) -u scripts/ledger_verify.py

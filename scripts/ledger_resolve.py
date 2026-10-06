@@ -21,8 +21,13 @@ DAY_MS = 86_400_000
 
 def freeze_times() -> dict[str, int]:
     out: dict[str, int] = {}
-    raw = ROOT / "data" / "raw" / "tether_blacklist_tron.json"
-    if raw.exists():
+    # Both chains. The Ethereum list used to be missing here, so the 13
+    # Ethereum entries in the ledger could only ever resolve through the
+    # labels parquet - a file rebuilt by hand, and therefore never in time.
+    for name in ("tether_blacklist_tron.json", "tether_blacklist_eth.json"):
+        raw = ROOT / "data" / "raw" / name
+        if not raw.exists():
+            continue
         for r in json.loads(raw.read_text()):
             a, t = r.get("address"), r.get("block_time")
             if a and t:

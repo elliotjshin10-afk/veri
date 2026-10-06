@@ -42,11 +42,20 @@ jobs:
       - name: Verify the chain after appending
         run: make ledger-verify
 
+      # The refresh above is allowed to fail transiently. This is what makes a
+      # PERSISTENT failure loud: it fails once the freeze lists stop reaching
+      # past the oldest prediction, which is the condition under which
+      # resolution can never find anything no matter what happens on chain.
+      - name: Check the freeze lists can still resolve anything
+        run: python -m pytest -q tests/test_ledger_resolve.py
+
       - name: Commit the night's entries
         run: |
           git config user.name  "veridis-ledger"
           git config user.email "noreply@users.noreply.github.com"
-          git add data/ledger site/ledger.json
+          git add data/ledger site/ledger.json \
+                  data/raw/tether_blacklist_tron.json \
+                  data/raw/tether_blacklist_eth.json
           if git diff --staged --quiet; then
             echo "no new entries tonight"
           else

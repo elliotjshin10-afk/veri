@@ -147,6 +147,7 @@ async def blacklist_events(
     contract: str,
     event_name: str = "AddedBlackList",
     max_pages: int = 200,
+    min_block_timestamp: int | None = None,
 ) -> list[dict]:
     """Tether freeze events, oldest-first, decoded to base58 addresses.
 
@@ -160,6 +161,10 @@ async def blacklist_events(
         "limit": PAGE,
         "order_by": "block_timestamp,asc",
     }
+    # A window turns the nightly refresh into a few pages instead of the full
+    # 400-page walk. Omitted, the behaviour is exactly what it was.
+    if min_block_timestamp is not None:
+        params["min_block_timestamp"] = int(min_block_timestamp)
     rows, _ = await _paginate(client, url, params, max_pages)
     out = []
     for r in rows:
