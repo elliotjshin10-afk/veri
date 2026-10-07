@@ -561,8 +561,19 @@ function verdict(to, amount, b, f, both, read, split) {
     + "just now \u00b7 " + (f.dest_senders_all || 0).toLocaleString() + " wallets have "
     + "paid it \u00b7 " + Math.max(1, Math.round(f.dest_age_days || 0)).toLocaleString()
     + " days old</p>"
-    + '<div class="pair"><button class="ghost" id="anyway">Send anyway</button>'
-    + '<button id="back">Cancel</button></div>';
+    /* "Send anyway" is the word for overriding a warning, so on a pass it
+       tells the reader we are uneasy about a verdict we just gave. The weight
+       carried the same implication: Cancel was the filled button under every
+       verdict, including the ones where we had nothing against the address.
+       So the primary is always on the right and is always the action the
+       verdict actually recommends. */
+    + '<div class="pair">'
+    + (b === "ordinary"
+        ? '<button class="ghost" id="back">Back</button>'
+          + '<button id="anyway">Send</button>'
+        : '<button class="ghost" id="anyway">Send anyway</button>'
+          + '<button id="back">Cancel</button>')
+    + "</div>";
   $("#anyway").onclick = () => sheet("Nothing was sent. This is a demo of the check.");
   $("#back").onclick = () => sheet("");
 }
