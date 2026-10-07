@@ -433,10 +433,9 @@ const COPY = {
      page accounts for them instead of listing them under a reassuring headline
      and leaving them to do their own work on whoever is reading. */
   ordinaryNotable: ["Nothing we would stop you for",
-    "Money fans in from strangers and passes straight back out — the shape of a "
-    + "collection point, and equally the shape of an exchange deposit address. "
-    + "Nothing else in this address's history matches a collection point, and "
-    + "that is what decides it."],
+    "Many wallets pay this address and it passes most of what it receives "
+    + "straight on — the pattern an exchange deposit address makes. Nothing "
+    + "else in its history matches a collection point."],
 };
 
 /* Why we are warning. Only ever shown under a warning - see clearReasons. */
@@ -475,6 +474,13 @@ function clearReasons(f, both) {
   if ((f.dest_senders_all || 0) > 0 && f.dest_senders_all <= 25)
     out.push("only " + f.dest_senders_all.toLocaleString()
       + " wallets have ever paid it");
+  // The direct counter to "it forwards everything": a collection point sweeps
+  // to one or two addresses, so paying out to many is the opposite shape and
+  // the one piece of positive evidence a busy pass-through address usually has.
+  if ((f.dest_distinct_out || 0) >= 10)
+    out.push("what it pays out goes to "
+      + Math.round(f.dest_distinct_out).toLocaleString()
+      + " different addresses, not swept to one");
   if ((f.dest_age_days || 0) >= 180)
     out.push("it has been active for "
       + Math.round(f.dest_age_days).toLocaleString() + " days");
@@ -522,8 +528,12 @@ function verdict(to, amount, b, f, both, read, split) {
   // the address carries collection-point traits anyway, by naming them.
   const traits = b === "ordinary" ? notable(f) : [];
   const [title, body] = COPY[traits.length ? "ordinaryNotable" : b];
-  const why = b !== "ordinary" ? reasons(f, both)
-            : traits.length ? traits : clearReasons(f, both);
+  // Under a pass, every bullet argues FOR the pass. The collection-point shape
+  // is handled in the body sentence instead of as two stark bullets: a reader
+  // who has just been told it is fine should not have to weigh evidence that it
+  // is not, and if we cannot explain that shape calmly we should not be passing
+  // the address in the first place.
+  const why = b === "ordinary" ? clearReasons(f, both) : reasons(f, both);
   // If the amount is the only thing making this look acceptable, lead with that.
   const RANK = {ordinary: 0, elevated: 1, high: 2};
   if (split && split.pband && RANK[split.dband] > RANK[split.pband]) {
