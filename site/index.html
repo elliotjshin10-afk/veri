@@ -209,7 +209,7 @@ async function model(name) {
 const TRY = [
   ["a scam collection wallet", "TZENLF5GidViNKjULCFF2r1cHYSghu5d6R"],
   ["one nobody has reported", "TSaRZDiBPD8Rd5vrvX8a4zgunHczM9mj8S"],
-  ["an ordinary wallet", "TWyy3oQbmUz6L3VtHFrQPfs5e4j5MJRjk3"],
+  ["an ordinary wallet", "TD7acTaXrpxvkddXWcBpd1YNEy4q7RLGsw"],
 ];
 
 /* The send sheet. Three fields and a button, because that is what a wallet
@@ -423,9 +423,23 @@ const COPY = {
     + "scam collection point."],
   elevated: ["Think before you send", "Some of what this address does resembles a "
     + "collection point, but not decisively."],
-  ordinary: ["Nothing unusual", "This address behaves like ordinary wallet activity."],
+  /* Not "nothing unusual". We looked and did not find enough to stop you, which
+     is a statement about our evidence and not a certificate on the address. */
+  ordinary: ["Nothing we would stop you for",
+    "Nothing in this address's history crosses our line."],
+  /* Ordinary, but the address has the shape of a collection point. Saying it
+     behaves normally here would be contradicted by the next two lines. */
+  /* Same verdict, but the reader can see two things that look alarming, so the
+     page accounts for them instead of listing them under a reassuring headline
+     and leaving them to do their own work on whoever is reading. */
+  ordinaryNotable: ["Nothing we would stop you for",
+    "Money fans in from strangers and passes straight back out — the shape of a "
+    + "collection point, and equally the shape of an exchange deposit address. "
+    + "Nothing else in this address's history matches a collection point, and "
+    + "that is what decides it."],
 };
 
+/* Why we are warning. Only ever shown under a warning - see clearReasons. */
 function reasons(f, both) {
   const out = [];
   if (both && f.is_first_send_to_dest) out.push("first time you have paid this address");
@@ -442,6 +456,54 @@ function reasons(f, both) {
   return out.slice(0, 2);
 }
 
+/* Why we are NOT warning - the mirror, and the whole reason the two exist
+   separately. These bullets used to be the ones above, printed under every
+   verdict including "ordinary", so the page would announce that an address
+   behaved normally and then list 353 unrelated payers and total pass-through
+   as the supporting evidence. That is not weak support for the verdict, it is
+   evidence against it, and a reader was right to stop trusting the page there. */
+function clearReasons(f, both) {
+  const out = [];
+  if (both && (f.sender_prior_sends_to_dest || 0) >= 1)
+    out.push("you have paid this address "
+      + Math.round(f.sender_prior_sends_to_dest).toLocaleString() + " time"
+      + (f.sender_prior_sends_to_dest >= 2 ? "s" : "") + " before");
+  if (f.dest_forward_ratio != null && f.dest_forward_ratio < 0.7)
+    out.push("it keeps most of what it receives rather than passing it straight on");
+  if ((f.dest_median_hold_secs || 0) >= 86400)
+    out.push("money that arrives sits for days, not minutes");
+  if ((f.dest_senders_all || 0) > 0 && f.dest_senders_all <= 25)
+    out.push("only " + f.dest_senders_all.toLocaleString()
+      + " wallets have ever paid it");
+  if ((f.dest_age_days || 0) >= 180)
+    out.push("it has been active for "
+      + Math.round(f.dest_age_days).toLocaleString() + " days");
+  return out.slice(0, 2);
+}
+
+/* The two traits a reader notices for themselves, and which the verdict has to
+   account for rather than ignore.
+   The CONJUNCTION is the shape, not either half. Pass-through alone describes
+   three quarters of ordinary addresses, because a wallet that receives money
+   and then spends it has forwarded everything it received. Many unrelated
+   payers AND pass-through is the collection-point silhouette - and also the
+   exchange deposit address, the payment processor and the OTC desk, which is
+   why the model weighs fifteen other things before deciding.
+   Measured on the shipped index: among addresses the model puts in the ordinary
+   band, the ones with this shape were later frozen LESS often than the ones
+   without it (10% against 33%). So naming it here explains the verdict; it
+   does not hedge it. */
+function notable(f) {
+  const many = (f.dest_senders_all || 0) >= 50;
+  const through = (f.dest_forward_ratio || 0) > 0.9;
+  const fast = f.dest_median_hold_secs != null && f.dest_median_hold_secs < 3600
+    && (f.dest_inbound_count || 0) >= 10;
+  if (!many || !(through || fast)) return [];
+  return [f.dest_senders_all.toLocaleString() + " unrelated wallets have paid it",
+          through ? "it forwards almost everything it receives"
+                  : "what arrives usually leaves within the hour"];
+}
+
 /* Keep the check where the person can find it again. A warning you have
    already clicked past is still the only record that it was ever shown, and it
    lives in this browser alone - nothing about what anyone checks leaves it. */
@@ -455,8 +517,13 @@ function remember(rec) {
 }
 
 function verdict(to, amount, b, f, both, read, split) {
-  const [title, body] = COPY[b];
-  const why = reasons(f, both);
+  // The evidence has to argue for the verdict, not against it. A warning is
+  // justified by what raised it; a clearance by what held it down - or, when
+  // the address carries collection-point traits anyway, by naming them.
+  const traits = b === "ordinary" ? notable(f) : [];
+  const [title, body] = COPY[traits.length ? "ordinaryNotable" : b];
+  const why = b !== "ordinary" ? reasons(f, both)
+            : traits.length ? traits : clearReasons(f, both);
   // If the amount is the only thing making this look acceptable, lead with that.
   const RANK = {ordinary: 0, elevated: 1, high: 2};
   if (split && split.pband && RANK[split.dband] > RANK[split.pband]) {
@@ -470,7 +537,8 @@ function verdict(to, amount, b, f, both, read, split) {
             why: why.length ? why[0].charAt(0).toUpperCase() + why[0].slice(1) : ""});
   card.innerHTML =
     '<div class="warn ' + b + '"><div class="band">'
-    + (b === "high" ? "High risk" : b === "elevated" ? "Some risk signals" : "Looks ordinary")
+    + (b === "high" ? "High risk" : b === "elevated" ? "Some risk signals"
+       : "Looks ordinary")
     + "</div><h2>" + title + "</h2><p>" + body + "</p>"
     + (why.length ? "<ul>" + why.map(w => '<li><span class="d">&mdash;</span><span>'
         + w + "</span></li>").join("") + "</ul>" : "")
