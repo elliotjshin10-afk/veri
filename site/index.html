@@ -140,20 +140,19 @@ button.wallet img{width:20px;height:20px;border-radius:4px}
   text-transform:uppercase;color:var(--ink3);text-decoration:none;white-space:nowrap}
 .tab:hover{color:var(--ink)}
 
-/* Autofill, not a gallery: three addresses someone can click instead of
-   hunting for one, named by what they are rather than by their verdict - the
-   verdict is the thing the page is for. */
-.try{display:flex;align-items:baseline;gap:var(--s2) var(--s3);flex-wrap:wrap;
-  margin-top:var(--s4)}
-.try-label{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--ink3)}
-#tryrow{display:flex;gap:var(--s2);flex-wrap:wrap}
-/* width:auto undoes the sheet's full-width button rule - the Send button owns
-   the card's width, these sit in a row. */
-.chip{font:inherit;font-size:12px;font-weight:400;width:auto;color:var(--ink2);
-  background:transparent;border:1px solid var(--rule);border-radius:999px;
-  padding:5px 11px;cursor:pointer}
-.chip:hover{border-color:var(--ink2);color:var(--ink);background:var(--surface)}
+/* Addresses to try, offered inside the field that asks for one. */
+.field{position:relative}
+.sugg{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:5;
+  background:var(--surface);border:1px solid var(--rule2);border-radius:3px;
+  box-shadow:0 6px 20px rgba(0,0,0,.10);overflow:hidden}
+.opt{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);
+  width:100%;font:inherit;font-size:13px;font-weight:400;text-align:left;
+  color:var(--ink);background:transparent;border:0;border-radius:0;
+  border-bottom:1px solid var(--rule);padding:9px 12px;cursor:pointer}
+.opt:last-child{border-bottom:0}
+.opt:hover,.opt[aria-selected="true"]{background:var(--sunk)}
+.opt .a{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink3);
+  white-space:nowrap}
 
 .stat{margin:var(--s6) 0 0;padding-top:var(--s4);border-top:1px solid var(--rule);
   font-size:13px;color:var(--ink3);line-height:1.55}
@@ -172,10 +171,6 @@ button.wallet img{width:20px;height:20px;border-radius:4px}
     </nav>
   </div>
   <div class="card" id="card"></div>
-  <div class="try" id="try" hidden>
-    <span class="try-label">Try one</span>
-    <span id="tryrow"></span>
-  </div>
   <p class="stat" id="stat"></p>
 </div>
 
@@ -208,6 +203,15 @@ async function model(name) {
   return models[name];
 }
 
+/* Three real addresses, so nobody has to go and find one before the page can
+   show them anything. The middle one is the point: it is on no public list,
+   and the page still says what it is. */
+const TRY = [
+  ["a scam collection wallet", "TZENLF5GidViNKjULCFF2r1cHYSghu5d6R"],
+  ["one nobody has reported", "TSaRZDiBPD8Rd5vrvX8a4zgunHczM9mj8S"],
+  ["an ordinary wallet", "TWyy3oQbmUz6L3VtHFrQPfs5e4j5MJRjk3"],
+];
+
 /* The send sheet. Three fields and a button, because that is what a wallet
    shows you and the product has to live inside one. */
 function sheet(msg) {
@@ -217,16 +221,24 @@ function sheet(msg) {
         ? '<div class="from"><span class="dot"></span>' + from + "</div>"
         : '<button class="ghost" id="connect" type="button">Connect wallet</button>')
     + "</div>"
-    + '<div class="row"><label>To</label>'
+    + '<div class="row field"><label>To</label>'
     + '<input id="to" spellcheck="false" placeholder="T\u2026 or 0x\u2026" '
-    + 'value="' + (prefill || "") + '"></div>'
+    + 'autocomplete="off" role="combobox" aria-expanded="false" '
+    + 'aria-controls="sugg" aria-autocomplete="list" '
+    + 'value="' + (prefill || "") + '">'
+    + '<div class="sugg" id="sugg" role="listbox" aria-label="Addresses to try" hidden>'
+    + TRY.map((t, i) => '<button class="opt" type="button" role="option" '
+        + 'aria-selected="false" data-i="' + i + '"><span>' + t[0] + "</span>"
+        + '<span class="a">' + t[1].slice(0, 6) + "\u2026" + t[1].slice(-4)
+        + "</span></button>").join("")
+    + "</div></div>"
     + '<div class="row"><label>Amount (USD)</label>'
     + '<input id="amt" inputmode="decimal" placeholder="5,000" value="' + (amt || "") + '"></div>'
     + '<button id="send" type="button">Send</button>'
     + '<div class="msg" id="msg">' + (msg || "") + "</div>";
-  $("#try").hidden = false;
   if (!from) $("#connect").onclick = connect;
   $("#send").onclick = check;
+  suggest();
   // Money should look like money as it is typed, not after.
   const a = $("#amt");
   a.oninput = () => {
@@ -235,8 +247,50 @@ function sheet(msg) {
     const [w, d] = raw.split(".");
     a.value = Number(w || 0).toLocaleString() + (d !== undefined ? "." + d : "");
   };
-  $("#to").onkeydown = e => { if (e.key === "Enter") check(); };
   a.onkeydown = e => { if (e.key === "Enter") check(); };
+}
+
+/* Addresses to try, offered where an address is asked for rather than parked
+   in a section of their own. Nobody arrives holding a scam address, and a row
+   of samples beneath the card made the page look like a gallery of them. */
+function suggest() {
+  const to = $("#to"), box = $("#sugg");
+  const opts = [].slice.call(box.querySelectorAll(".opt"));
+  let at = -1;
+
+  const open = on => {
+    box.hidden = !on;
+    to.setAttribute("aria-expanded", String(!!on));
+    if (!on) { at = -1; opts.forEach(o => o.setAttribute("aria-selected", "false")); }
+  };
+  const mark = i => {
+    at = i;
+    opts.forEach((o, k) => o.setAttribute("aria-selected", String(k === i)));
+  };
+  const take = i => {
+    to.value = TRY[i][1];
+    prefill = to.value;
+    if (!$("#amt").value) { $("#amt").value = "5,000"; amt = "5,000"; }
+    open(false);
+    to.focus();
+  };
+
+  // mousedown, not click: blur fires first and would close the list out from
+  // under the pointer, so the click would land on nothing.
+  opts.forEach((o, i) => {
+    o.onmousedown = e => { e.preventDefault(); take(i); };
+    o.onmouseenter = () => mark(i);
+  });
+  to.onfocus = () => { if (!to.value) open(true); };
+  to.oninput = () => open(!to.value);   // their own address wins over ours
+  to.onblur = () => open(false);
+  to.onkeydown = e => {
+    if (e.key === "Escape") return open(false);
+    if (box.hidden) { if (e.key === "Enter") check(); return; }
+    if (e.key === "ArrowDown") { e.preventDefault(); mark((at + 1) % opts.length); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); mark((at - 1 + opts.length) % opts.length); }
+    else if (e.key === "Enter") { e.preventDefault(); at >= 0 ? take(at) : check(); }
+  };
 }
 
 async function useProvider(prov) {
@@ -401,7 +455,6 @@ function remember(rec) {
 }
 
 function verdict(to, amount, b, f, both, read, split) {
-  $("#try").hidden = true;
   const [title, body] = COPY[b];
   const why = reasons(f, both);
   // If the amount is the only thing making this look acceptable, lead with that.
@@ -435,23 +488,6 @@ function verdict(to, amount, b, f, both, read, split) {
   $("#anyway").onclick = () => sheet("Nothing was sent. This is a demo of the check.");
   $("#back").onclick = () => sheet("");
 }
-
-/* Three real addresses, so nobody has to go and find one before the page can
-   show them anything. The middle one is the point: it is on no public list,
-   and the page still says what it is. */
-const TRY = [
-  ["a scam collection wallet", "TZENLF5GidViNKjULCFF2r1cHYSghu5d6R"],
-  ["one nobody has reported", "TSaRZDiBPD8Rd5vrvX8a4zgunHczM9mj8S"],
-  ["an ordinary wallet", "TWyy3oQbmUz6L3VtHFrQPfs5e4j5MJRjk3"],
-];
-$("#tryrow").innerHTML = TRY.map((t, i) =>
-  '<button class="chip" type="button" data-i="' + i + '">' + t[0] + "</button>").join("");
-$("#tryrow").querySelectorAll(".chip").forEach(b => b.onclick = () => {
-  prefill = TRY[+b.dataset.i][1];
-  if (!amt) amt = "5,000";
-  sheet("");
-  $("#to").focus();
-});
 
 /* One number, read from the decided-cases log rather than typed in here, so
    the page cannot go on claiming something that file no longer says. */
