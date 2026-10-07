@@ -1,4 +1,4 @@
-"""Rebuild site/index.html's inlined data, and the artifact preview copy.
+"""Rebuild site/lookup.html's inlined data, and the artifact preview copy.
 
 Two things the page must never depend on a network round trip for: the three
 examples and the two comparison cards. They are a few KB, they are the first
@@ -95,7 +95,7 @@ BANDS = ["ordinary", "elevated", "high"]
 # offline and the type-ahead always has something to show.
 INLINE_ROWS = 900
 
-# Column order must match decodeIdx() in site/index.html.
+# Column order must match decodeIdx() in site/lookup.html.
 IDX_COLS = ("age_days", "senders_all", "inbound_count", "outbound_count",
             "inbound_usd", "usd_per_sender", "forward_ratio",
             "consolidation_ratio", "median_hold_secs")
@@ -241,14 +241,14 @@ def main() -> None:
             chosen.append(r)
     idx_blob = json.dumps(chosen, separators=(",", ":"))
 
-    html = (SITE / "index.html").read_text(encoding="utf-8")
+    html = (SITE / "lookup.html").read_text(encoding="utf-8")
     for name, new in (("BOOT", "var BOOT = " + json.dumps(boot, separators=(",", ":")) + ";"),
                       ("IDX", "var IDX = " + idx_blob + ";")):
         html, n = re.subn(r"var %s = [\[{].*?[\]}];" % name, lambda _: new,
                           html, count=1, flags=re.S)
         if not n:
-            sys.exit(f"{name} block not found in site/index.html")
-    (SITE / "index.html").write_text(html, encoding="utf-8")
+            sys.exit(f"{name} block not found in site/lookup.html")
+    (SITE / "lookup.html").write_text(html, encoding="utf-8")
 
     # Artifact preview copy: the publish wrapper supplies doctype/html/head.
     title = re.search(r"<title>.*?</title>", html, re.S).group(0)
@@ -263,7 +263,7 @@ def main() -> None:
           f"({len(json.dumps(boot)) / 1024:.1f} KB); "
           f"{len(chosen):,} addresses inlined ({len(idx_blob) / 1024:.0f} KB), "
           f"{len(rows):,} in index_compact.json ({len(full_blob) / 1024:.0f} KB, fetched lazily)")
-    print("wrote site/examples.json, site/index.html, site/_artifact.html")
+    print("wrote site/examples.json, site/lookup.html, site/_artifact.html")
 
 
 if __name__ == "__main__":

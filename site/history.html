@@ -212,7 +212,7 @@ function yours() {
   try { mine = JSON.parse(localStorage.getItem("veridis.checks") || "[]"); } catch (e) {}
   if (!Array.isArray(mine) || !mine.length) {
     $("#yours").innerHTML = '<p class="empty">Nothing yet. Every check you run on '
-      + 'the <a href="send.html">send sheet</a> is kept here, in this browser only.</p>';
+      + 'the <a href="/">send sheet</a> is kept here, in this browser only.</p>';
     return;
   }
   $("#yourcount").textContent = mine.length + (mine.length === 1 ? " check" : " checks")

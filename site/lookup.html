@@ -1,4 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Veridis Address Check</title>
+<meta name="description" content="Check what a Tron or Ethereum address does with the money sent to it, before your transfer is irreversible.">
+
+<!-- Without these a shared link renders as a bare URL, which is most of why a
+     link posted in a thread never gets clicked. og:image must be absolute -
+     crawlers do not resolve relative paths - so this needs updating if the
+     site moves to its own domain. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Veridis">
+<meta property="og:title" content="Check an address before you send">
+<meta property="og:description" content="Stablecoin transfers cannot be reversed. See what the receiving address does with the money people send it — scored from public chain data, in your browser.">
+<meta property="og:url" content="https://jade-quokka-d86b49.netlify.app/">
+<meta property="og:image" content="https://jade-quokka-d86b49.netlify.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Check an address before you send">
+<meta name="twitter:description" content="Stablecoin transfers cannot be reversed. See what the receiving address does with the money people send it.">
+<meta name="twitter:image" content="https://jade-quokka-d86b49.netlify.app/og.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
 <style>
 /* ── tokens ─────────────────────────────────────────────────────────────
@@ -125,10 +148,20 @@ button.go:hover{background:var(--ink2)}
   padding-top:var(--s4);border-top:1px solid var(--rule)}
 .proofline b{color:var(--ink);font-weight:600;font-family:"IBM Plex Mono",monospace}
 .proofline a{color:var(--ink3)}
-/* One line, under the proof figures, for the thing a lookup cannot show. */
-.replaylink{margin:var(--s3) 0 0;font-size:13px}
-.replaylink a{color:var(--ink2);text-decoration-color:var(--rule2)}
-.replaylink a:hover{color:var(--ink)}
+/* One primary step, then the quiet ones. Three stacked underlined links all
+   read as equally important, which is the same as none of them being. */
+.next{display:flex;align-items:center;gap:var(--s4) var(--s5);flex-wrap:wrap;
+  margin-top:var(--s5)}
+/* Outlined, not filled. Check is the filled button on this page because the
+   form is the product; a second solid button beside it would ask the reader to
+   choose between two primaries, which is how a page stops having one. */
+.next .go{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;
+  text-decoration:none;color:var(--ink);background:transparent;
+  border:1px solid var(--rule2);border-radius:3px;padding:11px 16px;white-space:nowrap}
+.next .go:hover{border-color:var(--ink);background:var(--sunk)}
+.next .quiet{display:flex;gap:var(--s4);flex-wrap:wrap;font-size:13px}
+.next .quiet a{color:var(--ink3);text-decoration-color:var(--rule2)}
+.next .quiet a:hover{color:var(--ink)}
 
 /* ── suggestions and examples ── */
 .sugg{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;background:var(--surface);
@@ -266,6 +299,8 @@ footer p{margin:0 0 var(--s3);max-width:46em;line-height:1.55}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:2px}
 </style>
+</head>
+<body>
 <div class="wrap">
 
   <header class="top">
@@ -303,8 +338,13 @@ footer p{margin:0 0 var(--s3);max-width:46em;line-height:1.55}
     <div class="rows" id="picks"></div>
 
     <p class="proofline" id="proofline"></p>
-    <p class="replaylink"><a href="/">See the warning a wallet would
-      show &mdash; connect, send, stop &rarr;</a></p>
+    <div class="next">
+      <a class="go" href="/">See it stop a transfer &rarr;</a>
+      <span class="quiet">
+        <a href="history.html">What we got right, and wrong</a>
+        <a href="#/ledger">How that was measured</a>
+      </span>
+    </div>
   </main>
 
   <!-- ── one address, in full ────────────────────────────────────────── -->
@@ -1193,8 +1233,10 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
       "<b>" + lt.payment_pct + "</b> of the payments into the addresses Tether froze last "
       + "half-year would have carried a warning from us &mdash; " + lt.headline_days
       + " days before any of them appeared on a list, at a " + lt.fpr_pct
-      + " false-alarm rate. "
-      + '<a href="#/ledger">How that was measured, and what we are predicting now &rarr;</a>';
+      + " false-alarm rate.";
+    // The link to the record lives in .next now. It used to sit here as well,
+    // so the same destination was offered twice within two lines, plus a third
+    // time in the footer nav.
   }
 
   function renderProof() {
@@ -1765,3 +1807,5 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
   init();
 })();
 </script>
+</body>
+</html>

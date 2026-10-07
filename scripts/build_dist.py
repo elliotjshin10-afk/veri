@@ -14,7 +14,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 SITE, DIST = ROOT / "site", ROOT / "dist"
 
 # index.html plus every asset it fetches or imports.
-RUNTIME = ["index.html", "scorer.js", "index_compact.json",
+#
+# index.html IS the send sheet now: connect, who, how much, one number. The
+# address lookup that used to be the landing page is lookup.html - still the
+# deeper tool, no longer the first thing anyone is asked to understand.
+RUNTIME = ["index.html", "scorer.js", "lookup.html", "index_compact.json",
            "model_dest.json", "model_pair.json",
            # Fetched at run time so a nightly ledger commit updates the live
            # page without rebuilding the site.
@@ -28,9 +32,6 @@ RUNTIME = ["index.html", "scorer.js", "index_compact.json",
            # A lookup page cannot show the minutes the product exists for,
            # because there is no "before" on a page you visit afterwards.
            "replay.html", "replay.json",
-           # The send sheet: connect, send, warning. The whole product in three
-           # beats, run live against the chain rather than against fixtures.
-           "send.html",
            # The decided-cases log: held-out transfers, the verdict each got
            # before it settled, and what the chain did afterwards. A score is a
            # claim about the future and this is the only page that shows one
@@ -50,12 +51,15 @@ OPTIONAL = {"model_pair_eth.json"}
 
 
 def main() -> None:
-    html = (SITE / "index.html").read_text(encoding="utf-8")
+    # The lookup page names its own fetches through grab(), so it can say what
+    # it needs and the build can check that it ships. The landing sheet uses
+    # plain fetch() and a static import, both listed in RUNTIME by hand.
+    html = (SITE / "lookup.html").read_text(encoding="utf-8")
     asked = set(re.findall(r'grab\("([^"]+)"\)', html)) \
         | {m.lstrip("./") for m in re.findall(r'import\("([^"]+)"\)', html)}
     missing = asked - set(RUNTIME)
     if missing:
-        sys.exit(f"index.html requests files not in RUNTIME: {sorted(missing)}")
+        sys.exit(f"lookup.html requests files not in RUNTIME: {sorted(missing)}")
 
     if DIST.exists():
         shutil.rmtree(DIST)

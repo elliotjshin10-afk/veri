@@ -1,11 +1,11 @@
 """Verify the site's reasons() reproduces collection_verdict exactly.
 
-The site inlines its address index and regenerates the plain-English notes in
+The lookup page inlines its address index and regenerates the notes in
 the browser, so the wording people read is JavaScript's, not Python's. That is
 one implementation rather than two only for as long as they agree - this check
 is what keeps them honest.
 
-It extracts the shipped reasons() and decoder straight out of site/index.html
+It extracts the shipped reasons() and decoder straight out of site/lookup.html
 rather than a copy of them, runs them over every indexed address, and compares
 against collection_verdict applied to the same profile. No tolerance: the two
 must produce identical strings, ties included.
@@ -31,7 +31,7 @@ def extract(html: str, start: str, end: str) -> str:
 
 
 def main() -> None:
-    html = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+    html = (ROOT / "site" / "lookup.html").read_text(encoding="utf-8")
     index = json.loads((ROOT / "site" / "address_index.json").read_text())
 
     compact = (ROOT / "site" / "index_compact.json").read_text()
