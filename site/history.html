@@ -55,9 +55,14 @@ a{color:inherit;text-decoration-color:var(--rule2);text-underline-offset:3px}
 a:hover{text-decoration-color:currentColor}
 a:focus-visible,button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 
-.mark{font-family:Newsreader,Georgia,serif;font-size:19px;text-decoration:none;
-  display:inline-block;margin-bottom:var(--s5)}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s4);
+  margin-bottom:var(--s5)}
+.mark{font-family:Newsreader,Georgia,serif;font-size:19px;text-decoration:none}
 .mark b{font-weight:500}
+.tabs{display:flex;gap:var(--s3);flex-wrap:wrap;justify-content:flex-end}
+.tab{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3);text-decoration:none;white-space:nowrap}
+.tab:hover{color:var(--ink)}
 .lede{color:var(--ink2);margin:var(--s3) 0 0;max-width:34rem}
 section{margin-top:var(--s8)}
 .sechead{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s4);
@@ -117,7 +122,13 @@ section{margin-top:var(--s8)}
 </head>
 <body>
 <div class="wrap">
-  <a class="mark" href="/">Veridis<b>.</b></a>
+  <div class="top">
+    <a class="mark" href="/">Veridis<b>.</b></a>
+    <nav class="tabs">
+      <a class="tab" href="/">Send</a>
+      <a class="tab" href="how.html">How it works</a>
+    </nav>
+  </div>
 
   <h1>What we said, and what happened</h1>
   <p class="lede">A score is a claim about the future. These are real transfers,

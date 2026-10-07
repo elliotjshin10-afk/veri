@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Veridis — how the check works</title>
+<meta name="description" content="What the check reads, where the answers come from, and what it cannot do.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#F9FAF9; --surface:#FFFFFF; --sunk:#F1F3F2;
+  --ink:#16191B; --ink2:#4A5157; --ink3:#727A80;
+  --rule:#E0E4E3; --rule2:#C4CAC9;
+  --crit:#A82A20; --crit-bg:#F9EDEB; --crit-rule:#E4C3BE;
+  --ok:#1F6B3E; --ok-bg:#ECF4EF; --ok-rule:#BFD8CA;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+  --s6:32px; --s7:48px; --s8:64px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  color-scheme: dark;
+  --paper:#0E1112; --surface:#161A1B; --sunk:#121516;
+  --ink:#E9ECEB; --ink2:#A5ADAC; --ink3:#7C8482;
+  --rule:#242A2A; --rule2:#39403F;
+  --crit:#E98275; --crit-bg:#291A17; --crit-rule:#4A2C27;
+  --ok:#5CBB83; --ok-bg:#122119; --ok-rule:#22402F;
+}}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0E1112; --surface:#161A1B; --sunk:#121516;
+  --ink:#E9ECEB; --ink2:#A5ADAC; --ink3:#7C8482;
+  --rule:#242A2A; --rule2:#39403F;
+  --crit:#E98275; --crit-bg:#291A17; --crit-rule:#4A2C27;
+  --ok:#5CBB83; --ok-bg:#122119; --ok-rule:#22402F;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:15.5px;line-height:1.62;-webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums}
+.wrap{max-width:38rem;margin:0 auto;padding-inline:var(--s5);
+  padding-block:var(--s6) var(--s8)}
+h1,h2{font-family:Newsreader,Georgia,"Times New Roman",serif;font-weight:400;margin:0;
+  letter-spacing:-.011em;text-wrap:balance;line-height:1.14}
+h1{font-size:clamp(30px,5.2vw,42px)}
+h2{font-size:22px;margin-top:var(--s8);margin-bottom:var(--s4)}
+p{margin:0 0 var(--s4)}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
+a{color:inherit;text-decoration-color:var(--rule2);text-underline-offset:3px}
+a:hover{text-decoration-color:currentColor}
+a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s4);
+  margin-bottom:var(--s7)}
+.mark{font-family:Newsreader,Georgia,serif;font-size:19px;text-decoration:none}
+.mark b{font-weight:500}
+.tabs{display:flex;gap:var(--s3);flex-wrap:wrap;justify-content:flex-end}
+.tab{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3);text-decoration:none;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+
+.lede{font-size:17px;color:var(--ink2);margin-top:var(--s4)}
+.num{font-family:"IBM Plex Mono",monospace;font-weight:500;color:var(--ink)}
+
+/* Two profiles side by side: the whole difficulty of the problem in one object. */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);
+  border:1px solid var(--rule);border-radius:4px;overflow:hidden;margin:var(--s5) 0}
+.vs > div{background:var(--surface);padding:var(--s4)}
+.vs h3{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;font-weight:500;margin:0 0 var(--s3);color:var(--ink3)}
+.vs .bad h3{color:var(--crit)}
+.vs .good h3{color:var(--ok)}
+.vs ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.vs li{font-size:13.5px;color:var(--ink2);line-height:1.45}
+.vs li b{color:var(--ink);font-weight:500}
+@media(max-width:560px){.vs{grid-template-columns:1fr}}
+
+table{border-collapse:collapse;width:100%;margin:var(--s5) 0;font-size:14px}
+th,td{text-align:left;padding:7px 10px 7px 0;border-bottom:1px solid var(--rule);
+  vertical-align:baseline}
+th{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3);font-weight:500}
+td.n{font-family:"IBM Plex Mono",monospace;text-align:right;white-space:nowrap;
+  padding-right:0}
+.tw{overflow-x:auto}
+
+.aside{border-left:2px solid var(--rule2);padding:2px 0 2px var(--s4);
+  margin:var(--s5) 0;color:var(--ink2);font-size:14px}
+.aside p:last-child{margin-bottom:0}
+ul.plain{list-style:none;margin:0 0 var(--s4);padding:0;display:grid;gap:10px}
+ul.plain li{display:grid;grid-template-columns:auto 1fr;gap:10px;color:var(--ink2);
+  font-size:14.5px;line-height:1.5}
+ul.plain li .d{color:var(--ink3);font-family:"IBM Plex Mono",monospace;font-size:11px;
+  line-height:1.7}
+.foot{margin-top:var(--s8);padding-top:var(--s4);border-top:1px solid var(--rule);
+  font-size:13px;color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="mark" href="/">Veridis<b>.</b></a>
+    <nav class="tabs">
+      <a class="tab" href="/">Send</a>
+      <a class="tab" href="history.html">Previous checks</a>
+    </nav>
+  </div>
+
+  <h1>How the check works</h1>
+  <p class="lede">It is the check your bank already runs on your card, moved in
+    front of a payment that cannot be undone.</p>
+
+  <h2>It is a fraud check, not a blocklist</h2>
+  <p>When your card is declined on a strange purchase, your bank is not
+    consulting a register of bad shops. It is asking whether <em>this</em>
+    purchase looks like you: wrong city, wrong hour, far larger than usual,
+    following a run of small test charges. The shop is often perfectly
+    legitimate and the payment is stopped anyway, because the evidence is in the
+    pattern rather than in the counterparty's reputation.</p>
+  <p>Crypto risk tools mostly do the opposite. They ask whether the receiving
+    address appears on a list of known-bad addresses. That answers well when the
+    address is known — and the entire difficulty is that it is not. The address
+    collecting a scam is typically weeks old and has never been reported,
+    because the people paying it have not yet realised anything is wrong. By the
+    time it is listed, it has been emptied.</p>
+  <p>There is one more difference, and it is the one that sets where the check
+    has to sit. Your bank can reverse a card payment. Nobody can reverse a
+    stablecoin transfer — not us, not the issuer, not the chain. So the check
+    has to happen in the seconds before you press send, which is why this is a
+    page you use beforehand rather than a report you read afterwards.</p>
+
+  <h2>What it reads</h2>
+  <p>Two questions, and the second one only when a wallet is connected.</p>
+  <p><b>What does this address do with the money people send it?</b> Seventeen
+    numbers, all computed from the address's own transfer history, read live off
+    the chain when you paste it: how many unrelated wallets have ever paid it
+    and how many in the last week, how long money sits before it moves again,
+    what share of what arrives leaves again, how many different addresses it
+    pays out to, how much each payer sends before stopping, and how long it has
+    existed.</p>
+  <p><b>Does this transfer fit your history with it?</b> Thirty-seven numbers
+    when your wallet is connected, adding the relationship: whether you have
+    paid this address before, how this amount compares with your last transfer
+    to it and with your own typical transfer, whether you and the address share
+    any counterparty, and how much of your balance is moving.</p>
+
+  <p>The shape being looked for is specific. Money arrives from many wallets
+    that each pay once and never return, sits for minutes, and leaves to one or
+    two destinations. The difficulty is that a perfectly ordinary exchange
+    deposit address looks like that too, which is why the answer comes from
+    seventeen numbers weighed together rather than from any one of them.</p>
+
+  <div class="vs">
+    <div class="bad">
+      <h3>Collection point</h3>
+      <ul>
+        <li><b>Many payers, each once.</b> Hundreds of unrelated wallets, almost
+          none returning.</li>
+        <li><b>Minutes, not days.</b> Money is forwarded almost as fast as it
+          lands.</li>
+        <li><b>Swept, not spent.</b> Everything leaves to one or two addresses.</li>
+        <li><b>Young.</b> Often weeks old, with no history before the scam
+          started.</li>
+      </ul>
+    </div>
+    <div class="good">
+      <h3>Exchange deposit address</h3>
+      <ul>
+        <li><b>Many payers, each once.</b> Identical, and completely innocent.</li>
+        <li><b>Minutes, not days.</b> Also identical — deposits are swept on a
+          schedule.</li>
+        <li><b>Swept to a hot wallet.</b> One destination, every time.</li>
+        <li><b>Old, and steady.</b> Years of the same behaviour at a constant
+          rate.</li>
+      </ul>
+    </div>
+  </div>
+  <p>Three of the four signals match. That is the real problem, and it is why
+    a rule like “warn when an address forwards everything it receives” is
+    useless: three quarters of ordinary addresses forward everything they
+    receive, because a wallet that is paid and then spends has done exactly
+    that.</p>
+
+  <h2>Where the right answers come from</h2>
+  <p>Tether's USDT contract emits an <span class="mono">AddedBlackList</span>
+    event on-chain when it freezes an address, normally at law-enforcement
+    request. Those events are public, timestamped by the block they sit in, and
+    produced by somebody other than us. They are the answer key the model is
+    trained and graded against.</p>
+  <p>They are deliberately <em>not</em> consulted when you check an address.
+    That is the point: by the time an address is on the list, the money has
+    gone. The list is useful for telling us afterwards whether we were right,
+    and useless for telling you now whether to send.</p>
+  <div class="aside">
+    <p>Every feature is computed only from transfers that existed before the
+      moment being scored. A model that has seen an address's later behaviour
+      can appear to predict a freeze it was in fact told about, and the result
+      is a backtest that cannot be reproduced in production. Keeping that line
+      clean is most of the work.</p>
+  </div>
+
+  <h2>How well it does</h2>
+  <p>On <span class="num">4,337</span> held-out transfers — destinations the
+    model never saw in training, each scored from only the history that existed
+    at that minute:</p>
+  <div class="tw"><table>
+    <tr><th>Transfers into an address that was</th><th class="n">stopped</th>
+      <th class="n">warned</th><th class="n">neither</th></tr>
+    <tr><td>later frozen (853)</td><td class="n">40.6%</td><td class="n">56.2%</td>
+      <td class="n">3.3%</td></tr>
+    <tr><td>never listed (3,484)</td><td class="n">1.1%</td><td class="n">12.0%</td>
+      <td class="n">86.9%</td></tr>
+  </table></div>
+  <p>Read as one sentence: at roughly one stop per hundred ordinary payments,
+    <span class="num">97%</span> of the money heading into a collection point
+    meets something. Every one of those cases is listed individually, including
+    the misses and the false alarms, on
+    <a href="history.html">previous checks</a>.</p>
+  <p>Timing matters more than the rate. The scores are as good three months
+    before a freeze as they are the day before it — tested against
+    <span class="num">163</span> addresses frozen after the training data was
+    cut, so the model had never encountered any of them.</p>
+
+  <h2>It runs in your browser</h2>
+  <p>The model is a gradient-boosted ensemble of decision trees: 400 of them for
+    the address check, 300 for the two-sided one. They are shipped to the page
+    as JSON and walked in JavaScript, so the scoring happens on your machine.
+    The address you type is sent to a public block explorer, because that is
+    where the transaction history lives. It is not sent to us. We have no
+    account, no login, and no record of what anyone checked.</p>
+  <p>The same trees are walked in Python for everything measured on this site.
+    The two implementations are held to each other on every build: identical
+    verdicts, and scores agreeing to within
+    <span class="mono">2.2e-16</span> — floating point's own resolution. A model
+    that quietly behaves differently in the browser than in the evaluation would
+    make every number here a statement about a program nobody runs.</p>
+
+  <h2>Published before the fact</h2>
+  <p>Each night the system samples addresses receiving USDT right now, drops any
+    already on a list, scores the rest, and writes down the ones it calls
+    high-risk — with the score, the features behind it, and the model file's own
+    checksum. The entries are hash-chained, so an earlier one cannot be changed
+    without breaking every entry after it, and they are committed by a scheduled
+    job on GitHub, whose timestamps we do not control.</p>
+  <p id="ledgerline">That record is the only evidence that settles the question,
+    and it can only be earned by waiting.</p>
+
+  <h2>What it does not do</h2>
+  <ul class="plain">
+    <li><span class="d">—</span><span>It cannot stop or reverse anything. It is
+      a reading, taken before you act, and the decision stays yours.</span></li>
+    <li><span class="d">—</span><span>It does not know who owns an address.
+      There is no identity here, no KYC, and no personal data — only public
+      transaction history.</span></li>
+    <li><span class="d">—</span><span>An address with no history cannot be
+      scored. A wallet created an hour ago has told us nothing yet.</span></li>
+    <li><span class="d">—</span><span>USDT on Tron and Ethereum. Other chains
+      and tokens are not covered, and the page says so rather than guessing.</span></li>
+    <li><span class="d">—</span><span>“Nothing we would stop you for” means we
+      found no case against the address. It is a statement about our evidence,
+      not a guarantee about your money.</span></li>
+  </ul>
+
+  <p class="foot">Every figure on this page is regenerated from the code that
+    produces it, and every address in it can be checked on
+    <a href="https://tronscan.org" target="_blank" rel="noopener">Tronscan</a> or
+    <a href="https://etherscan.io" target="_blank" rel="noopener">Etherscan</a>.
+    You can also <a href="lookup.html">look up any address on its own</a>, with
+    the full reasoning and the prediction record behind it.</p>
+</div>
+
+<script>
+/* The ledger grows every night, so the count cannot live in the markup - it
+   would be wrong by morning and nobody would notice. Same reason the landing
+   page reads its one number out of history.json. */
+fetch("ledger.json").then(r => r.json()).then(d => {
+  const open = d.predictions || 0;
+  const done = (d.cohorts || []).reduce((n, c) => n + (c.frozen || 0), 0);
+  const el = document.getElementById("ledgerline");
+  if (!el || !open) return;
+  el.innerHTML = 'There are <span class="num">' + open.toLocaleString()
+    + "</span> calls on the record and <span class=\"num\">"
+    + done.toLocaleString() + "</span> resolved so far"
+    + (done ? ". " : " \u2014 freezes take months, and the oldest entries are "
+       + "days old. ")
+    + el.innerHTML;
+}).catch(() => {});
+</script>
+</body>
+</html>

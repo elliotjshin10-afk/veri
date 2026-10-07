@@ -37,6 +37,9 @@ RUNTIME = ["index.html", "scorer.js", "lookup.html", "index_compact.json",
            # claim about the future and this is the only page that shows one
            # beside the future it claimed.
            "history.html", "history.json",
+           # The explainer. The product is a judgement about someone's money,
+           # so how it reaches one is part of the product.
+           "how.html",
            # Social preview card. A link with no card is a link nobody clicks.
            "og.png"]
 
