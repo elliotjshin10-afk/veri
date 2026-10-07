@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Veridis — decided cases</title>
+<title>Veridis: decided cases</title>
 <meta name="description" content="What we said before a transfer, and what the chain did afterwards.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
 <style>
@@ -230,7 +230,7 @@ function yours() {
     + " · this browser only";
   $("#yours").innerHTML = mine.slice(0, 25).map(c =>
     '<div class="case"><div class="meta"><span class="amt">'
-    + (c.amt > 0 ? usd(c.amt) : "—") + "</span>" + esc(day(c.t)) + "</div>"
+    + (c.amt > 0 ? usd(c.amt) : "n/a") + "</span>" + esc(day(c.t)) + "</div>"
     + '<div class="body"><p class="to">to <a href="' + explorer(c.to, c.chain)
     + '" target="_blank" rel="noopener">' + esc(short(c.to)) + "</a>"
     + (c.chain ? " · " + esc(c.chain) : "") + "</p>"
@@ -252,11 +252,11 @@ fetch("history.json").then(r => r.json()).then(d => {
     + "as it stood before the transfer, so nothing here is scored with knowledge "
     + "of the freeze that followed. Scores come from <span class=\"mono\">"
     + esc(d.model.file) + "</span> (<span class=\"mono\">"
-    + esc(d.model.sha256_16) + "</span>) — the same file the send sheet runs "
+    + esc(d.model.sha256_16) + "</span>), the same file the send sheet runs "
     + "in your browser. The eighteen cases are drawn at random inside each "
     + "verdict, including both kinds of mistake; the percentages above are over "
     + "all " + s.n.toLocaleString() + ". <b>Missed</b> marks a transfer we let "
-    + "through to an address that was frozen later — however much later, so "
+    + "through to an address that was frozen later, however much later, so "
     + "read it with the lead time beside it: at three years out it is a weak "
     + "counterfactual, at sixteen days it is not. Blacklists current to "
     + esc(day(d.labels_current_to)) + ".";

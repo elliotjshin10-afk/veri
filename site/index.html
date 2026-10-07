@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Veridis — before you send</title>
+<title>Veridis: before you send</title>
 <meta name="description" content="Connect a wallet, send money, get a warning before it is too late.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
 <style>
@@ -115,7 +115,8 @@ button[disabled]{opacity:.5;cursor:default}
 .warn ul{list-style:none;margin:var(--s3) 0 0;padding:0;display:grid;gap:6px}
 .warn li{font-size:13px;color:var(--ink2);display:grid;grid-template-columns:auto 1fr;
   gap:8px;line-height:1.45}
-.warn li .d{color:var(--ink3);font-family:"IBM Plex Mono",monospace;font-size:11px;line-height:1.6}
+.warn li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
+  margin-top:9px}
 .sum{font-size:13px;color:var(--ink2);margin:0 0 6px}
 .read{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink3);
   margin:0 0 var(--s4)}
@@ -434,7 +435,8 @@ const COPY = {
      and leaving them to do their own work on whoever is reading. */
   ordinaryNotable: ["Nothing we would stop you for",
     "Many wallets pay this address and it passes most of what it receives "
-    + "straight on — the pattern an exchange deposit address makes. Nothing "
+    + "straight on. That is the pattern an exchange deposit address makes. "
+    + "Nothing "
     + "else in its history matches a collection point."],
 };
 
@@ -538,7 +540,7 @@ function verdict(to, amount, b, f, both, read, split) {
   const RANK = {ordinary: 0, elevated: 1, high: 2};
   if (split && split.pband && RANK[split.dband] > RANK[split.pband]) {
     why.unshift(split.small
-      ? "the amount is small, but this address is what it is \u2014 a small first "
+      ? "the amount is small, but this address is what it is. A small first "
         + "transfer is how most of these start"
       : "this transfer on its own looks unremarkable; the address receiving it does not");
   }
@@ -550,12 +552,12 @@ function verdict(to, amount, b, f, both, read, split) {
     + (b === "high" ? "High risk" : b === "elevated" ? "Some risk signals"
        : "Looks ordinary")
     + "</div><h2>" + title + "</h2><p>" + body + "</p>"
-    + (why.length ? "<ul>" + why.map(w => '<li><span class="d">&mdash;</span><span>'
+    + (why.length ? "<ul>" + why.map(w => '<li><span class="d"></span><span>'
         + w + "</span></li>").join("") + "</ul>" : "")
     + "</div>"
     + '<p class="sum">'
     + (isFinite(amount) && amount > 0 ? usd(amount) + " to " : "To ") + short(to)
-    + (both ? " \u2014 checked against your wallet too." : " \u2014 destination only.")
+    + (both ? ". Checked against your wallet too." : ". Destination only.")
     + "</p>"
     + '<p class="read">read ' + read.rows.toLocaleString() + " transfers off the chain "
     + "just now \u00b7 " + (f.dest_senders_all || 0).toLocaleString() + " wallets have "
@@ -585,7 +587,7 @@ fetch("history.json").then(r => r.json()).then(d => {
   const warned = (s.scam_high + s.scam_elevated) / s.n_scam;
   const cost = s.control_high / s.n_control;
   $("#stat").innerHTML = "<b>" + Math.round(warned * 100) + "%</b> of transfers into "
-    + "an address that was later frozen got a warning from us — at one stop in "
+    + "an address that was later frozen got a warning from us, at one stop in "
     + "every " + Math.round(1 / cost) + " ordinary payments. "
     + '<a href="history.html">See the cases &rarr;</a>';
 }).catch(() => {
