@@ -177,21 +177,52 @@ it against the bands, cut at the top 1% of held-out ordinary wallets, where the
 live trial flagged 0 of 207. Reproduce with `make fresh-freezes`; `n` shrinks at
 the longer horizons because not every address existed that far back.
 
-**A measured negative, so it is not re-opened on a hunch.** `payout_fanin`
-asks whether the wallet your money is forwarded to is also collecting from many
-other fresh addresses, which the code described as a mule network's signature
-visible two hops out with no labels. It is backwards. Fetching the consolidation
-wallets themselves for 106 held-out destinations, rather than reading them out
-of the warehouse, gives a median fan-in of 13 for scam destinations against 75
-for controls, a univariate AUC of 0.324. High fan-in at the payout address
-indicates an exchange, which is to say legitimacy: an ordinary wallet forwards
-to an exchange hot wallet fed by thousands, a scam collection point forwards to
-a mule wallet fed by a handful. The quantity sitting in the warehouse is not
-even that, because the warehouse holds only the addresses we fetched, and that
-artefact makes controls look higher-fanin. Adding the warehouse version to the
-destination model moved ROC-AUC 0.9234 to 0.9309 and recall at the shipped 1%
-operating point 23.2% to 23.0%. It stays out of the model. Reproduce with
-`python scripts/m13_payout_fanin.py`.
+**The second hop, and what it took to get it right.** `payout_fanin` asks
+whether the wallet your money is forwarded to is also collecting from many other
+fresh addresses. The code described that as a mule network's signature visible
+two hops out with no labels, and excluded it because the second hop was not in
+the warehouse. Three findings, in order, each one changing what the next step
+had to be:
+
+1. **The stated rationale is backwards.** Fetching the consolidation wallets for
+   106 held-out destinations gives a median fan-in of 13 for scam destinations
+   against 75 for controls, univariate AUC 0.324. An ordinary wallet forwards to
+   an exchange hot wallet fed by thousands; a scam collection point forwards to
+   a mule wallet fed by a handful. The real signal is *your money is going
+   somewhere almost nobody else pays*, and no blocklist can see it.
+2. **The version in the warehouse is worse than backwards.** It counts only the
+   inbound edges that happen to pass through addresses we chose to fetch, which
+   made controls look higher fan-in than scams. Adding those columns to the
+   destination model moved recall at the shipped 1% operating point 23.2% to
+   23.0%: nothing, because the feature was measuring our own sampling.
+3. **Fetched properly it is worth having.** All 1,363 payout wallets for the
+   event dataset, 2.49M transfers, computed point-in-time:
+
+   | | TPR @1% FPR | ROC-AUC |
+   |---|---|---|
+   | shipped 17 features | 24.4% (23.2 to 26.5) | 0.9209 |
+   | + payout fan-in | **26.9%** (25.2 to 30.0) | 0.9203 |
+
+   Mean **+2.5pp**, winning on 7 of 7 seeds. Seven because 2pp of 853 positives
+   is seventeen events. ROC-AUC does not move; the gain is specifically at the
+   operating point the product runs at.
+
+One more negative shaped the design. The obvious way to deliver this is to put
+the payout transfers in the warehouse, where the existing SQL already computes
+the feature correctly and point-in-time. That works, and it drops the same 17
+features on the same events from 24.4% recall to 14.5%, because every other
+feature then gains legs only where an address happens to touch a payout wallet.
+One sampling asymmetry traded for a worse one. So the fan-in is computed from
+its own file and joined as two columns, never read from the warehouse.
+
+**Status: measured, built, not yet shipped.** The figures above are from the
+event-level split. The shipped model is trained on address-level point-in-time
+probes over a larger universe, which needs all 9,500 payout wallets rather than
+the 1,363 the measurement needed; that ingest is what gates the retrain. The
+serving path, the shared definition and the parity coverage are in, and the page
+asks the model whether it wants the feature, so nothing changes for anyone until
+a model that lists the columns is published. Ethereum has no equivalent ingest
+and will stay on 17 features until it does.
 
 **What is not yet established:**
 
