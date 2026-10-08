@@ -200,6 +200,62 @@ export function computeFeatures(transfers, address, asOfMs, opts = {}) {
   };
 }
 
+/* ── the second hop ───────────────────────────────────────────────────────
+   Everything above is computed from one address's own history. These two are
+   computed from the history of the wallet that address pays, which is the only
+   thing on this page that needs a second fetch.
+
+   The question is how many OTHER wallets pay that same destination. A scam
+   collection point forwards to a mule wallet fed by a handful of addresses; an
+   ordinary wallet forwards to an exchange, and an exchange hot wallet is fed by
+   thousands. So a low count is the warning, not a high one, which is the
+   opposite of what the name suggests and the opposite of what this codebase
+   assumed until it was measured. */
+
+/* The address this one pays the most, before the moment being scored.
+   Ties are broken on the address itself rather than left to sort order: SQL's
+   ROW_NUMBER picks arbitrarily among equal sums, and an arbitrary pick is a
+   parity failure waiting for the first address that sends two wallets exactly
+   the same amount. Python breaks them the same way. */
+export function topPayout(transfers, address, asOfMs) {
+  const byPeer = new Map();
+  for (const r of transfers) {
+    if (r.t >= asOfMs || !(r.usd > 0) || r.from !== address) continue;
+    byPeer.set(r.to, (byPeer.get(r.to) || 0) + r.usd);
+  }
+  let best = null, bestV = -1;
+  for (const [peer, v] of byPeer) {
+    if (v > bestV || (v === bestV && peer < best)) { best = peer; bestV = v; }
+  }
+  return best;
+}
+
+/* Distinct wallets that had paid the payout address before the scoring moment,
+   not counting the address that sent us here.
+
+   `exact` matters more than it looks. Only busy wallets hit the page cap, and
+   busy means exchange, so a truncated count always understates legitimacy and
+   never the reverse. Handing the model a silently-low number would teach it
+   that exchanges are mule wallets; the flag lets it tell the two cases apart. */
+export function payoutFanin(payoutTransfers, payoutAddress, asOfMs, selfAddress,
+                            truncated) {
+  if (!payoutAddress || !payoutTransfers) {
+    return {payout_fanin_pit: 0, payout_fanin_exact: 0};
+  }
+  const payers = new Set();
+  let coveredUntil = -Infinity;
+  for (const r of payoutTransfers) {
+    if (!(r.usd > 0) || r.to !== payoutAddress) continue;
+    if (r.t > coveredUntil) coveredUntil = r.t;
+    if (r.t >= asOfMs || r.from === selfAddress) continue;
+    payers.add(r.from);
+  }
+  return {
+    payout_fanin_pit: payers.size,
+    payout_fanin_exact: (!truncated || coveredUntil >= asOfMs) ? 1 : 0,
+  };
+}
+
 function walk(node, x) {
   while (node.v === undefined) {
     const val = x[node.f];
