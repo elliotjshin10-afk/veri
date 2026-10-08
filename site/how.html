@@ -266,13 +266,39 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
     days, so it sees the <em>rate</em> and whether the rate is changing rather
     than a lifetime count. It gets two quantiles of holding time rather than
     one, so an address that sweeps some deposits instantly and lets others sit
-    looks different from one that treats everything the same. Seventeen numbers,
+    looks different from one that treats everything the same. Nineteen numbers,
     400 trees, and the interactions between them are the model.</p>
 
   <p>This is also why a hand-written rule fails. "Warn when an address forwards
     everything it receives" fires on three quarters of ordinary addresses,
     because a wallet that gets paid and then spends has forwarded everything it
     received.</p>
+
+  <h2>One step further than the address</h2>
+  <p>Everything above is read from one address's own history. The last signal is
+    not. It asks where the money goes next, and then who else sends money
+    there.</p>
+
+  <div class="vs">
+    <div class="hd"><span class="a">Collection point</span>
+      <span class="b">Busy legitimate address</span><span class="m">&nbsp;</span></div>
+    <div class="rw sep"><span>Forwards to a wallet fed by a <b>handful</b> of
+      addresses</span><span>Forwards to an exchange, fed by
+      <b>thousands</b></span><span class="m">separates</span></div>
+  </div>
+
+  <p>The useful part is which way round it goes. A wallet that almost nobody
+    else pays is the warning; one that everybody pays is an exchange, and your
+    money is going somewhere ordinary. We had this backwards in our own code for
+    a long time, on the reasonable-sounding theory that scam addresses sweep
+    into shared wallets. Measured, scam destinations forward to wallets with a
+    median of 42 other payers and ordinary ones to wallets with 60.</p>
+
+  <p>It is worth <span class="num">+2.5</span> points of recall at the same
+    false-alarm rate, and it is the one signal here that a blocklist cannot have
+    in principle: nothing about it depends on anyone having reported anything.
+    It costs one more read of the chain, which is why the check takes a moment
+    longer than a lookup would.</p>
 
   <h2>What happens when you press Send</h2>
   <ol class="flow">
@@ -286,6 +312,11 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
       places it pays out to, how old it is.
       <span class="s">37 numbers when a wallet is connected, adding your
         relationship to it and the amount</span></span></li>
+    <li><span class="t">It follows the money one more step: it finds the wallet
+      this address pays most, reads that wallet's history too, and counts how
+      many other wallets pay it.
+      <span class="s">the only part of the check that needs a second
+        address</span></span></li>
     <li><span class="t">400 decision trees vote on those numbers, and the score
       lands in one of three bands.
       <span class="s">the trees run on your machine, not ours</span></span></li>

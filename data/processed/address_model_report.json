@@ -3,18 +3,18 @@
     "n": 2836,
     "n_scam": 2243,
     "n_control": 593,
-    "roc_auc": 0.9305645669983964,
-    "pr_auc": 0.9776553831788332,
-    "tpr_at_1pct_fpr": 0.3655818100757913,
+    "roc_auc": 0.9321058056580751,
+    "pr_auc": 0.9782552198030826,
+    "tpr_at_1pct_fpr": 0.3276861346411057,
     "tpr_at_1pct_fpr_ci": [
-      0.1956531431119037,
-      0.47615916183682566
+      0.2697168970129291,
+      0.4369482835488185
     ],
     "held_out": true
   },
   "thresholds": {
-    "elevated": 0.6445427791435294,
-    "high": 0.9799129519745967
+    "elevated": 0.6373629193721702,
+    "high": 0.977076218818827
   },
   "features": [
     "dest_age_days",
@@ -34,7 +34,9 @@
     "dest_forward_ratio",
     "dest_in_out_ratio",
     "dest_usd_per_sender",
-    "dest_funder_fanout"
+    "dest_funder_fanout",
+    "payout_fanin_pit",
+    "payout_fanin_exact"
   ],
   "trained_on": "point-in-time address probes",
   "holdout_addresses": 2836
