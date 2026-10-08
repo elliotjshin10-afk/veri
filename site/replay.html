@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Veridis — the 83 hours</title>
+<title>Veridis: the 83 hours</title>
 <meta name="description" content="One real victim, scored at each transfer as it happened. Every blocklist said the address was clean for another 215 days.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
 <style>
@@ -191,7 +191,7 @@ footer{padding-block:var(--s6) var(--s8);font-size:12px;color:var(--ink3)}
 
   <footer>
     Every figure is public chain data. The scores come from the models this site
-    serves, run over the transfers that preceded each moment &mdash; nothing here
+    serves, run over the transfers that preceded each moment. Nothing here
     is re-fitted for the demo.
   </footer>
 </div>
@@ -256,7 +256,7 @@ function reveal() {
     +   verdictCard(s.pair, "With your wallet connected")
     + "</div>"
     + (s.why.length
-        ? '<ul class="why">' + s.why.map(w => '<li><span class="d">&mdash;</span><span>'
+        ? '<ul class="why">' + s.why.map(w => '<li><span class="d">&#8226;</span><span>'
             + w + "</span></li>").join("") + "</ul>" : "")
     + '<div class="seen">read from ' + s.evidence.transfers_known.toLocaleString()
     + " transfers that existed before this moment &middot; "
@@ -298,7 +298,7 @@ function finish() {
     + "<p>Tether froze <a href=\"" + scan(data.destination) + "\" target=\"_blank\" "
     + "rel=\"noopener\">" + short(data.destination) + "</a> on "
     + when(data.frozen_at).slice(0, 10) + ". Every transfer above is on-chain and "
-    + "public &mdash; open it and check the dates.</p></div>"
+    + "public. Open it and check the dates.</p></div>"
     + '<div class="choice"><button class="b" id="again">Start again</button></div>';
   $("#again").onclick = () => { i = 0; sent = 0; stoppedAt = null;
     $("#log").innerHTML = ""; ask(); };
@@ -314,13 +314,13 @@ $("#prov").innerHTML = [
     + "chance to say no."],
   ["Held out", "This destination never appeared in training, and the builder exits "
     + "rather than run if it ever does. The first case considered was a better "
-    + "story &mdash; a $10 test transfer, then $181,714 inside two hours &mdash; and "
+    + "story (a $10 test transfer, then $181,714 inside two hours), and "
     + "was discarded on that check."],
   ["Point in time", "Each score reads only the transfers timestamped before it. The "
     + "same feature layer runs in training, on this page and in the live product, so "
     + "there is one definition of every number rather than three."],
   ["Two models", "The left verdict is the destination model, 17 features from the "
-    + "receiving address alone. The right adds the sender and the amount &mdash; 37 "
+    + "receiving address alone. The right adds the sender and the amount: 37 "
     + "features including the relationship between the two wallets."],
   ["Provenance", "Scored by <b>model_browser " + p.dest_model_sha256_16 + "</b> and "
     + "<b>model_pair " + p.pair_model_sha256_16 + "</b>. Those hashes are in the "

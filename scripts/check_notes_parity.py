@@ -40,10 +40,13 @@ def main() -> None:
         + extract(html, "  var BANDS = ", "\n  function loadModel") + "\n"
         + extract(html, "  var INSTITUTIONAL_PER_SENDER", "\n  /* Each fetch")
     )
-    # Python's notes carry a plain hyphen where the page needs an HTML entity.
+    # The two sides used to disagree on one punctuation mark, the page carrying
+    # an HTML entity where Python carried a hyphen, and this driver quietly
+    # normalised it away. Both say the same thing now, so the comparison is on
+    # the strings as written and a real divergence cannot hide behind a rewrite.
     driver = """
 const m = decodeIdx(), out = [];
-for (const [k, e] of m) out.push([e.a, reasons(e.p).map(s => s.replace(/&mdash;/g, "-"))]);
+for (const [k, e] of m) out.push([e.a, reasons(e.p)]);
 console.log(JSON.stringify(out));
 """
     with tempfile.NamedTemporaryFile("w", suffix=".mjs", delete=False) as fh:

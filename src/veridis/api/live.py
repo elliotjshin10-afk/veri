@@ -181,7 +181,7 @@ def collection_verdict(p: dict) -> tuple[str, list[str]]:
             f"averages ${per_sender:,.0f} per paying wallet across "
             f"${inbound_usd:,.0f} received")
         notes.append(
-            "that is institutional scale - an exchange, bridge or desk, not a "
+            "that is institutional scale: an exchange, bridge or desk, not a "
             "retail collection address")
         if age:
             notes.append(f"operating for {age/365:.1f} years")

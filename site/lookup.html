@@ -13,7 +13,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Veridis">
 <meta property="og:title" content="Check an address before you send">
-<meta property="og:description" content="Stablecoin transfers cannot be reversed. See what the receiving address does with the money people send it — scored from public chain data, in your browser.">
+<meta property="og:description" content="Stablecoin transfers cannot be reversed. See what the receiving address does with the money people send it, scored from public chain data, in your browser.">
 <meta property="og:url" content="https://jade-quokka-d86b49.netlify.app/">
 <meta property="og:image" content="https://jade-quokka-d86b49.netlify.app/og.png">
 <meta property="og:image:width" content="1200">
@@ -317,7 +317,7 @@ footer p{margin:0 0 var(--s3);max-width:46em;line-height:1.55}
   <main class="view" id="viewHome">
     <h1>Check an address<br>before you send.</h1>
     <p class="lede">Stablecoin transfers cannot be reversed. See what the receiving
-      address does with the money people send it &mdash; before yours is in it.
+      address does with the money people send it, before yours is in it.
       <span class="chains">Tron and Ethereum, read live from the chain.</span></p>
 
     <div class="field">
@@ -389,7 +389,7 @@ footer p{margin:0 0 var(--s3);max-width:46em;line-height:1.55}
     <p>Every figure is public chain data you can verify on Tronscan or Etherscan. We hold
       no funds, take no custody, and store no personal information.</p>
     <p>We grade ourselves against Tether&rsquo;s on-chain freeze list and the OFAC SDN list.
-      We do not use them to answer a query &mdash; that is the point: they are the thing that
+      We do not use them to answer a query. That is the point: they are the thing that
       arrives too late.</p>
   </footer>
 </div>
@@ -528,7 +528,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
        collection point. */
     if (per >= INSTITUTIONAL_PER_SENDER || inb >= INSTITUTIONAL_INBOUND) {
       out.push("averages $" + com(per) + " per paying wallet across $" + com(inb) + " received");
-      out.push("that is institutional scale &mdash; an exchange, bridge or desk, "
+      out.push("that is institutional scale: an exchange, bridge or desk, "
         + "not a retail collection address");
       if (a) out.push("operating for " + pyRound(a / 365, 1).toFixed(1) + " years");
       return out;
@@ -708,7 +708,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
   function wrongChain(chain) {
     say("That is a <b>" + chain + "</b> address. We read <b>Tron</b> and "
       + "<b>Ethereum</b>, where stablecoins are issued and where the issuer can "
-      + "freeze a fraud address &mdash; which is what gives us something to train "
+      + "freeze a fraud address, which is what gives us something to train "
       + "on and to grade ourselves against. Nobody can freeze a Bitcoin output, so "
       + "there is no label to learn from there, and we would be guessing."
       + ' <a href="#wait" id="wrongWait">Tell me when ' + chain + " is live &rarr;</a>", true);
@@ -822,16 +822,16 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
         say(m === "no_eth_model"
           ? "We could not load the Ethereum model, which Ethereum lookups need. "
             + "Tron addresses still work, and we will not score an Ethereum "
-            + "address with Tron&rsquo;s model instead &mdash; that would be a guess "
+            + "address with Tron&rsquo;s model instead. That would be a guess "
             + "dressed up as a measurement."
           : m === "rate_limited"
           ? "Our data provider is rate-limiting us right now. Wait a moment and "
-            + "try again &mdash; nothing is wrong with the address."
+            + "try again. Nothing is wrong with the address."
           : m === "typo"
           ? (eth
               ? "That is not a valid Ethereum address. It needs <b>0x</b> and exactly "
                 + "40 hex characters after it. Paste it again rather than retyping it."
-              : "That is not a valid Tron address &mdash; its checksum does not match, "
+              : "That is not a valid Tron address. Its checksum does not match, "
                 + "so a character is wrong somewhere. Paste it again rather than "
                 + "retyping it.")
           : m === "typo_from"
@@ -840,7 +840,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
           : m === "unavailable"
           ? "This address is not one of the " + BOOT.indexed.toLocaleString()
             + " we have already scored, so reading it means calling the " + ch
-            + " API &mdash; which this preview blocks. It works on the deployed site. "
+            + " API, which this preview blocks. It works on the deployed site. "
             + "Every indexed address, including the ones above, still works here."
           : m === "empty"
           ? "That is a valid " + ch + " address, but we found no stablecoin transfers "
@@ -1160,7 +1160,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
          > {ordinary: 0, elevated: 1, high: 2}[e.pair.pairBand];
     if (small) {
       pts.unshift(e.pair.amountSmall
-        ? "the amount is small, but this address is what it is &mdash; a small "
+        ? "the amount is small, but this address is what it is. A small "
           + "first transfer is how most of these start"
         : "this transfer on its own looks unremarkable; the address receiving it "
           + "does not");
@@ -1180,7 +1180,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
        that belongs above the figures, not in small print under them. */
     var partial = e.partial
       ? '<div class="partial">Too busy to read in full. We read its most recent '
-        + 'transfers, so <b>the counts below are lower bounds</b> &mdash; its age '
+        + 'transfers, so <b>the counts below are lower bounds</b>. Its age '
         + 'is exact. An address this active is usually an exchange or a service '
         + 'rather than a personal wallet.</div>'
       : "";
@@ -1196,7 +1196,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
       + '<p class="sum">' + v.sum + "</p>"
       + partial
       + (listed
-          ? '<div class="flag"><b>On a public scam list</b> &mdash; ' + (e.ls || "unknown")
+          ? '<div class="flag"><b>On a public scam list</b>: ' + (e.ls || "unknown")
             + (e.lw ? ", first reported " + new Date(e.lw).toISOString().slice(0, 10) : "")
             + ". Every transfer into it before that date passed every blocklist in "
             + "existence.</div>"
@@ -1207,12 +1207,12 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
       + '<ul class="pts">' + (pts.length ? pts : ["Nothing stood out in its transfer pattern."])
           .map(function (t) {
             var why = whyItMatters(t);
-            return '<li><span class="tick" style="color:' + col + '">&mdash;</span><span>'
+            return '<li><span class="tick" style="color:' + col + '">&#8226;</span><span>'
               + '<span class="what">' + t.charAt(0).toUpperCase() + t.slice(1) + "</span>"
               + (why ? '<span class="why">' + why + "</span>" : "") + "</span></li>";
           }).join("") + "</ul>"
       + '<p class="src">' + (e.live ? "Read from the chain just now. " : "")
-        + 'Every figure is on-chain &mdash; <a target="_blank" rel="noopener" href="'
+        + 'Every figure is on-chain. <a target="_blank" rel="noopener" href="'
         + ex.href + e.a + '">check it on ' + ex.name + "</a>.</p>";
 
     /* Contextual, not permanent: the two cards exist to explain what the
@@ -1231,7 +1231,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
     if (!lt || !$("#proofline")) return;
     $("#proofline").innerHTML =
       "<b>" + lt.payment_pct + "</b> of the payments into the addresses Tether froze last "
-      + "half-year would have carried a warning from us &mdash; " + lt.headline_days
+      + "half-year would have carried a warning from us, " + lt.headline_days
       + " days before any of them appeared on a list, at a " + lt.fpr_pct
       + " false-alarm rate.";
     // The link to the record lives in .next now. It used to sit here as well,
@@ -1246,16 +1246,16 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
       '<div class="big">' + lt.payment_pct + "</div>"
       + '<div><p class="cap">of the <b>' + lt.payments.toLocaleString() + " payments</b> made "
       + "into the " + lt.population.toLocaleString() + " Tron addresses Tether froze last "
-      + "half-year &mdash; in the <b>" + lt.headline_days + " days before</b> any of them "
-      + "appeared on a list &mdash; would have carried a warning, at a <b>" + lt.fpr_pct
+      + "half-year, in the <b>" + lt.headline_days + " days before</b> any of them "
+      + "appeared on a list, would have carried a warning, at a <b>" + lt.fpr_pct
       + " false-alarm rate</b> on ordinary wallets. Median payment $"
       + lt.median_payment.toLocaleString() + ". <b>A blocklist warned on none of them</b>, "
       + "because unlisted is unlisted.</p>"
       + '<details class="how"><summary>How that was measured</summary>'
       + "<p>Every Tron address frozen in the window against ordinary wallets sampled from "
       + "the live USDT stream. Both arms are probed " + lt.headline_days + " days before a "
-      + "freeze date \u2014 the controls get a pseudo-date drawn from the real ones, so both "
-      + "face the same calendar \u2014 and every feature is rebuilt from only the transfers "
+      + "freeze date. The controls get a pseudo-date drawn from the real ones, so both "
+      + "face the same calendar. Every feature is rebuilt from only the transfers "
       + "that existed at that moment. " + lt.n_pos.toLocaleString() + " frozen and "
       + lt.n_neg.toLocaleString() + " ordinary addresses had enough history to score, none "
       + "of them seen by the model in training. ROC-AUC " + lt.roc_auc + ".</p>"
@@ -1265,7 +1265,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
       + lt.ops.map(function (o) { return o.tpr + " at " + o.fpr; }).join(", ") + ".</p>"
       + "<p>This number has moved twice. It fell when the backtest was restricted to "
       + "addresses the model had never seen, which was correct. It rose again when the "
-      + "ordinary arm turned out to be 195 wallets rather than 749 \u2014 a script kept its "
+      + "ordinary arm turned out to be 195 wallets rather than 749, because a script kept its "
       + "own list of data files and missed one. Both corrections are in the repo.</p>"
       + "</details></div>";
   }
@@ -1330,7 +1330,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
     if (a) {
       b.textContent = a.slice(0, 6) + "\u2026" + a.slice(-4);
       b.classList.add("on");
-      b.title = "Connected as " + a + " on " + SENDER.chain + " \u2014 click to disconnect";
+      b.title = "Connected as " + a + " on " + SENDER.chain + ". Click to disconnect";
     } else {
       b.textContent = "Connect wallet";
       b.classList.remove("on");
@@ -1406,7 +1406,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
       + 'placeholder="T\u2026 or 0x\u2026" autocomplete="off" value="' + (cur || "") + '">'
       + '<button class="go" id="manualSave" type="button">Use it</button>'
       + '<button class="paste" id="manualCancel" type="button">Cancel</button></div>'
-      + '<p class="fine" id="manualMsg">Tron or Ethereum. We only read it &mdash; no '
+      + '<p class="fine" id="manualMsg">Tron or Ethereum. We only read it. No '
       + "signature, no transaction, and it never leaves your browser.</p>";
     var input = $("#manualAddr");
     input.focus(); input.select();
@@ -1553,7 +1553,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
       + '<button class="paste" id="pickPaste" type="button">or paste an address '
       + "instead</button>"
       + '<button class="paste" id="pickCancel" type="button">Cancel</button></div>'
-      + '<p class="fine" id="pickMsg">We only read your address &mdash; no '
+      + '<p class="fine" id="pickMsg">We only read your address. No '
       + "signature, no transaction, and nothing that could move money. A hardware "
       + "or phone wallet has no extension to ask, so pasting works too.</p>";
 
@@ -1637,7 +1637,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
       "Every night we score addresses receiving stablecoins that are on no list anywhere, "
       + "and write down the ones that look like collection points. Then we wait. When Tether "
       + "freezes one, the gap between our entry and theirs is a lead time nobody has to take "
-      + "our word for &mdash; both ends are public and on-chain."
+      + "our word for. Both ends are public and on-chain."
       + (L.substantive != null && L.min_senders
           ? " Rates below come from the " + L.substantive.toLocaleString() + " calls on "
             + "addresses with at least " + L.min_senders + " payers and $"
@@ -1655,7 +1655,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
        the substantive tier is the one that carries a rate. */
     $("#ledgerCohorts").innerHTML = "<tbody>" + (L.cohorts || []).map(function (c) {
       var v = c.too_early
-        ? '<span class="toosoon">' + c.n.toLocaleString() + " open \u2014 too early to judge"
+        ? '<span class="toosoon">' + c.n.toLocaleString() + " open, too early to judge"
           + (c.n_sub != null ? " &middot; " + c.n_sub.toLocaleString() + " with money behind them" : "")
           + "</span>"
         : (c.rate_sub != null
@@ -1690,7 +1690,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
       var days = (Date.now() - Date.parse(L.generated_at)) / 86400000;
       if (days > 2) {
         stale = '<span class="stale">Last updated ' + Math.floor(days)
-          + " days ago &mdash; the nightly job has not run since then, so this "
+          + " days ago. The nightly job has not run since then, so this "
           + "record is not current.</span>";
       }
     }
@@ -1726,12 +1726,12 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
     box.innerHTML = '<div class="band"><p class="eyebrow">Only half the question</p>'
       + "<h3>We judged the address. We could judge the transfer.</h3>"
       + "<p>Connect the wallet you would send from and we read the relationship between "
-      + "you too &mdash; whether you have paid it before, how this transfer compares. "
+      + "you too: whether you have paid it before, how this transfer compares. "
       + "37 signals instead of 17, and the model gets materially sharper.</p>"
       + '<div class="two" id="two"></div><p class="kicker" id="kicker"></p></div>';
     $("#two").innerHTML = card(fine) + card(bad);
     $("#kicker").innerHTML = "<b>" + usd(fine.amt) + " goes through, " + usd(bad.amt)
-      + " is stopped.</b> Not because of the amount &mdash; the one we stopped is "
+      + " is stopped.</b> Not because of the amount. The one we stopped is "
       + Math.round(fine.amt / bad.amt) + "x smaller. Because one wallet had paid that "
       + "address " + fine.prior + " times before, and the other never had.";
   }
@@ -1741,7 +1741,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
     e.preventDefault();
     var out = $("#leadOut"), email = $("#email").value.trim(), role = $("#role").value;
     var done = function () {
-      out.innerHTML = '<div class="ok">Thanks &mdash; one email when it is live.</div>';
+      out.innerHTML = '<div class="ok">Thanks. One email when it is live.</div>';
       $("#leadForm").style.display = "none";
     };
 
@@ -1770,7 +1770,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
       var sub = encodeURIComponent("Veridis waitlist");
       var body = encodeURIComponent("Add me to the waitlist.\n\nEmail: " + email
         + (role ? "\nI am: " + role : ""));
-      out.innerHTML = '<div class="ok">Almost there &mdash; '
+      out.innerHTML = '<div class="ok">Almost there. '
         + '<a href="mailto:' + CONTACT_EMAIL + "?subject=" + sub + "&body=" + body + '">'
         + "send this one-click email</a> and you are on the list.</div>";
       return;
@@ -1782,7 +1782,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
     out.innerHTML = configured
       ? '<div class="warnbox">We could not reach the signup service from here. This '
         + "preview blocks outside requests; it works on the live site.</div>"
-      : '<div class="warnbox">Signup is not open yet &mdash; nothing was sent, so nothing '
+      : '<div class="warnbox">Signup is not open yet. Nothing was sent, so nothing ''
         + "was lost. Check back shortly.</div>";
     if (window.console && !configured) console.warn(
       "[veridis] waitlist not configured: set FORM_ENDPOINT or CONTACT_EMAIL in index.html");
@@ -1799,7 +1799,7 @@ var IDX = [["TV9kaon1Sx9DKAQYTzqNZmRQKwiigUhaKo",1.0,2,1,648.3,563,1471,926,3509
     renderLedger();
     refreshLedger();
     if (BOOT.ledger && BOOT.ledger.predictions && $("#ledgerLink"))
-      $("#ledgerLink").textContent = "The prediction record \u2014 "
+      $("#ledgerLink").textContent = "The prediction record: "
         + BOOT.ledger.predictions.toLocaleString() + " open calls";
     route();      // the URL decides what is on screen, including a shared link
   }

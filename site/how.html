@@ -160,8 +160,8 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
   </div>
 
   <h1>How the check works</h1>
-  <p class="lede">It is the check your bank already runs on your card, moved in
-    front of a payment that cannot be undone.</p>
+  <p class="lede">Your bank checks card payments for fraud before they go
+    through. This does the same job for stablecoin transfers.</p>
 
   <h2>A fraud check, not a blocklist</h2>
   <p>When your card is declined on a strange purchase, your bank is not
@@ -169,8 +169,9 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
     looks like you: wrong city, wrong hour, far bigger than usual, right after a
     run of small test charges. The shop is often perfectly legitimate and the
     payment is stopped anyway.</p>
-  <p>Most crypto risk tools do the opposite. They ask whether the receiving
-    address is on a list. Here is why that answer arrives too late.</p>
+  <p>Most crypto risk tools work the other way. They ask whether the
+    receiving address is on a list of known-bad addresses. That answer comes
+    too late, and here is why.</p>
 
   <ol class="tl">
     <li>
@@ -183,8 +184,8 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
       <span class="dot"></span>
       <span class="when">Week 3 or so</span>
       <span class="what">Strangers start paying it, each one once, and the money
-        leaves within minutes. <b>The shape is already readable.</b> This is
-        where the check sits.
+        leaves within minutes. <b>There is already enough history here to tell
+        what it is.</b> This is where the check runs.
         <span class="tag us">We can answer here</span></span>
     </li>
     <li>
@@ -245,7 +246,7 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
       <span class="s">the trees run on your machine, not ours</span></span></li>
   </ol>
   <p>The bands are not round numbers. "High" is set where only the top 1% of
-    ordinary wallets land, so a stop means an address is rarer than 99 out of
+    ordinary wallets land. A stop means the address behaves unlike 99 out of
     100 of the wallets people pay every day.</p>
 
   <h2>How well it does</h2>
@@ -281,9 +282,9 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
     <span><i class="b-thru"></i>Went through</span>
   </div>
 
-  <p>One sentence: at about one stop per hundred ordinary payments,
-    <span class="num">97%</span> of the money heading into a collection point
-    meets something. Every one of those cases is listed individually, misses and
+  <p>Put together: for every hundred ordinary payments the check stops about
+    one, and it catches <span class="num">97%</span> of the money going into a
+    collection point. Every one of those cases is listed individually, misses and
     false alarms included, under
     <a href="history.html">previous checks</a>.</p>
   <p>Timing matters more than the rate. The scores are as good three months
@@ -296,16 +297,15 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
     event on-chain when it freezes an address. Those events are public,
     timestamped by the block they sit in, and produced by somebody other than
     us. They are the answer key.</p>
-  <p>They are deliberately never consulted when you check an address. By the
-    time a freeze happens the money has gone, so the list is useful for telling
-    us afterwards whether we were right, and useless for telling you now whether
-    to send.</p>
+  <p>We never consult that list when you check an address. By the time a
+    freeze happens the money has gone. The list can tell us afterwards whether
+    we were right. It cannot tell you now whether to send.</p>
   <div class="aside">
     <p>Every number is computed only from transfers that existed before the
       moment being scored. A model that has seen an address's later behaviour
-      can appear to predict a freeze it was in fact told about, which produces a
-      backtest that cannot be reproduced in production. Keeping that line clean
-      is most of the work.</p>
+      can look like it predicted a freeze it was actually told about. The
+      backtest then scores well and the live system does not. Most of the work
+      goes into enforcing that rule.</p>
   </div>
 
   <h2>It runs in your browser</h2>
@@ -314,12 +314,11 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
     explorer, because that is where transaction history lives. It does not come
     to us. There is no account, no login, and no record of what anyone
     checked.</p>
-  <p>The same trees are walked in Python for everything measured here, and the
-    two are held to each other on every build: identical verdicts, and scores
-    agreeing to within <span class="mono">2.2e-16</span>, which is floating
-    point's own resolution. A model that behaved differently in the browser
-    would make every figure on this page a claim about a program nobody
-    runs.</p>
+  <p>The same trees are run in Python for everything measured here. Every
+    build checks the two against each other: same verdicts, and scores matching
+    to <span class="mono">2.2e-16</span>, the smallest gap a computer can
+    represent. If the browser scored differently from the version we test, the
+    numbers on this page would not describe what you actually get.</p>
 
   <h2>Published before the fact</h2>
   <p>Each night the system samples addresses receiving USDT right now, drops any
@@ -329,13 +328,12 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
   <p>The entries are hash-chained, so changing an earlier one breaks every entry
     after it, and a scheduled job on GitHub commits them with timestamps we do
     not control.</p>
-  <p id="ledgerline">That record is the only evidence that settles the question,
-    and it can only be earned by waiting.</p>
+  <p id="ledgerline">Only time can show whether those calls were right.</p>
 
   <h2>What it does not do</h2>
   <ul class="plain">
     <li><span class="d"></span><span>It cannot stop or reverse anything.
-      It is a reading taken before you act, and the decision stays yours.</span></li>
+      It gives you a reading before you act. The decision is yours.</span></li>
     <li><span class="d"></span><span>It does not know who owns an address.
       No identity, no KYC, no personal data. Only public transaction
       history.</span></li>
