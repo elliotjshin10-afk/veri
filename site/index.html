@@ -120,6 +120,7 @@ button[disabled]{opacity:.5;cursor:default}
 .sum{font-size:13px;color:var(--ink2);margin:0 0 6px}
 .read{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink3);
   margin:0 0 var(--s4)}
+.read.partial{margin-top:calc(-1 * var(--s3));color:var(--warn)}
 .warn{animation:rise .32s cubic-bezier(.2,.7,.3,1) both}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 button.wallet{display:flex;align-items:center;gap:10px;justify-content:flex-start;
@@ -370,8 +371,14 @@ async function check() {
   try {
     const evm = chain === "Ethereum";
     const dest = evm ? to.toLowerCase() : to;
-    const tx = evm ? await fetchTransfersEvm(dest, {maxPages: 8})
-                   : await fetchTransfers(dest, {maxPages: 6});
+    /* Depth matters more than it looks. TronGrid pages newest-first, so a
+       capped history is the address's RECENT window while the model was trained
+       on whole ones. A 1,434-day-old collection point with 733 lifetime payers
+       came back as 353 and scored ordinary, against high in the index built
+       from its full history: one model, two answers, decided by where the fetch
+       stopped. Six pages was 1,200 transfers. */
+    const tx = evm ? await fetchTransfersEvm(dest, {maxPages: 14})
+                   : await fetchTransfers(dest, {maxPages: 15});
     if (!tx.length) return sheet("Nothing has ever been sent to that address.");
     /* A busy address returns only its most recent pages, and the age taken from
        that window is the age of the WINDOW, not the address - which made a
@@ -418,7 +425,7 @@ async function check() {
       const RANK = {ordinary: 0, elevated: 1, high: 2};
       b = RANK[dband] > RANK[pband] ? dband : pband;
     }
-    verdict(to, amount, b, feats, both, {rows, calls},
+    verdict(to, amount, b, feats, both, {rows, calls, partial: !!tx.truncated},
             {dband, pband, small: amount < 250});
   } catch (e) {
     sheet("Could not read that address just now. Try again in a moment.");
@@ -590,6 +597,15 @@ function verdict(to, amount, b, f, both, read, split) {
     + "just now \u00b7 " + (f.dest_senders_all || 0).toLocaleString() + " wallets have "
     + "paid it \u00b7 " + Math.max(1, Math.round(f.dest_age_days || 0)).toLocaleString()
     + " days old</p>"
+    /* Still capped after fifteen pages means a busy address, and the verdict
+       above was reached on a slice of it. The lookup page has said so for a
+       while; the sheet was quietly confident instead. */
+    + (read.partial
+        ? '<p class="read partial">that is the most recent ' 
+          + read.rows.toLocaleString() + " and not its whole history, so the "
+          + "counts are lower bounds and the reading is of what it has been "
+          + "doing lately.</p>"
+        : "")
     /* "Send anyway" is the word for overriding a warning, so on a pass it
        tells the reader we are uneasy about a verdict we just gave. The weight
        carried the same implication: Cancel was the filled button under every
