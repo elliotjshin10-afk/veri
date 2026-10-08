@@ -31,13 +31,44 @@ from veridis.dataset.holdings import (ETH_INDEPENDENT_SET, eth_complete,
                                       eth_transfers)
 from veridis.model.quantise import quantise_matrix
 from veridis.features.asof import FeatureEngine
+from veridis.features import payout
 from veridis.model.address_risk import DEST_FEATURES
 
 DAY = 86_400_000
 HORIZONS = [7, 30, 90, 180]
 TEST_FRAC = 0.30
 SEED = 17
-BROWSER = [f for f in DEST_FEATURES if f != "dest_funder_fanout"]
+FULL = DEST_FEATURES + payout.FEATURES
+BROWSER = ([f for f in DEST_FEATURES if f != "dest_funder_fanout"]
+           + payout.FEATURES)
+
+
+def eth_payout(tf, frame):
+    """The second hop, on Ethereum, from the same module Tron uses.
+
+    Tron's destination model reads one address past the one you are paying and
+    gained +2.5pp of recall for it. Without this, the two chains answer
+    different questions while the page presents one product, which is the kind
+    of gap that is invisible until somebody compares the feature lists.
+    """
+    tx_path = INTERIM / "eth_payout_transfers.parquet"
+    tr_path = INTERIM / "eth_payout_truncated.parquet"
+    if not tx_path.exists() or not tr_path.exists():
+        sys.exit("no Ethereum payout history - run scripts/m14_eth_payout_fetch.py")
+    ptx = pl.read_parquet(tx_path)
+    tr = pl.read_parquet(tr_path)
+    trunc = dict(zip(tr["address"].to_list(), tr["truncated"].to_list()))
+    # A payout wallet whose own history is already in the warehouse is complete
+    # there, so it needs no separate fetch and is not truncated.
+    for a in tf["to_address"].unique().to_list():
+        trunc.setdefault(a, False)
+    hop = pl.concat([ptx.select(tf.columns), tf], how="vertical_relaxed") \
+        .unique(subset=["tx_hash", "to_address"])
+    f = payout.batch(frame.select("event_id", "destination", "event_time"),
+                     tf, hop, trunc)
+    return frame.join(f, on="event_id", how="left").with_columns(
+        pl.col("payout_fanin_pit").fill_null(0),
+        pl.col("payout_fanin_exact").fill_null(0))
 
 # What we hold lives in veridis.dataset.holdings, not here. This script used to
 # keep its own copy of the list, which is how the Tron side ended up with three
@@ -162,13 +193,13 @@ def main() -> None:
           .with_columns(pl.lit("ethereum").alias("chain"), pl.lit("__probe__").alias("sender"),
                         pl.lit(1000.0).alias("amount_usd")).with_row_index("event_id"))
     engine = FeatureEngine(tf)
-    feats = engine.compute(ev)
+    feats = eth_payout(tf, engine.compute(ev))
     engine.close()
 
     out = {}
     print(f"\nindependent ordinary wallets available: {len(independent):,}")
-    print("\n  arm        ROC-AUC  PR-AUC   TPR@5%FPR   (pos/neg)")
-    for name, cols in (("full   ", DEST_FEATURES), ("browser", BROWSER)):
+    print("\n  arm        ROC-AUC  PR-AUC  TPR@5%  TPR@1%   (pos/neg)")
+    for name, cols in (("full   ", FULL), ("browser", BROWSER)):
         X = feats.select(cols).to_numpy()
         ytr = y[~is_test]
         b = lgb.train({
@@ -188,15 +219,24 @@ def main() -> None:
                 continue
             sm, ym = s[mask], yt[mask]
             thr = float(np.quantile(np.sort(sm[ym == 0]), 0.95))
+            # Both budgets. Ethereum reported 5% and Tron 1%, so the two
+            # chains' headline recalls were never comparable and the page put
+            # them in the same table anyway. 5% stays because it is the figure
+            # this arm has always been judged on and dropping it would quietly
+            # rebase the history; 1% is added because it is what the product
+            # actually runs at and what Tron publishes.
+            thr1 = float(np.quantile(np.sort(sm[ym == 0]), 0.99))
             res[tag] = {"roc_auc": float(roc_auc_score(ym, sm)),
                         "pr_auc": float(average_precision_score(ym, sm)),
                         "tpr_at_5pct_fpr": float((sm[ym == 1] >= thr).mean()),
+                        "tpr_at_1pct_fpr": float((sm[ym == 1] >= thr1).mean()),
                         "n_pos": int((ym == 1).sum()), "n_neg": int((ym == 0).sum())}
         out[name.strip()] = res
         for tag, r in res.items():
             lab = name if tag == "all" else "   \u21b3 indep"
             print(f"  {lab}   {r['roc_auc']:.4f}  {r['pr_auc']:.4f}   "
-                  f"{r['tpr_at_5pct_fpr']:.1%}   ({r['n_pos']:,}/{r['n_neg']:,})")
+                  f"{r['tpr_at_5pct_fpr']:>6.1%}  {r['tpr_at_1pct_fpr']:>6.1%}   "
+                  f"({r['n_pos']:,}/{r['n_neg']:,})")
         if name.strip() == "full":
             b.save_model(str(PROCESSED / "model_eth_pit.txt"))
         else:
