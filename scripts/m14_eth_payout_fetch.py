@@ -28,7 +28,7 @@ sys.path.insert(0, "src")
 
 import polars as pl
 
-from veridis.chain.etherscan import client as es_client, normalise, token_transfers
+from veridis.chain.etherscan import client as es_client, token_transfers
 from veridis.config import INTERIM
 from veridis.dataset.holdings import eth_complete, eth_fetched, eth_transfers
 
@@ -87,9 +87,14 @@ async def main() -> None:
                 nonlocal failed
                 async with sem:
                     try:
+                        # token_transfers returns rows already in the
+                        # canonical schema. Normalising them again finds no
+                        # contractAddress to match on and silently drops every
+                        # one: the first run of this script wrote 3,900
+                        # truncation flags and zero transfers.
                         raw, cut = await token_transfers(c, a, KEY,
                                                          max_pages=MAX_PAGES)
-                        rows.extend(normalise(raw))
+                        rows.extend(raw)
                         trunc[a] = cut
                     except Exception as exc:          # noqa: BLE001
                         # A refusal raises rather than returning a short history

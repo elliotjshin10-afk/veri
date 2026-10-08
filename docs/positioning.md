@@ -90,10 +90,16 @@ from the reports, so the page cannot carry a number the code no longer produces.
 
 | | Tron | Ethereum |
 |---|---|---|
-| Address lookup, ROC-AUC | **0.928** | **0.861** |
-| Recall at a 1% false-alarm budget | 25% | 30% |
-| With the sender known (two-sided) | 0.975 † | 0.872 † |
+| Address lookup, ROC-AUC | **0.931** | **0.866** |
+| Recall at a 1% false-alarm budget | 30% | 29% |
+| With the sender known (two-sided) | 0.975 † | 0.870 † |
 | Lead time: caught 90 days before the freeze, at 1% false alarms | **39%** (CI 33-53%) | not yet measured |
+
+Both address models read one address past the destination as of 2026-10-08, and
+both are now quoted at the same false-alarm budget. Ethereum used to publish
+recall at 5% while Tron published 1%, so the two columns sat side by side
+without being the same measurement; its 5% figure, 54%, is still produced by its
+own pipeline.
 
 † Recall at 1% false alarms is about three points optimistic on these two; see
 the destination-age note below.
@@ -215,14 +221,20 @@ feature then gains legs only where an address happens to touch a payout wallet.
 One sampling asymmetry traded for a worse one. So the fan-in is computed from
 its own file and joined as two columns, never read from the warehouse.
 
-**Status: measured, built, not yet shipped.** The figures above are from the
-event-level split. The shipped model is trained on address-level point-in-time
-probes over a larger universe, which needs all 9,500 payout wallets rather than
-the 1,363 the measurement needed; that ingest is what gates the retrain. The
-serving path, the shared definition and the parity coverage are in, and the page
-asks the model whether it wants the feature, so nothing changes for anyone until
-a model that lists the columns is published. Ethereum has no equivalent ingest
-and will stay on 17 features until it does.
+**Status: shipped on both chains, 2026-10-08.** Tron moved ROC-AUC 0.9279 to
+0.9309 and recall at 1% from 24.5% to 30.4%. Ethereum, after its own ingest of
+3,901 payout wallets and 1.83M transfers, moved 0.8565 to 0.8660 on independent
+controls. Both chains compute the feature through the same module, and the
+browser's fetch depth for the payout wallet is pinned per chain to whatever
+training saw: 15 pages of 200 on Tron, 4 of 1,000 on Ethereum. Fetching deeper
+at serving time would not be more accurate, it would be a different feature,
+because the count is taken over a window.
+
+Read Tron's 30.4% with its interval. There are 593 ordinary addresses in that
+held-out set, so a 1% budget puts the threshold on about six scores; the CI is
+20-41% against 18-42% before. The firmer evidence is the event-level
+measurement, +2.5pp winning on 7 of 7 seeds, and ROC-AUC, which is the stable
+statistic and moved the right way on every arm of both chains.
 
 **What is not yet established:**
 

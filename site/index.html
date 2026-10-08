@@ -447,7 +447,11 @@ async function secondHop(tx, dest, evm) {
     const now = Date.now();
     const p = topPayout(tx, dest, now);
     if (!p) return none;
-    const ptx = evm ? await fetchTransfersEvm(p, {maxPages: 8})
+    /* Depth has to match what training saw, per chain, or the count is over a
+       different window than the model learned on: 15 pages of 200 on Tron,
+       4 of 1,000 on Ethereum. Fetching deeper here would not be "more
+       accurate", it would be a different feature. */
+    const ptx = evm ? await fetchTransfersEvm(p, {maxPages: 4})
                     : await fetchTransfers(p, {maxPages: 15});
     return payoutFanin(ptx, p, now, dest, !!ptx.truncated);
   } catch (e) { return none; }
