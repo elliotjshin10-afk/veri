@@ -177,7 +177,8 @@ button.wallet img{width:20px;height:20px;border-radius:4px}
 
 <script type="module">
 import {fetchTransfers, fetchTransfersEvm, fetchFirstSeen, fetchFirstSeenEvm,
-        computeFeatures, computePairFeatures, score, band} from "./scorer.js";
+        computeFeatures, computePairFeatures, score, band,
+        topPayout, payoutFanin} from "./scorer.js";
 
 const $ = s => document.querySelector(s);
 const card = $("#card");
@@ -391,6 +392,14 @@ async function check() {
        unusual" - the exact reassurance a test transfer is sent to get. */
     const dm = await model(evm ? "model_eth.json" : "model_dest.json");
     const dfeats = computeFeatures(tx, dest, Date.now(), {firstSeen: firstSeen});
+    /* The second hop. Every other number comes from this address's own history;
+       these two come from the history of the wallet it pays, which is the only
+       thing here that costs another fetch. Low fan-in is the warning: a mule
+       wallet is fed by a handful of addresses, an exchange hot wallet by
+       thousands. Declared by the model, so a model without them skips it. */
+    if (dm.features.indexOf("payout_fanin_pit") >= 0) {
+      Object.assign(dfeats, await secondHop(tx, dest, evm));
+    }
     const dband = band(score(dm, dfeats), dm.thresholds);
 
     let feats = dfeats, b = dband, pband = null;
@@ -417,6 +426,24 @@ async function check() {
     window.fetch = real;
     const b = $("#send"); if (b) b.disabled = false;
   }
+}
+
+/* Fetch the wallet this address pays most, and count who else pays it.
+   A failure here is not fatal and must not be silent: payout_fanin_exact of 0
+   is the model's encoding of "we do not know", and it is the same value Python
+   writes when the second hop is missing from training. Returning a confident
+   zero instead would tell the model nobody pays that wallet, which is the
+   reading that makes an exchange look like a mule. */
+async function secondHop(tx, dest, evm) {
+  const none = {payout_fanin_pit: 0, payout_fanin_exact: 0};
+  try {
+    const now = Date.now();
+    const p = topPayout(tx, dest, now);
+    if (!p) return none;
+    const ptx = evm ? await fetchTransfersEvm(p, {maxPages: 8})
+                    : await fetchTransfers(p, {maxPages: 15});
+    return payoutFanin(ptx, p, now, dest, !!ptx.truncated);
+  } catch (e) { return none; }
 }
 
 const COPY = {

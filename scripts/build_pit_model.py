@@ -32,6 +32,7 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 
 from veridis.config import INTERIM, PROCESSED, SITE
 from veridis.features.asof import FeatureEngine
+from veridis.features import payout
 from veridis.model.address_risk import DEST_FEATURES
 from veridis.dataset.holdings import all_transfers, all_indexed
 
@@ -39,8 +40,41 @@ DAY = 86_400_000
 HORIZONS = [7, 30, 90, 180]
 TEST_FRAC = 0.30
 SEED = 17
+# dest_funder_fanout needs a third address's history and the browser cannot get
+# it, so a model trained with it would be fed a default at serving time. The
+# payout features need a third address too, and the browser DOES fetch it, which
+# is the whole difference: see veridis/features/payout.py.
 NEEDS_THIRD_ADDRESS = {"dest_funder_fanout"}
-BROWSER_FEATURES = [f for f in DEST_FEATURES if f not in NEEDS_THIRD_ADDRESS]
+TRAIN_FEATURES = DEST_FEATURES + payout.FEATURES
+BROWSER_FEATURES = ([f for f in DEST_FEATURES if f not in NEEDS_THIRD_ADDRESS]
+                    + payout.FEATURES)
+
+
+def payout_data(tf: pl.DataFrame, addresses) -> tuple:
+    """The second hop, or a clear instruction to go and fetch it.
+
+    Falling back to the 17-feature model when the file is missing would be the
+    worst option: the site would quietly ship a weaker model and the only sign
+    would be a number moving in a report nobody reads that week."""
+    tx_path, tr_path = INTERIM / "payout_transfers.parquet", INTERIM / "payout_truncated.parquet"
+    if not tx_path.exists() or not tr_path.exists():
+        sys.exit("no payout wallet history - run scripts/m13_payout_fetch.py first")
+    ptx = pl.read_parquet(tx_path)
+    tr = pl.read_parquet(tr_path)
+    trunc = dict(zip(tr["address"].to_list(), tr["truncated"].to_list()))
+    link = payout.links(tf, addresses)
+    covered = link.filter(pl.col("payout").is_in(list(trunc)))
+    print(f"payout wallets: {len(trunc):,} held, covering {covered.height:,} of "
+          f"{link.height:,} addresses ({covered.height/max(link.height,1):.0%})")
+    return link, ptx, trunc
+
+
+def attach(frame: pl.DataFrame, link, ptx, trunc) -> pl.DataFrame:
+    f = payout.batch(frame.select("event_id", "destination", "event_time"),
+                     link, ptx, trunc)
+    return frame.join(f, on="event_id", how="left").with_columns(
+        pl.col("payout_fanin_pit").fill_null(0),
+        pl.col("payout_fanin_exact").fill_null(0))
 
 
 def slim(t):
@@ -145,10 +179,11 @@ def main() -> None:
           .with_columns(pl.lit("tron").alias("chain"), pl.lit("__probe__").alias("sender"),
                         pl.lit(1000.0).alias("amount_usd")).with_row_index("event_id"))
     engine = FeatureEngine(tf)
-    feats = engine.compute(ev)
+    link, ptx, trunc = payout_data(tf, pr["address"].unique().to_list())
+    feats = attach(engine.compute(ev), link, ptx, trunc)
     y = pr["label"].to_numpy()
-    full = fit(feats.filter(pl.Series(~is_test)).select(DEST_FEATURES).to_numpy(),
-               y[~is_test], DEST_FEATURES)
+    full = fit(feats.filter(pl.Series(~is_test)).select(TRAIN_FEATURES).to_numpy(),
+               y[~is_test], TRAIN_FEATURES)
     lite = fit(feats.filter(pl.Series(~is_test)).select(BROWSER_FEATURES).to_numpy(),
                y[~is_test], BROWSER_FEATURES)
 
@@ -162,7 +197,8 @@ def main() -> None:
                          (pl.col("last_seen") + 1000).alias("event_time"))
              .with_columns(pl.lit("tron").alias("chain"), pl.lit("__probe__").alias("sender"),
                            pl.lit(1000.0).alias("amount_usd")).with_row_index("event_id"))
-    served = engine.compute(probe).with_columns(pl.col("destination").alias("address"))
+    served = attach(engine.compute(probe), link, ptx, trunc) \
+        .with_columns(pl.col("destination").alias("address"))
     engine.close()
 
     def tpr_ci(y, sc, budget=0.01, n=600):
@@ -182,7 +218,7 @@ def main() -> None:
     out = {}
     print(f"\nheld out: {int(yt.sum()):,} listed, {int((yt==0).sum()):,} ordinary")
     print("\n  arm        n      ROC-AUC  PR-AUC   TPR@1%FPR")
-    for name, booster, cols in (("full  ", full, DEST_FEATURES), ("browser", lite, BROWSER_FEATURES)):
+    for name, booster, cols in (("full  ", full, TRAIN_FEATURES), ("browser", lite, BROWSER_FEATURES)):
         s = booster.predict(lab.select(cols).to_numpy())
         thr = float(np.quantile(np.sort(s[yt == 0]), 0.99))
         out[name.strip()] = {
@@ -223,7 +259,7 @@ def main() -> None:
         {"addresses": sorted(holdout), "cut_ms": cut, "horizons": HORIZONS,
          "test_frac": TEST_FRAC, "seed": SEED}))
     (PROCESSED / "address_model_report.json").write_text(json.dumps(
-        {"evaluation": out["full"], "thresholds": thr, "features": DEST_FEATURES,
+        {"evaluation": out["full"], "thresholds": thr, "features": TRAIN_FEATURES,
          "trained_on": "point-in-time address probes", "holdout_addresses": len(holdout)}, indent=2))
     print(f"\nthresholds (held-out controls): {thr}")
     print(f"wrote model_dest_latest.txt, model_browser.txt, site/model_dest.json, "
