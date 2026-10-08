@@ -103,6 +103,10 @@ a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   text-transform:uppercase;text-align:right;white-space:nowrap;color:var(--crit)}
 .vs .rw.same .m{color:var(--ink3)}
 .vs .rw.same{background:var(--sunk)}
+/* In the second table the colour has to mean the opposite thing: a row that
+   inverts is the surprise, a row that separates is the one doing the work. */
+.vs .rw.sep{background:var(--sunk)}
+.vs .rw.sep .m{color:var(--ok)}
 @media(max-width:560px){
   .vs .hd,.vs .rw{grid-template-columns:1fr 1fr;}
   .vs .rw .m{grid-column:1 / -1;text-align:left;padding-top:0;color:var(--ink3)}
@@ -205,29 +209,70 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
   </ol>
 
   <h2>Why it is hard</h2>
-  <p>A scam collection point and an ordinary exchange deposit address behave
-    almost identically. Three of these four signals match.</p>
+  <p>Start with the obvious signals. A scam collection point and a busy
+    legitimate address, such as a shared exchange deposit address or a payment
+    processor, are not distinguishable on any of them.</p>
 
   <div class="vs">
     <div class="hd"><span class="a">Collection point</span>
-      <span class="b">Exchange deposit</span><span class="m">&nbsp;</span></div>
+      <span class="b">Busy legitimate address</span><span class="m">&nbsp;</span></div>
     <div class="rw same"><span>Hundreds of unrelated payers, almost none
       returning</span><span>The same, and completely innocent</span>
       <span class="m">same</span></div>
-    <div class="rw same"><span>Money forwarded within minutes of
-      landing</span><span>The same: deposits are swept on a schedule</span>
+    <div class="rw same"><span>Forwards nearly everything it
+      receives</span><span>The same: nothing is meant to sit here</span>
       <span class="m">same</span></div>
-    <div class="rw same"><span>Everything leaves to one or two
+    <div class="rw same"><span>Money moves on within minutes or
+      hours</span><span>The same: deposits are swept on a schedule</span>
+      <span class="m">same</span></div>
+    <div class="rw same"><span>Outflow goes to a small number of
       addresses</span><span>The same: one hot wallet, every time</span>
       <span class="m">same</span></div>
-    <div class="rw"><span>Weeks old, with no history before the scam
-      began</span><span>Years of the same behaviour at a steady rate</span>
-      <span class="m">differs</span></div>
   </div>
-  <p>So a simple rule does not work. "Warn when an address forwards everything
-    it receives" would fire on three quarters of ordinary addresses, because a
-    wallet that gets paid and then spends has forwarded everything it received.
-    The answer has to come from many weak signals weighed together.</p>
+
+  <p>Worse than unhelpful, two of them point the wrong way. Taking the
+    <span class="num">3,186</span> indexed addresses that share this shape and
+    splitting them by what the model says:</p>
+
+  <div class="vs">
+    <div class="hd"><span class="a">Flagged high</span>
+      <span class="b">Not flagged</span><span class="m">&nbsp;</span></div>
+    <div class="rw"><span><b>Held 2.4 hours</b> before forwarding</span>
+      <span><b>Held 30 minutes.</b> The legitimate ones are faster</span>
+      <span class="m">inverts</span></div>
+    <div class="rw"><span><b>20%</b> of outflow to its biggest payee</span>
+      <span><b>32%.</b> The legitimate ones sweep more tightly</span>
+      <span class="m">inverts</span></div>
+    <div class="rw sep"><span><b>$75,800</b> per paying wallet</span>
+      <span><b>$7,759.</b> Ten times less</span>
+      <span class="m">separates</span></div>
+    <div class="rw sep"><span><b>$13.4m</b> received in total</span>
+      <span><b>$837k</b></span>
+      <span class="m">separates</span></div>
+    <div class="rw sep"><span><b>569 days</b> old</span>
+      <span><b>216 days.</b> A difference, but a weak one</span>
+      <span class="m">separates</span></div>
+  </div>
+
+  <p>So it is not age, and it is certainly not "money left quickly". The
+    strongest single signal here is how much each wallet sends before it stops
+    paying, which is the difference between somebody moving their savings and
+    somebody topping up an account. Those groups are 91% and 10% later frozen
+    respectively, so the split is real and not an artefact of the model's own
+    opinion.</p>
+
+  <p>No row decides it on its own. The model gets payer counts at one day,
+    seven days, thirty days and ever, and dollar totals at seven and thirty
+    days, so it sees the <em>rate</em> and whether the rate is changing rather
+    than a lifetime count. It gets two quantiles of holding time rather than
+    one, so an address that sweeps some deposits instantly and lets others sit
+    looks different from one that treats everything the same. Seventeen numbers,
+    400 trees, and the interactions between them are the model.</p>
+
+  <p>This is also why a hand-written rule fails. "Warn when an address forwards
+    everything it receives" fires on three quarters of ordinary addresses,
+    because a wallet that gets paid and then spends has forwarded everything it
+    received.</p>
 
   <h2>What happens when you press Send</h2>
   <ol class="flow">
@@ -265,28 +310,22 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
         through unflagged</div>
     </div>
   </div>
-  <div class="rate">
-    <div class="what"><b>Into an address never listed</b>3,484 transfers</div>
-    <div>
-      <div class="bar" role="img" aria-label="1.1% stopped, 12.0% warned, 86.9% neither">
-        <span class="b-stop" style="width:1.1%"></span>
-        <span class="b-warn" style="width:12.0%"></span>
-        <span class="b-thru" style="width:86.9%"></span></div>
-      <div class="cap">stopped 1.1% &middot; warned 12.0% &middot; 86.9% went
-        through</div>
-    </div>
-  </div>
   <div class="key">
     <span><i class="b-stop"></i>Stopped</span>
     <span><i class="b-warn"></i>Warned</span>
-    <span><i class="b-thru"></i>Went through</span>
+    <span><i class="b-thru"></i>Got through</span>
   </div>
 
-  <p>Put together: for every hundred ordinary payments the check stops about
-    one, and it catches <span class="num">97%</span> of the money going into a
-    collection point. Every one of those cases is listed individually, misses and
-    false alarms included, under
-    <a href="history.html">previous checks</a>.</p>
+  <p>That is the number that matters: <span class="num">96.7%</span> of the
+    money moving into an address that later turned out to be a scam ran into
+    something first.</p>
+  <p>It is not free. The same check also looked at 3,484 transfers to addresses
+    that were never listed, and stopped 1.1% of them while warning on another
+    12%. So about one ordinary payment in ninety gets a stop it did not need.
+    That is the price of the figure above, and the reason the threshold sits
+    where it does rather than lower.</p>
+  <p>Every one of those cases is listed individually, misses and false alarms
+    included, under <a href="history.html">previous checks</a>.</p>
   <p>Timing matters more than the rate. The scores are as good three months
     before a freeze as the day before it, tested against
     <span class="num">163</span> addresses frozen after the training data was
