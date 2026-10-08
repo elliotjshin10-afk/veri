@@ -98,8 +98,7 @@ def test_batch_matches_the_single_event_form():
             ("X", "P", 5, 5), ("Y", "P", 5, 30), ("Z", "P", 5, 900)])
     probes = pl.DataFrame({"event_id": [0, 1], "destination": ["A", "A"],
                            "event_time": [50, 1_000]})
-    link = links(t, ["A"])
-    got = batch(probes, link, t, {"P": False}).sort("event_id")
+    got = batch(probes, t, t, {"P": False}).sort("event_id")
     for row in got.iter_rows(named=True):
         when = {0: 50, 1: 1_000}[row["event_id"]]
         one = payout_fanin(t, "P", when, "A", False)

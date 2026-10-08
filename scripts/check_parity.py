@@ -15,6 +15,7 @@ import numpy as np
 import polars as pl
 
 from veridis.features.asof import FeatureEngine
+from veridis.features import payout
 from veridis.dataset.holdings import all_indexed, all_transfers
 from veridis.model.quantise import quantise_matrix
 from veridis.config import INTERIM, PROCESSED
@@ -48,6 +49,25 @@ engine = FeatureEngine(warehouse)
 pyf = engine.compute(probe)
 engine.close()
 
+# The second hop, when the shipped model asks for it. Both sides get the same
+# rows for the payout wallet, exactly as both get the same rows for the address
+# itself: the harness exists to compare two implementations, not two fetches.
+PAYOUT_ON = all(f in FEATS for f in payout.FEATURES)
+payout_tx, payout_trunc = None, {}
+if PAYOUT_ON:
+    tx_path = INTERIM / "payout_transfers.parquet"
+    tr_path = INTERIM / "payout_truncated.parquet"
+    if not tx_path.exists():
+        raise SystemExit("model_dest.json wants payout features but "
+                         "data/interim/payout_transfers.parquet is missing")
+    payout_tx = pl.read_parquet(tx_path)
+    tr = pl.read_parquet(tr_path)
+    payout_trunc = dict(zip(tr["address"].to_list(), tr["truncated"].to_list()))
+    pyf = pyf.join(payout.batch(probe, warehouse, payout_tx, payout_trunc),
+                   on="event_id", how="left").with_columns(
+        pl.col("payout_fanin_pit").fill_null(0),
+        pl.col("payout_fanin_exact").fill_null(0))
+
 import lightgbm as lgb
 booster = lgb.Booster(model_file=str(PROCESSED / "model_browser.txt"))
 # Quantised exactly as the browser does, or the two disagree on a band
@@ -61,8 +81,18 @@ for row in pyf.iter_rows(named=True):
     a = row["destination"]
     tx = warehouse.filter(
         (pl.col("from_address") == a) | (pl.col("to_address") == a))
+    ptx_rows, p_trunc = [], False
+    if PAYOUT_ON:
+        pay = payout.top_payout(warehouse, a, int(row["event_time"]))
+        if pay is not None:
+            prows = payout_tx.filter(pl.col("to_address") == pay)
+            ptx_rows = [{"from": r["from_address"], "to": r["to_address"],
+                         "usd": float(r["amount_usd"]), "t": int(r["block_time"])}
+                        for r in prows.iter_rows(named=True)]
+            p_trunc = bool(payout_trunc.get(pay, False))
     cases.append({
         "address": a, "asOf": int(row["event_time"]),
+        "payoutTransfers": ptx_rows, "payoutTruncated": p_trunc,
         "transfers": [{"from": r["from_address"], "to": r["to_address"],
                        "usd": float(r["amount_usd"]), "t": int(r["block_time"])}
                       for r in tx.iter_rows(named=True)],
@@ -71,16 +101,24 @@ for row in pyf.iter_rows(named=True):
     })
 
 with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as fh:
-    json.dump({"cases": cases, "model": model}, fh)
+    json.dump({"cases": cases, "model": model, "payoutOn": PAYOUT_ON}, fh)
     payload = fh.name
 
 scorer_url = (__import__("pathlib").Path("site/scorer.js").resolve().as_uri())
 runner = f"""
-import {{computeFeatures, score}} from '{scorer_url}';
+import {{computeFeatures, score, topPayout, payoutFanin}} from '{scorer_url}';
 import {{readFileSync}} from 'fs';
-const {{cases, model}} = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+const {{cases, model, payoutOn}} = JSON.parse(readFileSync(process.argv[2], 'utf8'));
 const out = cases.map(c => {{
   const f = computeFeatures(c.transfers, c.address, c.asOf);
+  if (f && payoutOn) {{
+    // The browser derives the payout address itself; the harness only supplies
+    // that wallet's rows. If the two sides disagreed about WHICH wallet, the
+    // counts would differ and this is where it would show.
+    const p = topPayout(c.transfers, c.address, c.asOf);
+    Object.assign(f, payoutFanin(c.payoutTransfers, p, c.asOf, c.address,
+                                 c.payoutTruncated));
+  }}
   return {{address: c.address, js: f, js_score: f ? score(model, f) : null}};
 }});
 process.stdout.write(JSON.stringify(out));

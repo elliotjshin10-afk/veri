@@ -64,14 +64,12 @@ def payout_fanin(payout_transfers: pl.DataFrame, payout_address: str | None,
 
 
 def links(transfers: pl.DataFrame, addresses: Iterable[str]) -> pl.DataFrame:
-    """Every address's top payout wallet, over all of its history.
+    """Every address's top payout wallet over all of its history.
 
-    The batch form, for training. It deliberately does NOT bound by a scoring
-    moment: a probe set carries many marks per address and re-deriving the link
-    at each one would turn one group-by into thousands. The per-event form above
-    is bounded, and the two agree wherever an address's largest payee does not
-    change, which is almost always. The inaccuracy is in the link, never in the
-    count: the fan-in itself is point-in-time either way.
+    Used to decide WHICH wallets to fetch, never to compute a feature. The
+    bounded form lives in `batch` and in the browser, and the two can disagree
+    for an address whose largest payee changed; fetching the union costs one
+    extra wallet and keeps the feature honest.
     """
     addrs = list(addresses)
     return (transfers.filter(pl.col("from_address").is_in(addrs)
@@ -84,39 +82,53 @@ def links(transfers: pl.DataFrame, addresses: Iterable[str]) -> pl.DataFrame:
                     pl.col("to_address").alias("payout")))
 
 
-def batch(probes: pl.DataFrame, link: pl.DataFrame, payout_tx: pl.DataFrame,
-          truncated: Mapping[str, bool], key: str = "event_id",
-          addr: str = "destination", when: str = "event_time") -> pl.DataFrame:
-    """Both features for a whole probe table, in three joins.
+def batch(probes: pl.DataFrame, transfers: pl.DataFrame,
+          payout_tx: pl.DataFrame, truncated: Mapping[str, bool],
+          key: str = "event_id", addr: str = "destination",
+          when: str = "event_time") -> pl.DataFrame:
+    """Both features for a whole probe table.
 
-    `probes` needs the key, the address and the scoring moment. Rows whose
-    address has no payout wallet, or whose payout wallet was never fetched, come
-    back as a zero count and not-exact, which is the honest encoding of "we do
-    not know" and the same thing the browser produces when the second fetch
-    fails.
+    The link is derived PER PROBE, bounded by that probe's moment, because that
+    is what the browser does and the two have to agree exactly or the model is
+    served a feature it was not trained on. Deriving it once over all history
+    would be cheaper and would quietly differ for any address whose largest
+    payee changed after the moment being scored.
+
+    Rows whose address has no payout wallet yet, or whose payout wallet was
+    never fetched, come back as a zero count and not-exact. That is the honest
+    encoding of "we do not know", and it is what the browser reports when its
+    second fetch fails.
     """
-    payouts = link["payout"].unique().to_list()
-    edges = (payout_tx.filter(pl.col("to_address").is_in(payouts)
-                              & (pl.col("amount_usd") > 0))
-             .group_by(["to_address", "from_address"])
+    p = probes.select(pl.col(key), pl.col(addr).alias("address"),
+                      pl.col(when).alias("t"))
+    out_legs = (transfers.filter(pl.col("amount_usd") > 0)
+                .select(pl.col("from_address").alias("address"),
+                        pl.col("to_address").alias("peer"),
+                        "amount_usd", "block_time"))
+    link = (p.join(out_legs, on="address", how="inner")
+            .filter(pl.col("block_time") < pl.col("t"))
+            .group_by([key, "peer"]).agg(pl.col("amount_usd").sum().alias("v"))
+            .sort(["v", "peer"], descending=[True, False])
+            .group_by(key).first()
+            .select(key, pl.col("peer").alias("payout")))
+
+    inbound = payout_tx.filter(pl.col("amount_usd") > 0)
+    edges = (inbound.group_by(["to_address", "from_address"])
              .agg(pl.col("block_time").min().alias("first_paid"))
              .rename({"to_address": "payout", "from_address": "payer"}))
-    covered = (payout_tx.filter(pl.col("to_address").is_in(payouts)
-                                & (pl.col("amount_usd") > 0))
-               .group_by("to_address").agg(pl.col("block_time").max()
-                                           .alias("covered_until"))
+    covered = (inbound.group_by("to_address")
+               .agg(pl.col("block_time").max().alias("covered_until"))
                .rename({"to_address": "payout"}))
     tr = pl.DataFrame({"payout": list(truncated),
                        "cut": [bool(v) for v in truncated.values()]})
 
-    p = probes.select(key, pl.col(addr).alias("address"), pl.col(when).alias("t")) \
-        .join(link, on="address", how="left")
-    counted = (p.join(edges, on="payout", how="inner")
+    q = p.join(link, on=key, how="left")
+    counted = (q.join(edges, on="payout", how="inner")
                .filter((pl.col("first_paid") < pl.col("t"))
                        & (pl.col("payer") != pl.col("address")))
                .group_by(key).agg(pl.col("payer").n_unique()
                                   .alias("payout_fanin_pit")))
-    return (p.join(counted, on=key, how="left")
+    return (q.join(counted, on=key, how="left")
             .join(covered, on="payout", how="left")
             .join(tr, on="payout", how="left")
             .with_columns(

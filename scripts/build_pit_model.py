@@ -69,9 +69,9 @@ def payout_data(tf: pl.DataFrame, addresses) -> tuple:
     return link, ptx, trunc
 
 
-def attach(frame: pl.DataFrame, link, ptx, trunc) -> pl.DataFrame:
+def attach(frame: pl.DataFrame, tf, ptx, trunc) -> pl.DataFrame:
     f = payout.batch(frame.select("event_id", "destination", "event_time"),
-                     link, ptx, trunc)
+                     tf, ptx, trunc)
     return frame.join(f, on="event_id", how="left").with_columns(
         pl.col("payout_fanin_pit").fill_null(0),
         pl.col("payout_fanin_exact").fill_null(0))
@@ -180,7 +180,7 @@ def main() -> None:
                         pl.lit(1000.0).alias("amount_usd")).with_row_index("event_id"))
     engine = FeatureEngine(tf)
     link, ptx, trunc = payout_data(tf, pr["address"].unique().to_list())
-    feats = attach(engine.compute(ev), link, ptx, trunc)
+    feats = attach(engine.compute(ev), tf, ptx, trunc)
     y = pr["label"].to_numpy()
     full = fit(feats.filter(pl.Series(~is_test)).select(TRAIN_FEATURES).to_numpy(),
                y[~is_test], TRAIN_FEATURES)
@@ -197,7 +197,7 @@ def main() -> None:
                          (pl.col("last_seen") + 1000).alias("event_time"))
              .with_columns(pl.lit("tron").alias("chain"), pl.lit("__probe__").alias("sender"),
                            pl.lit(1000.0).alias("amount_usd")).with_row_index("event_id"))
-    served = attach(engine.compute(probe), link, ptx, trunc) \
+    served = attach(engine.compute(probe), tf, ptx, trunc) \
         .with_columns(pl.col("destination").alias("address"))
     engine.close()
 
