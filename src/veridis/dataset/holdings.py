@@ -44,6 +44,15 @@ TRANSFER_SETS = (
     (INTERIM, "leadtime_transfers"),        # every recently frozen address
     (INTERIM, "coverage_transfers"),        # the rest of the Tron freeze list
     (INTERIM, "control2_transfers"),        # a second, independently sampled control set
+    # payout_transfers.parquet is deliberately NOT here. The consolidation
+    # wallets were fetched so the payout fan-in could be computed from real
+    # data, and putting them in the warehouse does compute it correctly - but it
+    # also hands every OTHER feature a lopsided helping of new legs, because a
+    # destination gains history only where it happens to touch a payout wallet.
+    # Measured: the same 17 features on the same events drop from 24.4% recall
+    # at a 1% false-alarm budget to 14.5%, and ROC-AUC from 0.9209 to 0.9008.
+    # The fan-in is computed from that file on its own instead, in
+    # scripts/m13_payout_ingest.py, and joined to the matrix as two columns.
 )
 
 # One row per address whose own history was fetched, written beside each ingest.

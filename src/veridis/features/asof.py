@@ -675,6 +675,25 @@ _CONTEXT = ["amount_usd", "event_hour", "hour_deviation",
 #
 # They become valid the moment the two-hop neighbourhood is fetched, which is a
 # data-collection job rather than a modelling one. Until then they stay out.
+#
+# 2026-10-07: that job is done for the payout wallets. scripts/m13_payout_ingest.py
+# fetched all 1,363 of them, 2.49M transfers, and the picture changes twice.
+#
+# First, the signal is real and runs OPPOSITE to the comment above. A scam
+# collection point forwards to a mule wallet fed by a handful of addresses; an
+# ordinary wallet forwards to an exchange, and an exchange hot wallet is fed by
+# thousands. Computed point-in-time from the fetched histories, the median
+# fan-in is 42 for scam destinations and 60 for controls, and adding it to the
+# destination model is worth +2.5pp of recall at the shipped 1% false-alarm
+# budget, 24.4% to 26.9%, winning on 7 of 7 seeds.
+#
+# Second, and the reason these columns STILL stay out: the fix cannot be applied
+# by putting those transfers in the warehouse. Doing so does compute payout_fanin
+# correctly, and it drops the same 17 features on the same events from 24.4% to
+# 14.5%, because every other feature gains legs only where an address happens to
+# touch a payout wallet. One asymmetry traded for another. The fan-in therefore
+# lives in its own lane, computed from data/interim/payout_transfers.parquet and
+# joined as payout_fanin_pit and payout_fanin_exact, never read from `legs`.
 GRAPH_FEATURES = [
     "payout_fanin", "payout_fanin_30d", "payout_inbound_usd",
     "sender_graph_clustering", "sender_peer_links",

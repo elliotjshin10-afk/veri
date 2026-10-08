@@ -1,0 +1,21 @@
+{
+  "max_pages": 15,
+  "payout_wallets": 1363,
+  "truncated": 635,
+  "arms": [
+    {
+      "arm": "shipped 17",
+      "n_features": 17,
+      "roc_auc": 0.9234359584528437,
+      "pr_auc": 0.7322540315949698,
+      "tpr_at_1pct_fpr": 0.2321219226260258
+    },
+    {
+      "arm": "+ true payout fan-in",
+      "n_features": 19,
+      "roc_auc": 0.9234660743536354,
+      "pr_auc": 0.7408590648264095,
+      "tpr_at_1pct_fpr": 0.25205158264947247
+    }
+  ]
+}
