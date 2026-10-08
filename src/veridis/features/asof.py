@@ -177,10 +177,35 @@ GROUP BY f.event_id
 # and would quietly invalidate the whole sender-side argument. These use
 # structure only, so they work on infrastructure nobody has reported.
 #
-# The signal: scam collection addresses are not independent. They sweep into
-# shared consolidation wallets, so the address your money is forwarded to is
-# usually also collecting from many other fresh addresses. That is a mule
-# network's signature and it is visible two hops out, with no labels at all.
+# The hypothesis was: scam collection addresses are not independent, they sweep
+# into shared consolidation wallets, so the address your money is forwarded to
+# is usually also collecting from many other fresh addresses. A mule network's
+# signature, visible two hops out with no labels.
+#
+# MEASURED 2026-10-07, and it is backwards. scripts/m13_payout_fanin.py fetched
+# the consolidation wallets themselves for 106 held-out destinations rather than
+# reading them out of the warehouse, and counted the wallets that had paid each
+# one before the scoring moment:
+#
+#     scam destinations   median fanin  13      controls  median fanin  75
+#     univariate AUC 0.324, where 0.5 is no signal
+#
+# High fan-in at the payout address indicates the OPPOSITE of a mule network.
+# An ordinary wallet forwards to an exchange, and an exchange hot wallet is fed
+# by thousands of addresses; a scam collection point forwards to a mule wallet
+# fed by a handful. The signal is real and worth about 0.68 inverted, but it is
+# not the signal this comment claimed, and the quantity in the warehouse is not
+# even that: the warehouse holds histories only for addresses we deliberately
+# fetched, so a consolidation wallet's inbound edges are only the ones that
+# happen to pass through the sample. On the held-out set that artefact makes
+# CONTROLS look higher-fanin (p95 437 against 14), which is a measurement of our
+# sampling, not of the chain.
+#
+# So these three columns are computed and deliberately excluded from
+# FEATURE_COLUMNS. Using them would train on a confound. Earning them back means
+# ingesting the consolidation wallets themselves, and the one arm that was
+# tested, adding the warehouse versions to the destination model, moved ROC-AUC
+# 0.9234 to 0.9309 and recall at the shipped 1% operating point 23.2% to 23.0%.
 _GRAPH_SQL = f"""
 WITH payee AS (
   -- The destination's main payout address, as of the event.

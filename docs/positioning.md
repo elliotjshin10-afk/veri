@@ -177,6 +177,22 @@ it against the bands, cut at the top 1% of held-out ordinary wallets, where the
 live trial flagged 0 of 207. Reproduce with `make fresh-freezes`; `n` shrinks at
 the longer horizons because not every address existed that far back.
 
+**A measured negative, so it is not re-opened on a hunch.** `payout_fanin`
+asks whether the wallet your money is forwarded to is also collecting from many
+other fresh addresses, which the code described as a mule network's signature
+visible two hops out with no labels. It is backwards. Fetching the consolidation
+wallets themselves for 106 held-out destinations, rather than reading them out
+of the warehouse, gives a median fan-in of 13 for scam destinations against 75
+for controls, a univariate AUC of 0.324. High fan-in at the payout address
+indicates an exchange, which is to say legitimacy: an ordinary wallet forwards
+to an exchange hot wallet fed by thousands, a scam collection point forwards to
+a mule wallet fed by a handful. The quantity sitting in the warehouse is not
+even that, because the warehouse holds only the addresses we fetched, and that
+artefact makes controls look higher-fanin. Adding the warehouse version to the
+destination model moved ROC-AUC 0.9234 to 0.9309 and recall at the shipped 1%
+operating point 23.2% to 23.0%. It stays out of the model. Reproduce with
+`python scripts/m13_payout_fanin.py`.
+
 **What is not yet established:**
 
 - The two-sided figures were the open question after the correction above, since

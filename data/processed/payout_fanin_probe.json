@@ -1,0 +1,537 @@
+{
+  "scam": [
+    {
+      "dest": "TAd659z85PL5kfhBbQmA9E5mg9xc1jN5mM",
+      "payout": "TUur6VmShDDRwJP4yRAqGYJf3Reddpv2PE",
+      "fanin": 100
+    },
+    {
+      "dest": "TAkh1B75m697Vb3Qvu7Efr9f8RFhjF8j7i",
+      "payout": "TG2oJqRoiZAjQaQspJsBxEJTp5Ga4rPyqZ",
+      "fanin": 0
+    },
+    {
+      "dest": "TAkpWPt2JZdiLSkG7ZX2VAQkZQsnGZ1nqh",
+      "payout": "TAhvsFPGf6TyPEZknYkCyDfS96gnebPhkz",
+      "fanin": 1423
+    },
+    {
+      "dest": "TA5sJibqnAXWMG9JDtSVYE95NFHWNjEsyS",
+      "payout": "TJzrPLkCqDVfkoJ4bpDsW8wiVN8E3MxhZS",
+      "fanin": 0
+    },
+    {
+      "dest": "TA1XH5cYApGKkdSuxuRDWzzkFD1fjJ3W6L",
+      "payout": "TYmJ2rBqjDZJCr6DfBu7CmjbnAc4Jbch2P",
+      "fanin": 128
+    },
+    {
+      "dest": "TBLFJACC6kuRLrAjbSDK4SXYXG3Ev8ztRb",
+      "payout": "TWjSZBSdwebaxg6o1gJm8wZEsasYLa97K5",
+      "fanin": 14
+    },
+    {
+      "dest": "TAQPzv9941nVuTj4ng2vd6L11Re57r42pW",
+      "payout": "TE3GhYJUGvHuusXzJmLSfjW9LYShoaEa8r",
+      "fanin": 117
+    },
+    {
+      "dest": "TAArQU5KVohMmbssTr9C76AUhnYebmeXeu",
+      "payout": "TU4Eht2N1vTXqwaebpguKWxJdqu5X5Ckdi",
+      "fanin": 0
+    },
+    {
+      "dest": "TAaHctAwDrkhGiLypATqNWbKuT9fuSoN1v",
+      "payout": "TSQs7P8yiAgtHmVLZrnVpWaE3MNepMZe8j",
+      "fanin": 0
+    },
+    {
+      "dest": "TAbKvjiZrHNR1URReBcNygAwNAThvSZCk5",
+      "payout": "TY9Qw7PDhBDTrQxtKCpGDKaiNTMUUCmvin",
+      "fanin": 1
+    },
+    {
+      "dest": "TB7ZXEDjaYNrjYPzx2oEZni2qfQLybLo7g",
+      "payout": "TBVuKArQZPNkfp7z2jEC9MAqCPvavGx14k",
+      "fanin": 112
+    },
+    {
+      "dest": "TAjVSq6VJcdn5moqVKRfWCMtWszEXHi9fS",
+      "payout": "TJTsRwoaBsAhvVYf12PgzBWpmYNCoqyUe8",
+      "fanin": 33
+    },
+    {
+      "dest": "TBEqQGTxXRWXXeqe7ZwmSB6hc5MMMMMMMM",
+      "payout": "TWnGkNtPZKMpRMqwvfW4fB7ueeVQSaKU6Z",
+      "fanin": 120
+    },
+    {
+      "dest": "TASBqscxGByNsPrs6SrQrAaN6GKY43z2G1",
+      "payout": "TG5NDcr661vyya8VBP239fh2dhD4g1GgWU",
+      "fanin": 4
+    },
+    {
+      "dest": "TAbbVaBKgH4VBLXgWqACuwoKF4cH1HinQh",
+      "payout": "TDqSquXBgUCLYvYC4XZgrprLK589dkhSCf",
+      "fanin": 1445
+    },
+    {
+      "dest": "TA92gaSqHukCM3Tvtw5mp6YTrcJrhRfF34",
+      "payout": "TLhfDqgm5sdjjUfLYEgfkgmvffiFNP3G87",
+      "fanin": 0
+    },
+    {
+      "dest": "TASzc9sS3eitEMXpV4rNFCJbP66y46aJWU",
+      "payout": "TG847wVRgKUeTHcpMyRHUJ2a2fMjFtkvww",
+      "fanin": 304
+    },
+    {
+      "dest": "TAY6XF5nKyGXxvuf8MWbruPgfvrJNpjVTR",
+      "payout": "TThwRi7EozUGateeRCmuNWrL8iVpZQqutA",
+      "fanin": 6
+    },
+    {
+      "dest": "TAcB9P9pWUkRFsA3HLvh7CqQxTWEVZgbsV",
+      "payout": "TX87VwFmKp1fJJQAAS2gmtkSYrhxssEwYG",
+      "fanin": 24
+    },
+    {
+      "dest": "TACDfnF9H8rnLhCKto4x4y5SkPHxeEhHZW",
+      "payout": "TVCSf9ZQScjrcG4MWwt31spoxXZ29UzApj",
+      "fanin": 4
+    },
+    {
+      "dest": "TAU65dv1aAZKNZSfxmjP3bq7uBgjaZkQnp",
+      "payout": "THYYby23nVwfjjtMfXA1F14VZverbTY4W3",
+      "fanin": 42
+    },
+    {
+      "dest": "TAQjKpWMvy2ALxCU2ogrxcgG5Fgp76fdvX",
+      "payout": "TVHAyGGyRxALHfwroyffhKR72JJgvLNDqg",
+      "fanin": 200
+    },
+    {
+      "dest": "TAW56PT12XAbqjecqEzkEF9SFuW8suujtL",
+      "payout": "TAHTtFCBPeQ3yZpbabG8ojvM8ig63A9QKW",
+      "fanin": 20
+    },
+    {
+      "dest": "TAT3tDVTufxscButn8uCyvWrBuLqBG4XeS",
+      "payout": "TLqRjCTgZt722PMmZf2R59NZ5aUeipyhnN",
+      "fanin": 0
+    },
+    {
+      "dest": "TAS3Tg5v1gCzPdnriwjME16Mmn8a1pf2xY",
+      "payout": "TCzMXoCvdUBkQYusrmnia6XmMhppw7KdVo",
+      "fanin": 0
+    },
+    {
+      "dest": "TADcqmSghLHVJZcYvDsevwE6nxepRZJyzL",
+      "payout": "TNu8pE9VjHvVxiUEg85rmE3rav9QidSSwU",
+      "fanin": 21
+    },
+    {
+      "dest": "TAhHpxPRwo1Bmm1A9m51uZ31tcB7EPq7SY",
+      "payout": "TBoj56r1qJLcsEpT8F3NFkjgzs7cnzL2RT",
+      "fanin": 0
+    },
+    {
+      "dest": "TAqMG8zhvxa5tM1re6rjXDJG5Rtf7uehG3",
+      "payout": "TCRkxZGQf7rJ3eSfRECxDBpkPsy4hfoZoU",
+      "fanin": 96
+    },
+    {
+      "dest": "TADF44dsZL59wnCxKkzmXGUaaL5xAhHDYk",
+      "payout": "TPwezUWpEGmFBENNWJHwXHRG1D2NCEEt5s",
+      "fanin": 396
+    },
+    {
+      "dest": "TBFW9gF4oDX5cG44gS7AoxQeujScmm3z6h",
+      "payout": "TV6MuMXfmLbBqPZvBHdwFsDnQeVfnmiuSi",
+      "fanin": 0
+    },
+    {
+      "dest": "TAu7xuGpW7zyjTNdSWRHCJYAKjwa1eN7Gc",
+      "payout": "TLRVw1Pmr6G6FAaa6c8P6YCig4ySjPSTz8",
+      "fanin": 0
+    },
+    {
+      "dest": "TA2MFscqcE8MjvxL24T2AvwHiGJi5Upj7v",
+      "payout": "TC6xBJh6ZHHJvYdUhQ9VMd619RsP1yAuUJ",
+      "fanin": 0
+    },
+    {
+      "dest": "TAQEJQxGRTysji5yjgYamdEEKS4w9UUYEi",
+      "payout": "TV2RvrdX4ft2XefaHzP5Gft4q7qK84uocF",
+      "fanin": 7
+    },
+    {
+      "dest": "TAG18cZpHXRKmCBaMUyxKnHjMEWnci3DTU",
+      "payout": "TDTFXRHeRhhuZVuEXLyRXPrNR9eAjaWzJ7",
+      "fanin": 0
+    },
+    {
+      "dest": "TARmzmNPGGMaX2hkkW2kqvFYqoiy8KbopR",
+      "payout": "TWWgW2SSKBr4vGbDskFH26osULV4885vog",
+      "fanin": 181
+    },
+    {
+      "dest": "TB9RgLd9VSdx7ftNdnTZSegUJtHMk4fGk8",
+      "payout": "TWe6kxqyboMX2EdYfHbsbXWNmBskZ3VayX",
+      "fanin": 0
+    },
+    {
+      "dest": "TAQtmPdcUZKhFRjEZrib5J4KPpRAcbshWP",
+      "payout": "TB2PvCygNcsxbAYiJkhqL3NYBtj9BfxZNF",
+      "fanin": 1
+    },
+    {
+      "dest": "TAAnvUJHMni4xJxpznhTcAfxEVemRJ3ycP",
+      "payout": "TPA6XiyLoQfAZ2vDXuouBqHn395UGGJZ26",
+      "fanin": 46
+    },
+    {
+      "dest": "TAwss6F14DXgVt1UGNoghkBrBLo7XjYvMv",
+      "payout": "TSeUiQhxoEL1yqbAfxpror1e97ZSzbNVaZ",
+      "fanin": 36
+    },
+    {
+      "dest": "TAD9LGXkLapq16U1JkjhLu34jDEQ8DgVuS",
+      "payout": "TVLL8D8HKCWkbCg3snXWx3yfVJYZxB3hVb",
+      "fanin": 8
+    },
+    {
+      "dest": "TACMY3DirsYFFKgoVJzWdzV5LwsJEqZJZy",
+      "payout": "TBpXAZzCyKkgoeCkRVEJieJh9aNpdM8ymU",
+      "fanin": 0
+    },
+    {
+      "dest": "TAGjwGdZJ2UGHMjXyQeowFSEa1BKFCRnsE",
+      "payout": "TResZWrdjwzSWcPQqRZeknN2QxUPbDveho",
+      "fanin": 0
+    },
+    {
+      "dest": "TAMXPLUxFxc3E2mw117u18W3WhwWxHA2eX",
+      "payout": "TB1dbVovJBwo49q6xB4ygYgKdvHDF93XUY",
+      "fanin": 129
+    },
+    {
+      "dest": "TAWAcBDtnwm3LaYZR5TgqGBzkWJrxfgGUF",
+      "payout": "TY5pZmdrQZ1FvuvFdzFSEx3M6cmD27RhBz",
+      "fanin": 311
+    },
+    {
+      "dest": "TACQ65fHEWv8BAZxDmjpzyfvXmtYjgDwUc",
+      "payout": "TTzTzVUjBcvF8Ai3xBL5gz4ctLxgtTciK2",
+      "fanin": 13
+    },
+    {
+      "dest": "TAsEmVi1UeL43z1iCZcG1pso9AuZ1r6nnh",
+      "payout": "TGEjaCHJB3kAoFuFYxyRXaq6W2Kgo93w17",
+      "fanin": 0
+    },
+    {
+      "dest": "TA6C3DFozR1j9PXVYo4LAkMw1BWuKfctxs",
+      "payout": "TC2y1Wb9gRSQ6YjG5LPFnvXvuoqu6dDNpc",
+      "fanin": 0
+    },
+    {
+      "dest": "TAacjBmYztic9x9wCw9GkA39JR48CM7DVW",
+      "payout": "TVggpE7NKomjD5fKBN258fRMp2JmjqNGo4",
+      "fanin": 20
+    },
+    {
+      "dest": "TA34BjhtQpcM4dycYVa1ca1dAbiJvpBjxc",
+      "payout": "TSHvaPrXn4os4DJMZEmS7ae9yMDDRt44ay",
+      "fanin": 15
+    }
+  ],
+  "control": [
+    {
+      "dest": "TXB4nviNEDEXzPGRgW11ZD3b5Nr55yeoFj",
+      "payout": "TU4vEruvZwLLkSfV9bNw12EJTPvNr7Pvaa",
+      "fanin": 1
+    },
+    {
+      "dest": "TLgyDNkbEwMUSyFWET4ApkhEhupPGT81HP",
+      "payout": "TNsjuKLc2miDjXSXs7PRvHZq4YWwTGn5bR",
+      "fanin": 71
+    },
+    {
+      "dest": "TDc18ZRciKxHfWg8efKFadRrdDxGShuASK",
+      "payout": "TAF7yFm2VC1KeFGddtDfuLVMVAUeBMQ7ne",
+      "fanin": 163
+    },
+    {
+      "dest": "TGynVyiaWtQ1W5qpGEUANH7HjhYViQ4jS2",
+      "payout": "TGYYx5dUce8T8mzzHqd2HS3LH4EVbudypS",
+      "fanin": 70
+    },
+    {
+      "dest": "TCYpEgnzmy822rc9Bdw7QaYVT8FZdJ9MmK",
+      "payout": "TD93kvjMfGLrm6CLMwqFttkQtyeXEwkwCM",
+      "fanin": 109
+    },
+    {
+      "dest": "TG3cffLRPrQMm9NZZA2TQYGNYHKHyJAUyM",
+      "payout": "TYh7o3zg1PYZhKaG5ynYd1EpQZyQ12iwbX",
+      "fanin": 0
+    },
+    {
+      "dest": "TNhxiD1jE13Q2vEqeHXhYx68z6rWFZDj9U",
+      "payout": "TMZxvrqT9hZRenajcNsCxUCJWEJNjJucCZ",
+      "fanin": 218
+    },
+    {
+      "dest": "TY5NEUfY3jztiosfLRyRs1DaiAbgZDHUKM",
+      "payout": "TC6RAGV7v5hrCfsoYSS15LcbKYBo5eashZ",
+      "fanin": 281
+    },
+    {
+      "dest": "TQXNdtV8ffAG3kEgWBDgqpmnZwVAEPzWp1",
+      "payout": "TDqSquXBgUCLYvYC4XZgrprLK589dkhSCf",
+      "fanin": 1445
+    },
+    {
+      "dest": "TXWoFYwCNiSJ1RDWp8jG6W2juVsCBqLf1H",
+      "payout": "TQrpN7fpkKYLo2ShMxzi9hFsF8mWtqBfHS",
+      "fanin": 233
+    },
+    {
+      "dest": "TKFgKEptHvWwpe8AFvKU2CRHPNRNENsf3m",
+      "payout": "TQBRipBRi6yyFkvMqvHNTeRaxYWUkjcF5k",
+      "fanin": 19
+    },
+    {
+      "dest": "TKbtQpNbJVSqSU3cAAnBH8e7Gv4FBX68eV",
+      "payout": "TNK1JaiGKX9DAaSzVV5EdKmVXs4dypwbSa",
+      "fanin": 15
+    },
+    {
+      "dest": "TFAvKyTSX5JGDEzH3ahxq2dGdAp8j2f5Ux",
+      "payout": "TAxAnpRJ6aYghphpkC6HG9XSc6uhhhq58k",
+      "fanin": 234
+    },
+    {
+      "dest": "TWuncNxpf1Piuarmp3i2R859zzaZ4P7KWA",
+      "payout": "TLY6hu3dtaJ3Hg4dXmKNcFg5aeaeWGxPSg",
+      "fanin": 488
+    },
+    {
+      "dest": "THeMnNPhtUnvQTiNt2VVsDJc3FSkGVCnGM",
+      "payout": "TWJS3yZiQ5sMt4ooU9eukit6u4Xy3fbjrT",
+      "fanin": 1
+    },
+    {
+      "dest": "TBvu8svUX3Zx5QhvgkSxMh6m7kGTqb39PB",
+      "payout": "TKTnHeP2215gPrL8DPwGtxxZDimpdGbivY",
+      "fanin": 9
+    },
+    {
+      "dest": "TJSs5at2dkmtzRJD8RELEFhrH3mBcncGsC",
+      "payout": "TRwhDYz7s5Dh57zE7p2b3oYuDYHd4cCHJf",
+      "fanin": 316
+    },
+    {
+      "dest": "TPrXsKYuNeHQXxi12Sx4eqpM8mJVYT8bZM",
+      "payout": "TYk8xY1kTVwMq4UghknqhUoadZ1ZVrqhbh",
+      "fanin": 0
+    },
+    {
+      "dest": "TBWkLeQNdrVeEhZWB41S3zPBFZ2nSk2i2x",
+      "payout": "TLaGjwhvA8XQYSxFAcAXy7Dvuue9eGYitv",
+      "fanin": 507
+    },
+    {
+      "dest": "THg8qQiVsbhxtdi1LLgVBEQMAF55555555",
+      "payout": "TUK5uKhFHryMXk3NExoTFmkWsjvSFFFFFF",
+      "fanin": 90
+    },
+    {
+      "dest": "TNrPFoTM7AK5dHoWETPWvYCYyZdH2W29v3",
+      "payout": "TBtzL4FhmipzZJtF5urvShb5z5GnMPhFoE",
+      "fanin": 102
+    },
+    {
+      "dest": "TV4nzLsv9qU1LDbeGuPDd4n2KbQ3SGpxP1",
+      "payout": "TXsX9ToBYFQW8W3dUBMnsojDAgr1fagBND",
+      "fanin": 25
+    },
+    {
+      "dest": "THdqbHG8uuMyZ5NYf2so73BLrhmRUWvC5B",
+      "payout": "TX7FNbkY31khgbHPFfeFrqdCY6D24z4RV9",
+      "fanin": 190
+    },
+    {
+      "dest": "TCFNp179Lg46D16zKoumd4Poa2WFFdtqYj",
+      "payout": "TH9ZmD9XjXAHZHRVWjua5g582EGXq9M9H9",
+      "fanin": 0
+    },
+    {
+      "dest": "TFUQL7DY7rRr3cktfcLpEfTBN9s9pQKUkS",
+      "payout": "TN6Lfia5YwJ1MrCNu3mHANrJhaMh4x8ByW",
+      "fanin": 50
+    },
+    {
+      "dest": "TJffwvsgvpyLFpng1hFxXXn3nue6niXyCd",
+      "payout": "TPw5gAvYixvDirLjJNdXeMDPNaaimKBSuy",
+      "fanin": 68
+    },
+    {
+      "dest": "TCw3dYRR33AirdF3Wo3t7BQT67FqSNKhG7",
+      "payout": "TV3mLz7VM6Pc15HNrH9VZdvsxfHGSHPogq",
+      "fanin": 30
+    },
+    {
+      "dest": "TBCK5bcW9ongwWUtHc3UYvTrFN7ERhMQLg",
+      "payout": "TGrkRRvLXhvvTpRRhAagVRgr2AeQk6De4g",
+      "fanin": 88
+    },
+    {
+      "dest": "TM24o9zfKtQjoqvSbrzWmJ1q4KFmGD77vZ",
+      "payout": "TCYyQgJQnBmQH6W1cA3QmJvo47hKdeyqJU",
+      "fanin": 24
+    },
+    {
+      "dest": "TC3u1zJtSKxQMBB4wv9cPDmAHtZTsdkMPP",
+      "payout": "THvCvjB5iN43xXhn7o2X8k3mf6HNdGMEQR",
+      "fanin": 24
+    },
+    {
+      "dest": "TAyfe6uemSyJRALPEhz99XPsppKnGZAZVF",
+      "payout": "TFvMmAWdN43UFKTZ9LCkzuiTJXANS94cHj",
+      "fanin": 89
+    },
+    {
+      "dest": "TGx5uWdBWzHPMD27D6PpGx5GEe1dFAd9bh",
+      "payout": "TNvmyWNeA2xdJ8NeAy1vbv33WMkpzStzap",
+      "fanin": 5
+    },
+    {
+      "dest": "TGMSgpbNdJGD7R53kh5wLnRfyNQM1UeHtJ",
+      "payout": "TDN55BogVJKDryzMPmpi57LZmZAQ3EQfQD",
+      "fanin": 0
+    },
+    {
+      "dest": "TPuEeR8ehFZv6ZB72BwVq31NdR43kod9zA",
+      "payout": "TDqSquXBgUCLYvYC4XZgrprLK589dkhSCf",
+      "fanin": 1445
+    },
+    {
+      "dest": "TWPV1Ni6eQGXMngTi4CftPEcMcxPw4WR4Y",
+      "payout": "TJ7hhYhVhaxNx6BPyq7yFpqZrQULL3JSdb",
+      "fanin": 503
+    },
+    {
+      "dest": "TMXZ5mj6K1GTJaNgg57ttYjeM4MNekt4PX",
+      "payout": "TJPjqKHhABMf8zitWj7SGPWSrkyX5cPwL1",
+      "fanin": 147
+    },
+    {
+      "dest": "TDHGxKdKrfDSJBdywY12fyFQUozkjeaqf1",
+      "payout": "TWdQBccBXCWdRzXXFdN69T86UV33Yfqg6z",
+      "fanin": 190
+    },
+    {
+      "dest": "TCHwC9uMtFhC8Z4HhvSpT4amtzn6ruCScn",
+      "payout": "TUpHuDkiCCmwaTZBHZvQdwWzGNm5t8J2b9",
+      "fanin": 198
+    },
+    {
+      "dest": "TD3Bf1VTKwTYtGSfUzA4hAYVZLMVqxiLkU",
+      "payout": "TXzJYLkFjLtP5wKVbZwMzCMTDkoGAzucou",
+      "fanin": 15
+    },
+    {
+      "dest": "TGJj8h6nuLeUNpDCjyJW49aizDLA8CAfu3",
+      "payout": "TApUS9C3Ttxps8GUNmrhysUx8nQW6tLsPR",
+      "fanin": 52
+    },
+    {
+      "dest": "TSMnejGCoV8dX4GfCPcLS77g99SLZG8Kne",
+      "payout": "TLeqdNky1PFy3p31cSngLjPRJ8Nn3dv2bY",
+      "fanin": 97
+    },
+    {
+      "dest": "TXZUpr21Ni6AjPQCRou8QpEzsmBT9DzjMN",
+      "payout": "TLRDQUHPtEACKXQSWcLMC3qH3E88888888",
+      "fanin": 146
+    },
+    {
+      "dest": "TGmWPaL9upnQLXVxaBwMxq5jpv4LhahT9Y",
+      "payout": "TRuybYpUAvWXdvXbK4FMEZUNcxfpJaZVxK",
+      "fanin": 0
+    },
+    {
+      "dest": "TYutxnqgzjH4fR29qaLMMMkRKk7zsqqn1g",
+      "payout": "TL5BkKAi6Ao1eediUadS9CuPGrtF1xP3TF",
+      "fanin": 33
+    },
+    {
+      "dest": "TXhf7cbfryHFGt26YE5WNyW8NLNQvw3eq6",
+      "payout": "TV74DsTxeBPHki4dadPwWFawQuuUtHUnyg",
+      "fanin": 56
+    },
+    {
+      "dest": "TEukZLGmBoELERhGNYRb7cZwZXtZdZwKut",
+      "payout": "TLb3629oZYnoX7zqoBKMZYjEXcKdCHduWA",
+      "fanin": 140
+    },
+    {
+      "dest": "TZB9CiULdUqxwLjY27xBVUJBsCXGiSvACE",
+      "payout": "TMPVnTLZjdwm2GpnAXTEBNg9qzshSPDSBb",
+      "fanin": 0
+    },
+    {
+      "dest": "TCspMdyWMGocbDjEU7S6fX8Z8J7KCP2Pem",
+      "payout": "THvLyDYCoSbTYchHMoacmQ5Au8Vqi8xrZs",
+      "fanin": 278
+    },
+    {
+      "dest": "TJWwpyUrBnM5Z55tZzG3VYdDXukgPhptop",
+      "payout": "TJmrS8BUWSHDY7z8A1NSiumsTGyeYqi5KG",
+      "fanin": 345
+    },
+    {
+      "dest": "TCcyFRsoiSKVqiaTxtGRdYzhudAWhmgDNC",
+      "payout": "TCjoB2Nt9Pv7URnaWRWCVJkGdJScm9mo4X",
+      "fanin": 135
+    },
+    {
+      "dest": "TUALBmX4QFxgQBYaGPbxjTfrGSb8ZMutHK",
+      "payout": "TK7VhKQ739gadQu2idaqUPS6PUQoh9Myre",
+      "fanin": 12
+    },
+    {
+      "dest": "TQ5geeCos8KqBcaT1sqnufw3SngxUAr4jM",
+      "payout": "TAymJdP2xqRutq8iNRnRWvsSWJPjLR16qx",
+      "fanin": 117
+    },
+    {
+      "dest": "THqn2Ewk2yXc2oBaSV9dqX3hNSkUdB1Bqz",
+      "payout": "TDbiaatT9PmPhnEKMevD3tdumQ9Y78QEj5",
+      "fanin": 75
+    },
+    {
+      "dest": "TDr3HyudYKQ5KGiUFvix7u3v63xqPM9Dqt",
+      "payout": "TU7NRezCZgECxyTX1qUUofgvBmcS4fUZdy",
+      "fanin": 0
+    },
+    {
+      "dest": "TNRfgksayWKidmAUBaujo8DXH5Z2UTitM1",
+      "payout": "TEiWd56U2XnWFqTpKonc5RPAyGNjWnJKHV",
+      "fanin": 6
+    },
+    {
+      "dest": "TPnYWaqnFaGn8NEhVvgykLsgQJ1H1RHi2h",
+      "payout": "TEuSr4STnWTZUqBWiAhkc9eqXwQsjVa6NA",
+      "fanin": 29
+    },
+    {
+      "dest": "THXpvUot78rnQ1rmXFD7z8cXgGKWWmefFN",
+      "payout": "TUeapnPqxRyQB2hePL2mSsm5HEZc7aSiwE",
+      "fanin": 1793
+    }
+  ],
+  "truncated": 47
+}
