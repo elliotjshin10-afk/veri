@@ -1,0 +1,47 @@
+{
+  "sampled_receipts": 4400,
+  "distinct_addresses": 3699,
+  "already_frozen_addresses": 0,
+  "prevalence_address": 0.0,
+  "prevalence_transfer": 0.0,
+  "prevalence_upper_95": 0.0008110300081103001,
+  "lr_stop": 37.18960942802493,
+  "lr_warn": 7.405794674258918,
+  "study_base_rate": 0.1966797325340097,
+  "recall_stop": 0.4056271981242673,
+  "recall_any": 0.9671746776084408,
+  "fpr_stop": 0.010907003444316877,
+  "fpr_any": 0.13059701492537312,
+  "precision_curve": [
+    {
+      "prevalence": 0.0005,
+      "precision_stop": 0.018264315491950508,
+      "precision_warn": 0.00369107520219321
+    },
+    {
+      "prevalence": 0.001,
+      "precision_stop": 0.03589073765037418,
+      "precision_warn": 0.0073586566308036176
+    },
+    {
+      "prevalence": 0.005,
+      "precision_stop": 0.15745658548691524,
+      "precision_warn": 0.035879780826630556
+    },
+    {
+      "prevalence": 0.01,
+      "precision_stop": 0.27307229666209837,
+      "precision_warn": 0.06959954292837482
+    },
+    {
+      "prevalence": 0.05,
+      "precision_stop": 0.6618591908111106,
+      "precision_warn": 0.2804609656939538
+    },
+    {
+      "prevalence": 0.1967,
+      "precision_stop": 0.9010531035878433,
+      "precision_warn": 0.6445606381045639
+    }
+  ]
+}

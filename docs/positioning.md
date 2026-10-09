@@ -242,6 +242,52 @@ held-out set, so a 1% budget puts the threshold on about six scores; the CI is
 measurement, +2.5pp winning on 7 of 7 seeds, and ROC-AUC, which is the stable
 statistic and moved the right way on every arm of both chains.
 
+**Can the catch rate be extrapolated? Not as a promise, and here is the
+arithmetic.** The strongest figure here is 96.7% of transfers into a
+later-frozen address meeting a warning. It is held out and it is real, and
+quoted alone it misleads, because recall does not depend on how common fraud is
+and precision depends on nothing else.
+
+Measured rather than assumed: of **3,699** addresses that received USDT over the
+past week, **none** were on Tether's freeze list, putting the live rate below
+**0.081%** at 95% confidence (rule of three). The test set is 19.7% scam by
+construction, so it is at least **240x** denser in fraud than the stream the
+product sits in front of. Feeding that through Bayes:
+
+| prevalence | a stop is right | a warning is right |
+|---|---|---|
+| 0.05% | 1.8% | 0.4% |
+| 0.5% | 15.7% | 3.6% |
+| 5% | 66.2% | 28.0% |
+| 19.7% (our test set) | 90.1% | 64.5% |
+
+On a random payment, most warnings would be false. That is what any screening
+test does against a rare event, and it is the argument for this being a check
+someone chooses to run rather than a filter over everyone's payments: the
+population that visits a pre-send check is not a random transfer, and a reader
+who already feels uneasy sits far down that table.
+
+**The likelihood ratio is what survives.** A stop multiplies the odds of paying
+a collection point by **37**, a warning by **7.4**, independent of anyone's base
+rate. That is now the figure on the front page; the catch rate was there until
+2026-10-08 and invited exactly the wrong reading. Reproduce with
+`make prevalence`.
+
+**Is it memorising?** Three checks. Every figure is measured on addresses absent
+from training, not merely on held-out transfers to familiar ones. Shared mule
+wallets would let a model recognise infrastructure rather than behaviour, so
+that was measured: 6% of held-out scam destinations share a payout wallet with a
+training destination against 13% of controls, lower for scams, so it is not a
+shortcut. And the 163 addresses frozen after the labels were cut are flagged at
+the same rate 90 days before a freeze as one day before.
+
+**What none of that repairs.** Our labels are addresses Tether froze, and Tether
+freezes on law-enforcement request, which selects for large and reported fraud.
+A scam too small to be reported enters neither the training set nor the
+evaluation. The catch rate is conditional on the fraud being the kind that
+eventually gets noticed, and no splitting discipline fixes a property of the
+only labels that exist.
+
 **What is not yet established:**
 
 - The two-sided figures were the open question after the correction above, since

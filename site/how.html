@@ -139,6 +139,17 @@ a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .cap{font-size:12.5px;color:var(--ink3);margin-top:6px}
 @media(max-width:560px){.rate{grid-template-columns:1fr;gap:var(--s1)}}
 
+/* Restored: the diagram rewrite dropped these and the precision table landed
+   with its header on one run-on line. */
+table{border-collapse:collapse;width:100%;margin:var(--s5) 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px 8px 0;border-bottom:1px solid var(--rule);
+  vertical-align:baseline}
+th{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink3);font-weight:500;line-height:1.35}
+td.n,th.n{text-align:right;white-space:nowrap;padding-right:0}
+td.n{font-family:"IBM Plex Mono",monospace;color:var(--ink)}
+.tw{overflow-x:auto}
+
 .aside{border-left:2px solid var(--rule2);padding:2px 0 2px var(--s4);
   margin:var(--s5) 0;color:var(--ink2);font-size:14px}
 .aside p:last-child{margin-bottom:0}
@@ -347,9 +358,10 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
     <span><i class="b-thru"></i>Got through</span>
   </div>
 
-  <p>That is the number that matters: <span class="num">96.7%</span> of the
-    money moving into an address that later turned out to be a scam ran into
-    something first.</p>
+  <p><span class="num">96.7%</span> of the money moving into an address that
+    later turned out to be a scam ran into something first. That figure is
+    held out and it is real, and on its own it would mislead you. The next
+    section is why.</p>
   <p>It is not free. The same check also looked at 3,484 transfers to addresses
     that were never listed, and stopped 1.1% of them while warning on another
     12%. So about one ordinary payment in ninety gets a stop it did not need.
@@ -361,6 +373,66 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
     before a freeze as the day before it, tested against
     <span class="num">163</span> addresses frozen after the training data was
     cut, none of which the model had ever encountered.</p>
+
+  <h2>Can you extrapolate that to yourself?</h2>
+  <p>Not directly, and the reason is worth more than the number. A catch rate
+    does not depend on how common fraud is. How often a warning is <em>right</em>
+    depends on nothing else.</p>
+
+  <p>Our test set is about one fifth scam transfers, because it was built to
+    measure a model. The live chain is not. Sampling
+    <span class="num">3,699</span> addresses that received USDT over the past
+    week, <b>none</b> were on Tether's freeze list, which puts the real rate
+    below <span class="num">0.081%</span> at 95% confidence. Our data is at
+    least <span class="num">240x</span> denser in fraud than the street.</p>
+
+  <p>Feed that through, and the same model that catches 96.7% looks like
+    this:</p>
+
+  <div class="tw"><table>
+    <tr><th>If this share of payments is fraud</th>
+      <th class="n">a stop is right</th><th class="n">a warning is right</th></tr>
+    <tr><td>0.05%</td><td class="n">1.8%</td><td class="n">0.4%</td></tr>
+    <tr><td>0.5%</td><td class="n">15.7%</td><td class="n">3.6%</td></tr>
+    <tr><td>5%</td><td class="n">66.2%</td><td class="n">28.0%</td></tr>
+    <tr><td>19.7% (our test set)</td><td class="n">90.1%</td><td class="n">64.5%</td></tr>
+  </table></div>
+
+  <p>So on a random payment most warnings would be false. That is not a defect
+    being confessed, it is what any screening test does against a rare event,
+    and it is why this is a page you choose to visit rather than a filter
+    running over everyone's payments. Nobody checks an address at random. If
+    you are here because something already felt wrong, your own rate is nearer
+    the bottom of that table than the top, and the check is worth far more to
+    you than to a random passer-by.</p>
+
+  <p>One number survives all of that. A stop multiplies the odds that you are
+    paying a collection point by <span class="num">37</span>, and a warning by
+    <span class="num">7.4</span>, whoever you are and whatever your starting
+    risk. That is the honest headline, and it is the one on the front page.</p>
+
+  <h2>Is it just memorising the frauds it was shown?</h2>
+  <p>Three checks, because the question deserves more than an assurance.</p>
+  <ul class="plain">
+    <li><span class="d"></span><span>Every figure here is measured on addresses
+      the model never saw in training. Not held-out transfers to familiar
+      addresses: held-out <em>addresses</em>.</span></li>
+    <li><span class="d"></span><span>Scam addresses often sweep into shared
+      mule wallets, which would let a model recognise the wallet rather than
+      the behaviour. Checked: 6% of held-out scam destinations share a payout
+      wallet with a training one, against 13% of ordinary ones. Lower for
+      scams, so it is not a shortcut.</span></li>
+    <li><span class="d"></span><span>The strongest test is the one we cannot
+      rig. Tether froze 163 Tron addresses after our training data was cut, so
+      the model had never encountered any of them in any form. It flags them at
+      the same rate three months before the freeze as one day before.</span></li>
+  </ul>
+  <p>What none of that fixes: our labels are addresses Tether froze, and Tether
+    freezes on law-enforcement request. That selects for large, reported fraud.
+    A scam too small for anyone to report never enters the training set or the
+    measurement, so the catch rate is conditional on the fraud being the kind
+    that eventually gets noticed. There is no clever split that repairs this.
+    It is a property of the only labels that exist.</p>
 
   <h2>Where the right answers come from</h2>
   <p>Tether's USDT contract emits an <span class="mono">AddedBlackList</span>

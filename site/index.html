@@ -628,14 +628,26 @@ function verdict(to, amount, b, f, both, read, split) {
 }
 
 /* One number, read from the decided-cases log rather than typed in here, so
-   the page cannot go on claiming something that file no longer says. */
+   the page cannot go on claiming something that file no longer says.
+
+   It used to be the catch rate: 97% of transfers into an address that was
+   later frozen got a warning. True, held out, and the wrong headline. Recall
+   does not depend on how common fraud is, and the reader silently supplies a
+   prevalence when they interpret it. Measured on the live stream, fewer than
+   0.081% of addresses receiving USDT are on the freeze list, so at the real
+   rate most warnings are false and "97%" invites exactly the wrong conclusion.
+
+   The likelihood ratio is the one figure here that does not move with
+   prevalence. It is true for every reader rather than for a reader whose base
+   rate we guessed. */
 fetch("history.json").then(r => r.json()).then(d => {
   const s = d.summary;
-  const warned = (s.scam_high + s.scam_elevated) / s.n_scam;
+  const recall = s.scam_high / s.n_scam;
   const cost = s.control_high / s.n_control;
-  $("#stat").innerHTML = "<b>" + Math.round(warned * 100) + "%</b> of transfers into "
-    + "an address that was later frozen got a warning from us, at one stop in "
-    + "every " + Math.round(1 / cost) + " ordinary payments. "
+  $("#stat").innerHTML = "A stop makes it <b>" + (recall / cost).toFixed(0)
+    + "x</b> more likely you are paying a collection point. Measured on "
+    + s.n.toLocaleString() + " held-out transfers, at one stop in every "
+    + Math.round(1 / cost) + " ordinary payments. "
     + '<a href="history.html">See the cases &rarr;</a>';
 }).catch(() => {
   $("#stat").innerHTML = '<a href="history.html">What we said before, and what '

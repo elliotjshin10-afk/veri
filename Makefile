@@ -4,7 +4,7 @@
 PY := $(shell [ -x ./.venv/bin/python ] && echo ./.venv/bin/python || echo python3)
 export DYLD_LIBRARY_PATH := /opt/homebrew/opt/libomp/lib:$(DYLD_LIBRARY_PATH)
 
-.PHONY: freezes fresh-freezes payout-fanin history setup labels scam-history victims controls harvest features train eval crosschain api demo bench ui research browser-model parity site test dataset clean
+.PHONY: freezes fresh-freezes payout-fanin prevalence history setup labels scam-history victims controls harvest features train eval crosschain api demo bench ui research browser-model parity site test dataset clean
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv
@@ -146,6 +146,11 @@ freezes:
 ## piece of evidence here that is not a backtest. Run `make freezes` first.
 fresh-freezes:
 	$(PY) -u scripts/m11_fresh_freezes.py
+
+## What the catch rate means for somebody outside the dataset: live prevalence,
+## the precision that follows from it, and the likelihood ratio that does not.
+prevalence:
+	$(PY) -u scripts/m15_prevalence.py
 
 ## Is payout_fanin a signal or an artefact of which addresses we fetched?
 ## Answer: an artefact, and the real quantity runs the other way. See the
