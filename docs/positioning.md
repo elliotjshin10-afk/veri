@@ -92,7 +92,7 @@ from the reports, so the page cannot carry a number the code no longer produces.
 |---|---|---|
 | Address lookup, ROC-AUC | **0.932** | **0.866** |
 | Recall at a 1% false-alarm budget | 30% | 29% |
-| With the sender known (two-sided) | 0.974 † | 0.870 † |
+| With the sender known (two-sided) | 0.974 † | 0.872 † |
 | Lead time: caught 90 days before the freeze, at 1% false alarms | **39%** (CI 33-53%) | not yet measured |
 
 Both address models read one address past the destination as of 2026-10-08, and
@@ -301,6 +301,23 @@ the destination model's apparent gain from +2.3pp to +5.9pp at the 1% budget.
 Corrected, both models count only wallets actually fetched, and an unfetched
 wallet reads as zero-and-not-exact, which is the encoding for "we do not know".
 The pair parity harness caught it.
+
+**The one place the chains differ, and it is measured rather than tolerated.**
+Tron's two-sided model reads the second hop; Ethereum's does not. Symmetry was
+the obvious move and it is wrong:
+
+| Ethereum two-sided | @1% FPR | @10% FPR | ROC-AUC |
+|---|---|---|---|
+| 37 features, no hop | **24.5%** | 60.4% | 0.8693 |
+| 39 features, with hop | 22.8% | 60.3% | 0.8699 |
+
+Minus 1.75pp at the operating point, winning 1 of 7 seeds. Ethereum's two-sided
+training set is 4,714 events against Tron's 17,415 and its payout wallets are
+read four pages deep rather than fifteen, so there is less signal and more noise
+to find it through. Shipping it to make the feature lists match would have cost
+recall to tidy a table. The columns are still computed and the ablation re-runs
+from `eth_pair_matrix.parquet`, so the day Ethereum has the events this becomes
+a two-line change.
 
 **What is not yet established:**
 

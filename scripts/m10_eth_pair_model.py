@@ -50,17 +50,60 @@ from veridis.dataset.matching import (MATCH_COVARIATES, match_controls_nn,
                                       standardised_mean_difference)
 from veridis.model.quantise import quantise_matrix
 from veridis.features.asof import FEATURE_COLUMNS, FEATURE_FAMILY, FeatureEngine
+from veridis.features import payout
 
 SEED = 17
 TEST_FRAC = 0.30
 NEEDS_THIRD_ADDRESS = {"dest_funder_fanout"}
 
+# The second hop is computed and deliberately NOT used here, which is the one
+# place the two chains legitimately differ.
+#
+# Tron's two-sided model gained +3.1pp of recall at a 1% budget from it, on six
+# of seven seeds, so the obvious move was to do the same on Ethereum. Measured
+# the same way, on the matrix this script now dumps:
+#
+#     37 features, no hop    @1%FPR 24.5%   @10% 60.4%   ROC 0.8693
+#     39 features, with hop  @1%FPR 22.8%   @10% 60.3%   ROC 0.8699
+#     difference at 1%: -1.75pp, winning 1 of 7 seeds
+#
+# It hurts, consistently. Ethereum's two-sided training set is 4,714 events
+# against Tron's 17,415, and its payout wallets are read four pages deep rather
+# than fifteen, so there is less to learn from and more noise to learn it
+# through. Shipping it for symmetry would have cost recall at the operating
+# point to make a feature list look tidy.
+#
+# The columns are still attached, so the ablation above re-runs from
+# eth_pair_matrix.parquet whenever the data grows. The day Ethereum has the
+# events to support it, this becomes a two-line change.
 DEST_ONLY = [c for c in FEATURE_COLUMNS
              if FEATURE_FAMILY[c] == "destination" and c not in NEEDS_THIRD_ADDRESS]
 PAIR_FEATURES = [c for c in FEATURE_COLUMNS
                  if FEATURE_FAMILY[c] in ("destination", "context", "relationship")
                  and c not in NEEDS_THIRD_ADDRESS]
 WITH_SENDER = [c for c in FEATURE_COLUMNS if c not in NEEDS_THIRD_ADDRESS]
+
+
+def with_payout(tf, frame):
+    """The second hop, from the same module Tron and the Ethereum address model
+    use. A payout wallet whose own history is already in the warehouse is
+    complete there, so it counts as fetched and not truncated."""
+    tx_path = INTERIM / "eth_payout_transfers.parquet"
+    tr_path = INTERIM / "eth_payout_truncated.parquet"
+    if not tx_path.exists() or not tr_path.exists():
+        sys.exit("no Ethereum payout history - run scripts/m14_eth_payout_fetch.py")
+    ptx = pl.read_parquet(tx_path)
+    tr = pl.read_parquet(tr_path)
+    trunc = dict(zip(tr["address"].to_list(), tr["truncated"].to_list()))
+    for a in tf["to_address"].unique().to_list():
+        trunc.setdefault(a, False)
+    hop = (pl.concat([ptx.select(tf.columns), tf], how="vertical_relaxed")
+           .unique(subset=["tx_hash", "to_address"]))
+    f = payout.batch(frame.select("event_id", "destination", "event_time"),
+                     tf, hop, trunc)
+    return frame.join(f, on="event_id", how="left").with_columns(
+        pl.col("payout_fanin_pit").fill_null(0),
+        pl.col("payout_fanin_exact").fill_null(0))
 
 
 def slim(t):
@@ -149,7 +192,7 @@ def main() -> None:
           .sort("event_time").with_row_index("event_id"))
 
     engine = FeatureEngine(tf)
-    feats = engine.compute(ev)
+    feats = with_payout(tf, engine.compute(ev))
     engine.close()
 
     # Match the controls, exactly as the Tron side does, for two reasons.
@@ -222,6 +265,13 @@ def main() -> None:
           f"train {int((~is_test).sum()):,} events, test {int(is_test.sum()):,} "
           f"({int((y[is_test] == 1).sum()):,} scam / "
           f"{int((y[is_test] == 0).sum()):,} ordinary)")
+
+    # The prepared matrix, so an ablation does not have to re-derive the
+    # control matching to ask whether one feature earns its place. A single
+    # run's @1%FPR on 821 controls puts the threshold on about eight scores,
+    # which is far too noisy to retire a feature on.
+    (feats.with_columns(pl.Series("label", y), pl.Series("is_test", is_test))
+     .write_parquet(PROCESSED / "eth_pair_matrix.parquet"))
 
     results, shipped = {}, None
     print("\n  arm                       ROC-AUC  PR-AUC   @1%FPR  @10%FPR")
