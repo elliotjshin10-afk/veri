@@ -96,7 +96,13 @@ from the reports, so the page cannot carry a number the code no longer produces.
 | Lead time: caught 90 days before the freeze, at 1% false alarms | **39%** (CI 33-53%) | not yet measured |
 
 Both address models read one address past the destination as of 2026-10-08, and
-both are now quoted at the same false-alarm budget. Ethereum used to publish
+both are now quoted at the same false-alarm budget. Both are also held to the
+same parity standard: `check_eth_features.py` recomputes all nineteen Ethereum
+features in Python and in the browser from identical transfer rows, which Tron
+has had since the start and Ethereum had not. Until 2026-10-08 the Ethereum
+check only verified that the browser SCORED a stored feature vector the same
+way, which says nothing about whether it arrives at that vector, and both
+Ethereum bugs found that day were of exactly that kind. Ethereum used to publish
 recall at 5% while Tron published 1%, so the two columns sat side by side
 without being the same measurement; its 5% figure, 54%, is still produced by its
 own pipeline.

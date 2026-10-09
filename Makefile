@@ -54,8 +54,17 @@ api:
 browser-model:
 	$(PY) -u scripts/build_browser_model.py
 
+## Every parity gate in one target, because the point of having five is that
+## nobody has to remember which one covers what. Tron features, Tron pair
+## features, Ethereum features, Ethereum model scoring, Etherscan
+## normalisation, and the page's notes against the API's.
 parity:
 	$(PY) -u scripts/check_parity.py $(N)
+	$(PY) -u scripts/check_pair_parity.py
+	$(PY) -u scripts/check_eth_features.py
+	$(PY) -u scripts/check_eth_parity.py
+	$(PY) -u scripts/check_evm_parity.py
+	$(PY) -u scripts/check_notes_parity.py
 
 site:
 	$(PY) -u scripts/build_site.py
