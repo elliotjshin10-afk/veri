@@ -93,10 +93,12 @@ from the reports, so the page cannot carry a number the code no longer produces.
 | Address lookup, ROC-AUC | **0.932** | **0.866** |
 | Recall at a 1% false-alarm budget | 30% | 29% |
 | With the sender known (two-sided) | 0.974 † | 0.872 † |
-| Lead time: caught 90 days before the freeze, at 1% false alarms | **39%** (CI 33-53%) | not yet measured |
+| Lead time: caught 90 days before the freeze, at 1% false alarms | **39%** (CI 33-53%) | **36%** |
 
-Both address models read one address past the destination as of 2026-10-08, and
-both are now quoted at the same false-alarm budget. Both are also held to the
+Ethereum's lead time is new on 2026-10-08 and is measured on the same 647
+addresses at every horizon rather than on whoever is old enough to appear in
+each row; see the correction below. Both address models read one address past
+the destination, and both are now quoted at the same false-alarm budget. Both are also held to the
 same parity standard: `check_eth_features.py` recomputes all nineteen Ethereum
 features in Python and in the browser from identical transfer rows, which Tron
 has had since the start and Ethereum had not. Until 2026-10-08 the Ethereum
@@ -318,6 +320,36 @@ to find it through. Shipping it to make the feature lists match would have cost
 recall to tidy a table. The columns are still computed and the ablation re-runs
 from `eth_pair_matrix.parquet`, so the day Ethereum has the events this becomes
 a two-line change.
+
+**A correction to a claim this repo made repeatedly.** "The scores are as good
+three months before a freeze as the day before it" was wrong, and it was wrong
+in a way worth describing because the measurement looked clean.
+
+Recall per horizon was computed over whoever could be probed at that horizon,
+and those are nested subsets: on the out-of-sample Tron set, 163 addresses can
+be scored one day before their freeze and only 80 can be scored ninety days
+before, because the rest were not old enough to have a history that far back.
+Each row was therefore a different and systematically older population, and
+older addresses are easier. Flat recall across the rows was composition.
+
+Holding the population fixed, the same 80 addresses at every distance:
+
+| checked before the freeze | stopped | any warning |
+|---|---|---|
+| 1 day | 36.2% | 83.8% |
+| 1 week | 32.5% | 83.8% |
+| 1 month | 28.7% | 77.5% |
+| 3 months | 22.5% | 73.8% |
+
+It decays. The stop rate falls by more than a third over three months; the
+warning rate holds up far better, 84% to 74%. The claim that survives is still
+the one that matters against a blocklist, which has nothing to say at any of
+these distances, but it is "most of the signal is there three months early",
+not "all of it". Ethereum, measured the same way on 647 addresses, goes 38.0%
+to 35.7% between one week and six months.
+
+Both scripts now report the fixed-population version beside the nested one, so
+the two cannot be confused again.
 
 **What is not yet established:**
 

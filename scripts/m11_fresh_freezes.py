@@ -41,6 +41,7 @@ from veridis.chain.tron import tron_client
 from veridis.config import INTERIM, PROCESSED, ROOT, SITE
 from veridis.dataset.ingest import fetch_histories
 from veridis.features.asof import FeatureEngine
+from veridis.features import payout
 from veridis.model import browser_model
 from veridis.model.address_risk import DEST_FEATURES
 
@@ -92,7 +93,11 @@ async def main() -> None:
     # defaulted in the browser - exactly the skew this project keeps guarding
     # against. Scoring with the extra column would not be what the site does.
     features = model["features"]
-    missing = [f for f in features if f not in DEST_FEATURES]
+    # The payout columns come from veridis.features.payout rather than the
+    # as-of SQL, so they are legitimately absent from DEST_FEATURES. Anything
+    # else missing is a real mismatch and should still stop the run.
+    missing = [f for f in features
+               if f not in DEST_FEATURES and f not in payout.FEATURES]
     if missing:
         sys.exit(f"shipped model wants features the feature layer lacks: {missing}")
     thr = model["thresholds"]
@@ -127,8 +132,31 @@ async def main() -> None:
     first_seen = dict(zip(first["to_address"].to_list(), first["first_seen"].to_list()))
     logging.info("fetched history for %d of %d addresses", len(first_seen), len(addrs))
 
+    # The shipped model reads one address past the destination, so this test
+    # has to as well. These addresses were frozen after the training data was
+    # cut, so their payout wallets are mostly new too and have to be fetched
+    # before they can be counted. Scoring them with the feature defaulted to
+    # zero would measure a model nobody serves.
+    link = payout.links(tx, addrs)
+    need = sorted(set(link["payout"].to_list()))
+    held = pl.read_parquet(INTERIM / "payout_truncated.parquet") \
+        if (INTERIM / "payout_truncated.parquet").exists() else None
+    have = set(held["address"].to_list()) if held is not None else set()
+    todo = [a for a in need if a not in have]
+    print(f"payout wallets: {len(need)} needed, {len(todo)} to fetch")
+    ptx = pl.read_parquet(INTERIM / "payout_transfers.parquet")
+    trunc = dict(zip(held["address"].to_list(), held["truncated"].to_list())) \
+        if held is not None else {}
+    if todo:
+        async with tron_client(concurrency=4) as client:
+            new_tx, new_tr = await fetch_histories(client, todo, max_pages=MAX_PAGES,
+                                                   concurrency=4, label="payout wallets")
+        ptx = pl.concat([ptx, new_tx.select(ptx.columns)], how="vertical_relaxed") \
+            .unique(subset=["tx_hash", "to_address"])
+        trunc.update({a: bool(v) for a, v in new_tr.items()})
+
     engine = FeatureEngine(tx)
-    results, per_address = {}, {}
+    results, per_address, scored_at = {}, {}, {}
     for h in HORIZONS:
         usable = [a for a in addrs
                   if a in first_seen and fresh[a] - h * DAY_MS > first_seen[a]]
@@ -142,7 +170,11 @@ async def main() -> None:
                   pl.lit("__probe__").alias("sender"),
                   pl.lit(1000.0).alias("amount_usd"))
               .with_row_index("event_id"))
-        feats = engine.compute(ev)
+        feats = engine.compute(ev).join(
+            payout.batch(ev.select("event_id", "destination", "event_time"),
+                         tx, ptx, trunc), on="event_id", how="left").with_columns(
+            pl.col("payout_fanin_pit").fill_null(0),
+            pl.col("payout_fanin_exact").fill_null(0))
         X = feats.select(features).to_numpy().tolist()
         scores = browser_model.score(model, X)
         bands = [browser_model.band(s, thr) for s in scores]
@@ -154,11 +186,28 @@ async def main() -> None:
                 (pl.Series([fresh[a] - h * DAY_MS - first_seen[a] for a in usable])
                  / DAY_MS).median()),
         }
+        scored_at[h] = dict(zip(usable, bands))
         if h == min(HORIZONS):
             per_address = {a: {"score": round(s, 4), "band": b,
                                "frozen_at_ms": fresh[a]}
                            for a, s, b in zip(usable, scores, bands)}
     engine.close()
+
+    # The rows above are nested: an address has to be old enough to be probed
+    # at a horizon to appear in it, so 157 addresses can be scored a day before
+    # their freeze and 75 three months before. Comparing those rows measures
+    # which addresses survive the filter as much as it measures the model. The
+    # honest comparison holds the population fixed.
+    common = set.intersection(*(set(scored_at[h]) for h in HORIZONS if scored_at.get(h))) \
+        if all(scored_at.get(h) for h in HORIZONS) else set()
+    balanced = {}
+    for h in HORIZONS:
+        if not common:
+            continue
+        b = [scored_at[h][a] for a in common]
+        balanced[str(h)] = {"n": len(b),
+                            "high": sum(x == "high" for x in b) / len(b),
+                            "elevated_or_high": sum(x != "ordinary" for x in b) / len(b)}
 
     doc = {
         "built_at": int(dt.datetime.now(dt.timezone.utc).timestamp() * 1000),
@@ -183,6 +232,13 @@ async def main() -> None:
             continue
         print(f"  {h:<24}{r['n']:>6}{r['high']:>8.1%}{r['elevated_or_high']:>11.1%}"
               f"{r['median_age_days']:>10.0f} d")
+    if balanced:
+        print(f"\n  the same {len(common)} addresses at every horizon:")
+        for h in HORIZONS:
+            r = balanced.get(str(h))
+            if r:
+                print(f"  {h:<24}{r['n']:>6}{r['high']:>8.1%}{r['elevated_or_high']:>11.1%}")
+
     print("\nRecall only - no control arm here. The bands are cut at the top 1% "
           "of\nheld-out ordinary wallets, where a live trial flagged 0 of 207.")
 

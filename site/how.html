@@ -348,10 +348,28 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
 
   <p>Every one of those cases is listed individually, misses and false alarms
     included, under <a href="history.html">previous checks</a>.</p>
-  <p>Timing matters more than the rate. The scores are as good three months
-    before a freeze as the day before it, tested against
-    <span class="num">163</span> addresses frozen after the training data was
-    cut, none of which the model had ever encountered.</p>
+  <p>Timing matters more than the rate, and it costs something. Tested on
+    <span class="num">169</span> addresses frozen after the training data was
+    cut, which the model had never encountered in any form, and holding the
+    population fixed so the comparison is the same addresses at every
+    distance:</p>
+
+  <div class="tw"><table>
+    <tr><th>Checked this long before the freeze</th>
+      <th class="n">stopped</th><th class="n">any warning</th></tr>
+    <tr><td>1 day</td><td class="n">36.2%</td><td class="n">83.8%</td></tr>
+    <tr><td>1 week</td><td class="n">32.5%</td><td class="n">83.8%</td></tr>
+    <tr><td>1 month</td><td class="n">28.7%</td><td class="n">77.5%</td></tr>
+    <tr><td>3 months</td><td class="n">22.5%</td><td class="n">73.8%</td></tr>
+  </table></div>
+
+  <p>Three months out the check still warns on nearly three quarters of them,
+    which is three months before any list has anything to say. The stop rate
+    does fade, from 36% to 23%, and we said otherwise here until 2026-10-08:
+    the earlier numbers looked flat because only the older addresses can be
+    scored that far back, so each row was a different and easier population.
+    Held fixed, it decays. Eighty addresses survive to every row, so read all
+    of this as approximate.</p>
 
   <h2>Can you extrapolate that to yourself?</h2>
   <p>Not directly, and the reason is worth more than the number. A catch rate

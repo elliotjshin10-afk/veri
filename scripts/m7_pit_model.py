@@ -168,7 +168,7 @@ def main() -> None:
                 if t <= r["first_seen"]:
                     continue
                 rows.append({"address": r["address"], "label": label, "event_time": t,
-                             "mark": r["mark"]})
+                             "mark": r["mark"], "horizon": h})
     pr = pl.DataFrame(rows)
     cut = float(np.quantile(pr["mark"].to_numpy(), 1 - TEST_FRAC))
     is_test = pr["mark"].to_numpy() >= cut
@@ -231,6 +231,65 @@ def main() -> None:
                         "tpr_at_5pct_fpr": float((sm[ym == 1] >= thr).mean()),
                         "tpr_at_1pct_fpr": float((sm[ym == 1] >= thr1).mean()),
                         "n_pos": int((ym == 1).sum()), "n_neg": int((ym == 0).sum())}
+        # Lead time, per horizon, which the claims table carried as "not yet
+        # measured" on Ethereum while the probes to answer it were already
+        # being built four horizons deep.
+        #
+        # Each horizon is judged against the CONTROLS AT THAT HORIZON, not a
+        # threshold borrowed from the pooled set. A frozen address 180 days out
+        # and an ordinary one 180 days out are the comparison; mixing horizons
+        # would let an easier one carry a harder one.
+        if name.strip() == "browser":
+            hz = np.array(pr["horizon"].to_list())[is_test]
+            lead = {}
+            for h in HORIZONS:
+                m = hz == h
+                if len(set(yt[m])) < 2 or (yt[m] == 0).sum() < 20:
+                    continue
+                sm, ym = s[m], yt[m]
+                t1 = float(np.quantile(np.sort(sm[ym == 0]), 0.99))
+                t5 = float(np.quantile(np.sort(sm[ym == 0]), 0.95))
+                lead[str(h)] = {
+                    "n_pos": int((ym == 1).sum()), "n_neg": int((ym == 0).sum()),
+                    "roc_auc": float(roc_auc_score(ym, sm)),
+                    "tpr_at_1pct_fpr": float((sm[ym == 1] >= t1).mean()),
+                    "tpr_at_5pct_fpr": float((sm[ym == 1] >= t5).mean())}
+            # The rows above are nested subsets: 637 positives can be probed
+            # 7 days before their freeze and only 266 can be probed 180 days
+            # before, because the rest were not old enough. Recall rising with
+            # distance is therefore more likely composition than the model
+            # improving, and the honest version holds the population fixed.
+            keep = set(addr_t)
+            for h in HORIZONS:
+                keep &= set(addr_t[hz == h])
+            same = np.array([a in keep for a in addr_t])
+            bal = {}
+            for h in HORIZONS:
+                m = same & (hz == h)
+                if len(set(yt[m])) < 2 or (yt[m] == 0).sum() < 20:
+                    continue
+                sm, ym = s[m], yt[m]
+                t1 = float(np.quantile(np.sort(sm[ym == 0]), 0.99))
+                bal[str(h)] = {"n_pos": int((ym == 1).sum()),
+                               "n_neg": int((ym == 0).sum()),
+                               "roc_auc": float(roc_auc_score(ym, sm)),
+                               "tpr_at_1pct_fpr": float((sm[ym == 1] >= t1).mean())}
+            out["lead_time"] = lead
+            out["lead_time_same_addresses"] = bal
+            if bal:
+                n = len(keep)
+                print(f"\n  the same {n:,} addresses at every horizon:")
+                for h, r in bal.items():
+                    print(f"  {h:>22}   {r['n_pos']:>4}/{r['n_neg']:<5}  "
+                          f"{r['roc_auc']:>8.4f}{'':>8}{r['tpr_at_1pct_fpr']:>8.1%}")
+            if lead:
+                print("\n  days before the freeze   n(pos/neg)   ROC-AUC  "
+                      "TPR@5%  TPR@1%")
+                for h, r in lead.items():
+                    print(f"  {h:>22}   {r['n_pos']:>4}/{r['n_neg']:<5}  "
+                          f"{r['roc_auc']:>8.4f}{r['tpr_at_5pct_fpr']:>8.1%}"
+                          f"{r['tpr_at_1pct_fpr']:>8.1%}")
+
         out[name.strip()] = res
         for tag, r in res.items():
             lab = name if tag == "all" else "   \u21b3 indep"
