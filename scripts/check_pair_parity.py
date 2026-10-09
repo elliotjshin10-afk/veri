@@ -29,6 +29,26 @@ FEATS = model["features"]
 events = pl.read_parquet(PROCESSED / "events_features.parquet")
 warehouse = pl.read_parquet(PROCESSED / "warehouse_transfers.parquet")
 
+# The second hop. The link is derived from the SAME frame the browser is handed,
+# not from the full warehouse: if Python picked the payout wallet from a wider
+# view than the browser can see, the two would disagree about which wallet and
+# the harness would be comparing counts of different things.
+from veridis.features import payout  # noqa: E402
+from veridis.config import INTERIM   # noqa: E402
+
+PAYOUT_ON = all(f in FEATS for f in payout.FEATURES)
+payout_tx, payout_trunc = None, {}
+if PAYOUT_ON:
+    payout_tx = pl.read_parquet(INTERIM / "payout_transfers.parquet")
+    _tr = pl.read_parquet(INTERIM / "payout_truncated.parquet")
+    payout_trunc = dict(zip(_tr["address"].to_list(), _tr["truncated"].to_list()))
+    events = events.join(
+        payout.batch(events.select("event_id", "destination", "event_time"),
+                     warehouse, payout_tx, payout_trunc),
+        on="event_id", how="left").with_columns(
+        pl.col("payout_fanin_pit").fill_null(0),
+        pl.col("payout_fanin_exact").fill_null(0))
+
 # Stratify so the sample cannot miss the cases most likely to drift.
 first = events.filter(pl.col("is_first_send_to_dest") == 1)
 repeat = events.filter(pl.col("is_first_send_to_dest") == 0)
@@ -46,6 +66,28 @@ def touching(addr: str) -> list[dict]:
              "usd": r["amount_usd"], "t": int(r["block_time"])}
             for r in d.iter_rows(named=True)]
 
+def _pay_for(addr: str, when: int):
+    return payout.top_payout(warehouse, addr, when) if PAYOUT_ON else None
+
+
+def payout_rows(addr: str, when: int):
+    """None when we do not hold the wallet, which is not the same as holding it
+    and finding nothing. The browser distinguishes the two by whether its fetch
+    succeeded; here the distinction is whether the wallet is in the ingest."""
+    pay = _pay_for(addr, when)
+    if pay is None or pay not in payout_trunc:
+        return None
+    d = payout_tx.filter(pl.col("to_address") == pay)
+    return [{"from": r["from_address"], "to": r["to_address"],
+             "usd": r["amount_usd"], "t": int(r["block_time"])}
+            for r in d.iter_rows(named=True)]
+
+
+def payout_cut(addr: str, when: int) -> bool:
+    pay = _pay_for(addr, when)
+    return bool(payout_trunc.get(pay, False)) if pay else False
+
+
 cases = []
 for r in sample.iter_rows(named=True):
     cases.append({
@@ -54,16 +96,25 @@ for r in sample.iter_rows(named=True):
         "senderTransfers": touching(r["sender"]),
         "destTransfers": touching(r["destination"]),
         "expected": {f: (None if r[f] is None else float(r[f])) for f in FEATS},
+        **({"payoutTransfers": payout_rows(r["destination"], int(r["event_time"])),
+            "payoutTruncated": payout_cut(r["destination"], int(r["event_time"]))}
+           if PAYOUT_ON else {}),
     })
 
 scorer = pathlib.Path("site/scorer.js").resolve().as_uri()
 driver = f"""
-import {{computePairFeatures, score}} from '{scorer}';
+import {{computePairFeatures, score, topPayout, payoutFanin}} from '{scorer}';
 import fs from 'fs';
 const cases = JSON.parse(fs.readFileSync(process.argv[2] === "--" ? process.argv[3] : process.argv[2], 'utf8'));
 const model = JSON.parse(fs.readFileSync('site/model_pair.json', 'utf8'));
 const out = cases.map(c => {{
   const f = computePairFeatures(c);
+  if (f && c.payoutTransfers !== undefined) {{
+    // The browser picks WHICH wallet itself, from the destination's own rows.
+    const p = topPayout(c.destTransfers, c.destination, c.asOfMs);
+    Object.assign(f, payoutFanin(c.payoutTransfers, p, c.asOfMs, c.destination,
+                                 c.payoutTruncated));
+  }}
   return {{f, s: score(model, f)}};
 }});
 console.log(JSON.stringify(out));
@@ -103,4 +154,5 @@ if bad:
     for d, f, e, a in bad[:12]:
         print(f"   {d[:14]}  {f:28s} py={e!r:>18}  js={a!r}")
     sys.exit(1)
-print("\nPAIR PARITY OK - the browser computes all 37 features identically.")
+print(f"\nPAIR PARITY OK - the browser computes all {len(FEATS)} "
+      f"features identically.")

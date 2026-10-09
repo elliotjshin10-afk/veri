@@ -34,14 +34,17 @@ import numpy as np
 import polars as pl
 
 from veridis.config import INTERIM, PROCESSED, SITE
+from veridis.dataset.holdings import all_transfers
 from veridis.features.asof import FEATURE_COLUMNS, FEATURE_FAMILY
+from veridis.features import payout
 from veridis.model import browser_model
 from veridis.model.reasons import ReasonEngine
 from veridis.model.train import temporal_split
 
-PAIR = [c for c in FEATURE_COLUMNS
-        if FEATURE_FAMILY[c] in ("destination", "context", "relationship")
-        and c != "dest_funder_fanout"]
+PAIR = ([c for c in FEATURE_COLUMNS
+         if FEATURE_FAMILY[c] in ("destination", "context", "relationship")
+         and c != "dest_funder_fanout"]
+        + payout.FEATURES)
 
 # (label, band, how many) - the shape of the sample, fixed before looking at any
 # of it. The two mistake strata are not optional: if the data has them the log
@@ -63,6 +66,17 @@ def main() -> None:
         sys.exit("site/model_pair.json has a different feature list than this script")
 
     events = pl.read_parquet(PROCESSED / "events_features.parquet")
+    # The same second hop the model was trained on. Computing the log without
+    # it would score every case with two features defaulted to zero, which is
+    # not what the page does and not what the numbers above it would mean.
+    ptx = pl.read_parquet(INTERIM / "payout_transfers.parquet")
+    tr = pl.read_parquet(INTERIM / "payout_truncated.parquet")
+    trunc = dict(zip(tr["address"].to_list(), tr["truncated"].to_list()))
+    events = events.join(
+        payout.batch(events.select("event_id", "destination", "event_time"),
+                     all_transfers(), ptx, trunc), on="event_id", how="left") \
+        .with_columns(pl.col("payout_fanin_pit").fill_null(0),
+                      pl.col("payout_fanin_exact").fill_null(0))
     sp = temporal_split(events)
     test = sp.test
 

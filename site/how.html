@@ -341,32 +341,11 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
     address the model had never seen, each scored from only the history that
     existed at that minute.</p>
 
-  <div class="rate">
-    <div class="what"><b>Into an address later frozen</b>853 transfers</div>
-    <div>
-      <div class="bar" role="img" aria-label="40.6% stopped, 56.2% warned, 3.3% neither">
-        <span class="b-stop" style="width:40.6%"></span>
-        <span class="b-warn" style="width:56.2%"></span>
-        <span class="b-thru" style="width:3.3%"></span></div>
-      <div class="cap">stopped 40.6% &middot; warned 56.2% &middot; 3.3% got
-        through unflagged</div>
-    </div>
-  </div>
-  <div class="key">
-    <span><i class="b-stop"></i>Stopped</span>
-    <span><i class="b-warn"></i>Warned</span>
-    <span><i class="b-thru"></i>Got through</span>
-  </div>
+  <div id="rates"></div>
 
-  <p><span class="num">96.7%</span> of the money moving into an address that
-    later turned out to be a scam ran into something first. That figure is
-    held out and it is real, and on its own it would mislead you. The next
-    section is why.</p>
-  <p>It is not free. The same check also looked at 3,484 transfers to addresses
-    that were never listed, and stopped 1.1% of them while warning on another
-    12%. So about one ordinary payment in ninety gets a stop it did not need.
-    That is the price of the figure above, and the reason the threshold sits
-    where it does rather than lower.</p>
+  <p id="headline"></p>
+  <p id="cost"></p>
+
   <p>Every one of those cases is listed individually, misses and false alarms
     included, under <a href="history.html">previous checks</a>.</p>
   <p>Timing matters more than the rate. The scores are as good three months
@@ -379,24 +358,11 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
     does not depend on how common fraud is. How often a warning is <em>right</em>
     depends on nothing else.</p>
 
-  <p>Our test set is about one fifth scam transfers, because it was built to
-    measure a model. The live chain is not. Sampling
-    <span class="num">3,699</span> addresses that received USDT over the past
-    week, <b>none</b> were on Tether's freeze list, which puts the real rate
-    below <span class="num">0.081%</span> at 95% confidence. Our data is at
-    least <span class="num">240x</span> denser in fraud than the street.</p>
+  <p id="density"></p>
 
-  <p>Feed that through, and the same model that catches 96.7% looks like
-    this:</p>
+  <p>Feed that through, and the same model looks like this:</p>
 
-  <div class="tw"><table>
-    <tr><th>If this share of payments is fraud</th>
-      <th class="n">a stop is right</th><th class="n">a warning is right</th></tr>
-    <tr><td>0.05%</td><td class="n">1.8%</td><td class="n">0.4%</td></tr>
-    <tr><td>0.5%</td><td class="n">15.7%</td><td class="n">3.6%</td></tr>
-    <tr><td>5%</td><td class="n">66.2%</td><td class="n">28.0%</td></tr>
-    <tr><td>19.7% (our test set)</td><td class="n">90.1%</td><td class="n">64.5%</td></tr>
-  </table></div>
+  <div class="tw"><table id="precision"></table></div>
 
   <p>So on a random payment most warnings would be false. That is not a defect
     being confessed, it is what any screening test does against a rare event,
@@ -406,10 +372,7 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
     the bottom of that table than the top, and the check is worth far more to
     you than to a random passer-by.</p>
 
-  <p>One number survives all of that. A stop multiplies the odds that you are
-    paying a collection point by <span class="num">37</span>, and a warning by
-    <span class="num">7.4</span>, whoever you are and whatever your starting
-    risk. That is the honest headline, and it is the one on the front page.</p>
+  <p id="lr"></p>
 
   <h2>Is it just memorising the frauds it was shown?</h2>
   <p>Three checks, because the question deserves more than an assurance.</p>
@@ -500,6 +463,82 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
 <script>
 /* The ledger grows every night, so the count cannot live in the markup. It
    would be wrong by morning and nobody would notice. */
+/* Every figure in "How well it does" and "Can you extrapolate" is computed
+   from history.json at load. They were typed into the markup until 2026-10-08,
+   and a single retrain made nine of them wrong at once with nothing to catch
+   it. The prevalence bound is the one measured constant here, from
+   `make prevalence`. */
+var PREVALENCE_UPPER = 0.00081;   // 0 of 3,699 live recipients, rule of three
+var PREV_GRID = [0.0005, 0.005, 0.05];
+
+fetch("history.json").then(function (r) { return r.json(); }).then(function (d) {
+  var s = d.summary, pct = function (x) { return (100 * x).toFixed(1) + "%"; };
+  var stop = s.scam_high / s.n_scam,
+      warn = s.scam_elevated / s.n_scam,
+      thru = s.scam_ordinary / s.n_scam,
+      any = stop + warn,
+      cStop = s.control_high / s.n_control,
+      cWarn = s.control_elevated / s.n_control,
+      cAny = cStop + cWarn;
+
+  document.getElementById("rates").innerHTML =
+    '<div class="rate"><div class="what"><b>Into an address later frozen</b>'
+    + s.n_scam.toLocaleString() + ' transfers</div><div>'
+    + '<div class="bar" role="img" aria-label="' + pct(stop) + ' stopped, '
+    + pct(warn) + ' warned, ' + pct(thru) + ' neither">'
+    + '<span class="b-stop" style="width:' + 100 * stop + '%"></span>'
+    + '<span class="b-warn" style="width:' + 100 * warn + '%"></span>'
+    + '<span class="b-thru" style="width:' + 100 * thru + '%"></span></div>'
+    + '<div class="cap">stopped ' + pct(stop) + " \u00b7 warned " + pct(warn)
+    + " \u00b7 " + pct(thru) + ' got through unflagged</div></div></div>'
+    + '<div class="key"><span><i class="b-stop"></i>Stopped</span>'
+    + '<span><i class="b-warn"></i>Warned</span>'
+    + '<span><i class="b-thru"></i>Got through</span></div>';
+
+  document.getElementById("headline").innerHTML =
+    '<span class="num">' + pct(any) + "</span> of the money moving into an "
+    + "address that later turned out to be a scam ran into something first. "
+    + "That figure is held out and it is real, and on its own it would mislead "
+    + "you. The next section is why.";
+
+  document.getElementById("cost").innerHTML =
+    "It is not free. The same check also looked at "
+    + s.n_control.toLocaleString() + " transfers to addresses that were never "
+    + "listed, and stopped " + pct(cStop) + " of them while warning on another "
+    + pct(cWarn) + ". So about one ordinary payment in "
+    + Math.round(1 / cStop) + " gets a stop it did not need.";
+
+  var study = s.n_scam / s.n;
+  document.getElementById("density").innerHTML =
+    "Our test set is " + pct(study) + " scam transfers, because it was built to "
+    + "measure a model. The live chain is not. Sampling <span class=\"num\">"
+    + "3,699</span> addresses that received USDT over a week, <b>none</b> were "
+    + "on Tether's freeze list, which puts the real rate below <span "
+    + 'class="num">0.081%</span> at 95% confidence. Our data is at least '
+    + '<span class="num">' + Math.round(study / PREVALENCE_UPPER) + "x</span> "
+    + "denser in fraud than the street.";
+
+  var prec = function (rec, fpr, p) { return (rec * p) / (rec * p + fpr * (1 - p)); };
+  var rows = PREV_GRID.concat([study]).map(function (p) {
+    return "<tr><td>" + (100 * p).toFixed(p < 0.01 ? 2 : 1) + "%"
+      + (p === study ? " (our test set)" : "") + '</td><td class="n">'
+      + pct(prec(stop, cStop, p)) + '</td><td class="n">'
+      + pct(prec(any, cAny, p)) + "</td></tr>";
+  }).join("");
+  document.getElementById("precision").innerHTML =
+    "<tr><th>If this share of payments is fraud</th>"
+    + '<th class="n">a stop is right</th>'
+    + '<th class="n">a warning is right</th></tr>' + rows;
+
+  document.getElementById("lr").innerHTML =
+    "One number survives all of that. A stop multiplies the odds that you are "
+    + 'paying a collection point by <span class="num">'
+    + (stop / cStop).toFixed(0) + '</span>, and a warning by <span class="num">'
+    + (any / cAny).toFixed(1) + "</span>, whoever you are and whatever your "
+    + "starting risk. That is the honest headline, and it is the one on the "
+    + "front page.";
+}).catch(function () {});
+
 fetch("ledger.json").then(function (r) { return r.json(); }).then(function (d) {
   var open = d.predictions || 0;
   var done = (d.cohorts || []).reduce(function (n, c) { return n + (c.frozen || 0); }, 0);

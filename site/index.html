@@ -404,9 +404,9 @@ async function check() {
        thing here that costs another fetch. Low fan-in is the warning: a mule
        wallet is fed by a handful of addresses, an exchange hot wallet by
        thousands. Declared by the model, so a model without them skips it. */
-    if (dm.features.indexOf("payout_fanin_pit") >= 0) {
-      Object.assign(dfeats, await secondHop(tx, dest, evm));
-    }
+    const hop = dm.features.indexOf("payout_fanin_pit") >= 0
+      ? await secondHop(tx, dest, evm) : null;
+    if (hop) Object.assign(dfeats, hop);
     const dband = band(score(dm, dfeats), dm.thresholds);
 
     let feats = dfeats, b = dband, pband = null;
@@ -418,6 +418,11 @@ async function check() {
       feats = computePairFeatures({senderTransfers: stx, destTransfers: tx,
         sender: src, destination: dest, amountUsd: amount, asOfMs: Date.now(),
         destFirstSeen: firstSeen});
+      /* Reused, not refetched. Both models ask the same question of the same
+         wallet, and the second hop is the one expensive thing on this page. */
+      if (m.features.indexOf("payout_fanin_pit") >= 0) {
+        Object.assign(feats, hop || await secondHop(tx, dest, evm));
+      }
       pband = band(score(m, feats), m.thresholds);
       // The destination is a floor. The relationship may raise the verdict and
       // never lowers it: a needless warning costs a moment, a missed collection

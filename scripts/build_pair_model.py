@@ -31,13 +31,39 @@ import polars as pl
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from veridis.features.asof import FEATURE_COLUMNS, FEATURE_FAMILY
+from veridis.features import payout
 from veridis.model.train import temporal_split
-from veridis.config import PROCESSED
+from veridis.config import INTERIM, PROCESSED
+from veridis.dataset.holdings import all_transfers
 
 NEEDS_THIRD_ADDRESS = {"dest_funder_fanout"}
-PAIR_FEATURES = [c for c in FEATURE_COLUMNS
-                 if FEATURE_FAMILY[c] in ("destination", "context", "relationship")
-                 and c not in NEEDS_THIRD_ADDRESS]
+PAIR_FEATURES = ([c for c in FEATURE_COLUMNS
+                  if FEATURE_FAMILY[c] in ("destination", "context", "relationship")
+                  and c not in NEEDS_THIRD_ADDRESS]
+                 + payout.FEATURES)
+
+
+def with_payout(events: pl.DataFrame) -> pl.DataFrame:
+    """The second hop, on the two-sided path.
+
+    The destination model gained it first and the two-sided model is the one
+    that actually runs when a wallet is connected, so leaving it off here would
+    have meant the better model was the one fewer people see. Measured the same
+    way, seven seeds: +3.1pp of recall at a 1% false-alarm budget, 36.7% to
+    39.8%, winning on six of seven.
+    """
+    tx_path = INTERIM / "payout_transfers.parquet"
+    tr_path = INTERIM / "payout_truncated.parquet"
+    if not tx_path.exists() or not tr_path.exists():
+        sys.exit("no payout wallet history - run scripts/m13_payout_fetch.py first")
+    ptx = pl.read_parquet(tx_path)
+    tr = pl.read_parquet(tr_path)
+    trunc = dict(zip(tr["address"].to_list(), tr["truncated"].to_list()))
+    f = payout.batch(events.select("event_id", "destination", "event_time"),
+                     all_transfers(), ptx, trunc)
+    return events.join(f, on="event_id", how="left").with_columns(
+        pl.col("payout_fanin_pit").fill_null(0),
+        pl.col("payout_fanin_exact").fill_null(0))
 
 
 def slim(t):
@@ -54,7 +80,7 @@ def slim(t):
 
 
 def main() -> None:
-    events = pl.read_parquet(PROCESSED / "events_features.parquet")
+    events = with_payout(pl.read_parquet(PROCESSED / "events_features.parquet"))
     sp = temporal_split(events)
     y = sp.train["label"].to_numpy()
     print(f"{len(PAIR_FEATURES)} features; train {sp.train.height:,} events, "

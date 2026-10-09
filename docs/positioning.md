@@ -90,9 +90,9 @@ from the reports, so the page cannot carry a number the code no longer produces.
 
 | | Tron | Ethereum |
 |---|---|---|
-| Address lookup, ROC-AUC | **0.931** | **0.866** |
+| Address lookup, ROC-AUC | **0.932** | **0.866** |
 | Recall at a 1% false-alarm budget | 30% | 29% |
-| With the sender known (two-sided) | 0.975 † | 0.870 † |
+| With the sender known (two-sided) | 0.974 † | 0.870 † |
 | Lead time: caught 90 days before the freeze, at 1% false alarms | **39%** (CI 33-53%) | not yet measured |
 
 Both address models read one address past the destination as of 2026-10-08, and
@@ -256,10 +256,10 @@ product sits in front of. Feeding that through Bayes:
 
 | prevalence | a stop is right | a warning is right |
 |---|---|---|
-| 0.05% | 1.8% | 0.4% |
-| 0.5% | 15.7% | 3.6% |
-| 5% | 66.2% | 28.0% |
-| 19.7% (our test set) | 90.1% | 64.5% |
+| 0.05% | 1.9% | 0.4% |
+| 0.5% | 16.5% | 3.6% |
+| 5% | 67.4% | 28.0% |
+| 19.7% (our test set) | 90.6% | 64.4% |
 
 On a random payment, most warnings would be false. That is what any screening
 test does against a rare event, and it is the argument for this being a check
@@ -268,7 +268,7 @@ population that visits a pre-send check is not a random transfer, and a reader
 who already feels uneasy sits far down that table.
 
 **The likelihood ratio is what survives.** A stop multiplies the odds of paying
-a collection point by **37**, a warning by **7.4**, independent of anyone's base
+a collection point by **39**, a warning by **7.4**, independent of anyone's base
 rate. That is now the figure on the front page; the catch rate was there until
 2026-10-08 and invited exactly the wrong reading. Reproduce with
 `make prevalence`.
@@ -287,6 +287,20 @@ A scam too small to be reported enters neither the training set nor the
 evaluation. The catch rate is conditional on the fraud being the kind that
 eventually gets noticed, and no splitting discipline fixes a property of the
 only labels that exist.
+
+**The two-sided model reads the second hop too, as of 2026-10-08**, and gained
++3.1pp of recall at a 1% budget for it on seven seeds. It is the path that runs
+when a wallet is connected, so leaving it on the destination model alone would
+have meant the better model was the one fewer people see.
+
+Building it surfaced the original artefact in miniature. `payout_transfers`
+holds the TRANSFERS of the wallets we fetched, so a wallet we never fetched
+still appears in that file as somebody else's counterparty, and counting those
+rows measures which wallets we chose rather than who pays this one. It inflated
+the destination model's apparent gain from +2.3pp to +5.9pp at the 1% budget.
+Corrected, both models count only wallets actually fetched, and an unfetched
+wallet reads as zero-and-not-exact, which is the encoding for "we do not know".
+The pair parity harness caught it.
 
 **What is not yet established:**
 

@@ -119,23 +119,38 @@ def batch(probes: pl.DataFrame, transfers: pl.DataFrame,
     covered = (inbound.group_by("to_address")
                .agg(pl.col("block_time").max().alias("covered_until"))
                .rename({"to_address": "payout"}))
+    # Membership in `truncated` is what "we fetched this wallet" means. A wallet
+    # we fetched that turned out to have no inbound USDT is a real, complete
+    # answer of zero; a wallet we never fetched is not an answer at all. Both
+    # arrive here as an absence of rows, and conflating them is a train/serve
+    # bug rather than a tidy-up: the browser CAN tell them apart, because it
+    # either made the request or it did not.
     tr = pl.DataFrame({"payout": list(truncated),
-                       "cut": [bool(v) for v in truncated.values()]})
+                       "cut": [bool(v) for v in truncated.values()],
+                       "fetched": [True] * len(truncated)})
 
-    q = p.join(link, on=key, how="left")
-    counted = (q.join(edges, on="payout", how="inner")
+    q = p.join(link, on=key, how="left").join(tr, on="payout", how="left")
+    # Only wallets we actually fetched contribute a count. payout_tx holds the
+    # TRANSFERS of fetched wallets, so an unfetched wallet still turns up in it
+    # as somebody else's counterparty, and counting those rows would measure
+    # which wallets we chose to fetch rather than who pays this one. That is
+    # the exact artefact that made the original payout_fanin useless, at a
+    # tenth the scale and therefore much easier to miss.
+    counted = (q.filter(pl.col("fetched").fill_null(False))
+               .join(edges, on="payout", how="inner")
                .filter((pl.col("first_paid") < pl.col("t"))
                        & (pl.col("payer") != pl.col("address")))
                .group_by(key).agg(pl.col("payer").n_unique()
                                   .alias("payout_fanin_pit")))
     return (q.join(counted, on=key, how="left")
             .join(covered, on="payout", how="left")
-            .join(tr, on="payout", how="left")
             .with_columns(
                 pl.col("payout_fanin_pit").fill_null(0).cast(pl.Int64),
-                pl.when(pl.col("payout").is_null() | pl.col("covered_until").is_null())
-                .then(0)
+                pl.when(pl.col("payout").is_null()
+                        | ~pl.col("fetched").fill_null(False))
+                .then(0)                       # no payout wallet, or never fetched
                 .otherwise(((~pl.col("cut").fill_null(False))
-                            | (pl.col("covered_until") >= pl.col("t"))).cast(pl.Int64))
+                            | (pl.col("covered_until").fill_null(0) >= pl.col("t")))
+                           .cast(pl.Int64))
                 .alias("payout_fanin_exact"))
             .select(key, *FEATURES))
