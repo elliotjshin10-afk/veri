@@ -5,6 +5,10 @@
  * Python one is for a laptop or a VPS; this one is for a free URL with no
  * server to run, which is what a static site on GitHub Pages needs.
  *
+ * Signups live here too, at POST /email. They are never readable without a
+ * READ_KEY variable, because an aggregate count is fine to publish and a list
+ * of people's addresses is not.
+ *
  * Setup, once, no CLI required:
  *   1. dash.cloudflare.com -> Workers & Pages -> Create -> Worker -> paste this
  *   2. Settings -> Variables -> KV Namespace Bindings -> add one named TALLY
@@ -76,6 +80,44 @@ export default {
         with_wallet: withWallet, by_day: days,
       }, null, 2);
       return new Response(body, {
+        headers: { ...CORS, "content-type": "application/json" },
+      });
+    }
+
+    /* Launch-list signups. Kept in the same Worker because standing up a second
+     * service to hold a few hundred email addresses is not worth the surface.
+     *
+     * There is deliberately no public read. Counts can be public, a list of
+     * people's email addresses cannot, so reading requires a secret set as a
+     * Worker variable and the endpoint simply does not exist until one is. */
+    if (request.method === "POST" && path === "/email") {
+      let addr = null, who = null;
+      try {
+        const b = await request.json();
+        if (typeof b.email === "string" && b.email.length <= 200
+            && /^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(b.email)) addr = b.email.toLowerCase();
+        if (typeof b.who === "string" && b.who.length <= 60) who = b.who;
+      } catch (e) { /* not an email then */ }
+      if (addr) {
+        // Keyed by address, so a double submit is one row rather than two.
+        await env.TALLY.put("e:" + addr, JSON.stringify(
+          { t: new Date().toISOString(), who: who || "" }));
+      }
+      return new Response(null, { status: 204, headers: CORS });
+    }
+
+    if (request.method === "GET" && path === "/emails.json") {
+      const secret = env.READ_KEY;
+      if (!secret || url.searchParams.get("key") !== secret) {
+        return new Response(null, { status: 404, headers: CORS });
+      }
+      const list = await env.TALLY.list({ prefix: "e:" });
+      const out = [];
+      for (const k of list.keys) {
+        const v = JSON.parse((await env.TALLY.get(k.name)) || "{}");
+        out.push({ email: k.name.slice(2), when: v.t, who: v.who });
+      }
+      return new Response(JSON.stringify(out, null, 2), {
         headers: { ...CORS, "content-type": "application/json" },
       });
     }
