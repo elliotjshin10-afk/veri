@@ -146,7 +146,6 @@ section{margin-top:var(--s8)}
       <span class="count" id="casecount"></span></div>
     <div class="rates" id="rates"></div>
     <div id="cases"></div>
-    <p class="note" id="method"></p>
   </section>
 </div>
 
@@ -247,19 +246,6 @@ fetch("history.json").then(r => r.json()).then(d => {
     + " · Tron · USDT";
   $("#rates").innerHTML = rates(s);
   $("#cases").innerHTML = d.cases.map(caseRow).join("");
-  $("#method").innerHTML = "Every transfer above is held out: its destination "
-    + "never appeared in training, and every feature is computed from the chain "
-    + "as it stood before the transfer, so nothing here is scored with knowledge "
-    + "of the freeze that followed. Scores come from <span class=\"mono\">"
-    + esc(d.model.file) + "</span> (<span class=\"mono\">"
-    + esc(d.model.sha256_16) + "</span>), the same file the send sheet runs "
-    + "in your browser. The eighteen cases are drawn at random inside each "
-    + "verdict, including both kinds of mistake; the percentages above are over "
-    + "all " + s.n.toLocaleString() + ". <b>Missed</b> marks a transfer we let "
-    + "through to an address that was frozen later, however much later, so "
-    + "read it with the lead time beside it: at three years out it is a weak "
-    + "counterfactual, at sixteen days it is not. Blacklists current to "
-    + esc(day(d.labels_current_to)) + ".";
 }).catch(() => {
   $("#cases").innerHTML = '<p class="empty">Could not load the case log.</p>';
 });
