@@ -303,7 +303,7 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
     money is going somewhere ordinary. We had this backwards in our own code for
     a long time, on the reasonable-sounding theory that scam addresses sweep
     into shared wallets. Measured, scam destinations forward to wallets with a
-    median of 42 other payers and ordinary ones to wallets with 60.</p>
+    median of 4 other payers, and ordinary ones to wallets with 71.</p>
 
   <p>It is worth <span class="num">+2.5</span> points of recall at the same
     false-alarm rate, and it is the one signal here that a blocklist cannot have
@@ -491,8 +491,17 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
    and a single retrain made nine of them wrong at once with nothing to catch
    it. The prevalence bound is the one measured constant here, from
    `make prevalence`. */
-var PREVALENCE_UPPER = 0.00081;   // 0 of 3,699 live recipients, rule of three
+/* Read, not typed. These moved once already when the sample was re-run and the
+   page kept the old pair, which is exactly the failure the rest of this script
+   exists to avoid. Defaults only apply if the fetch fails. */
+var PREVALENCE_UPPER = 0.00085, PREV_N = 3540;
 var PREV_GRID = [0.0005, 0.005, 0.05];
+
+fetch("prevalence.json").then(function (r) { return r.json(); })
+  .then(function (p) {
+    if (p && p.prevalence_upper_95) PREVALENCE_UPPER = p.prevalence_upper_95;
+    if (p && p.distinct_addresses) PREV_N = p.distinct_addresses;
+  }).catch(function () {}).then(function () {
 
 fetch("history.json").then(function (r) { return r.json(); }).then(function (d) {
   var s = d.summary, pct = function (x) { return (100 * x).toFixed(1) + "%"; };
@@ -535,9 +544,10 @@ fetch("history.json").then(function (r) { return r.json(); }).then(function (d) 
   document.getElementById("density").innerHTML =
     "Our test set is " + pct(study) + " scam transfers, because it was built to "
     + "measure a model. The live chain is not. Sampling <span class=\"num\">"
-    + "3,699</span> addresses that received USDT over a week, <b>none</b> were "
-    + "on Tether's freeze list, which puts the real rate below <span "
-    + 'class="num">0.081%</span> at 95% confidence. Our data is at least '
+    + PREV_N.toLocaleString() + "</span> addresses that received USDT over a "
+    + "week, <b>none</b> were on Tether's freeze list, which puts the real rate "
+    + 'below <span class="num">' + (100 * PREVALENCE_UPPER).toFixed(3)
+    + '%</span> at 95% confidence. Our data is at least '
     + '<span class="num">' + Math.round(study / PREVALENCE_UPPER) + "x</span> "
     + "denser in fraud than the street.";
 
@@ -560,7 +570,7 @@ fetch("history.json").then(function (r) { return r.json(); }).then(function (d) 
     + (any / cAny).toFixed(1) + "</span>, whoever you are and whatever your "
     + "starting risk. That is the honest headline, and it is the one on the "
     + "front page.";
-}).catch(function () {});
+}).catch(function () {}); });
 
 fetch("ledger.json").then(function (r) { return r.json(); }).then(function (d) {
   var open = d.predictions || 0;
