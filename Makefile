@@ -4,7 +4,7 @@
 PY := $(shell [ -x ./.venv/bin/python ] && echo ./.venv/bin/python || echo python3)
 export DYLD_LIBRARY_PATH := /opt/homebrew/opt/libomp/lib:$(DYLD_LIBRARY_PATH)
 
-.PHONY: freezes fresh-freezes payout-fanin prevalence tally history setup labels scam-history victims controls harvest features train eval crosschain api demo bench ui research browser-model parity site test dataset clean
+.PHONY: freezes fresh-freezes payout-fanin prevalence tally pages history setup labels scam-history victims controls harvest features train eval crosschain api demo bench ui research browser-model parity site test dataset clean
 
 setup:
 	/opt/homebrew/bin/python3.11 -m venv .venv
@@ -147,6 +147,12 @@ freezes:
 ## piece of evidence here that is not a backtest. Run `make freezes` first.
 fresh-freezes:
 	$(PY) -u scripts/m11_fresh_freezes.py
+
+## A public URL with no build minutes spent: writes dist/ to the gh-pages
+## branch using the credentials that already push this repo. One manual step
+## the first time, in Settings -> Pages.
+pages:
+	./scripts/publish_pages.sh
 
 ## Count that checks are happening, without recording what was checked. Set the
 ## endpoint in site/index.html's veridis-tally meta tag to switch it on; empty

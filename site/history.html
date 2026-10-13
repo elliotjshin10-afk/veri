@@ -123,9 +123,9 @@ section{margin-top:var(--s8)}
 <body>
 <div class="wrap">
   <div class="top">
-    <a class="mark" href="/">Veridis<b>.</b></a>
+    <a class="mark" href="index.html">Veridis<b>.</b></a>
     <nav class="tabs">
-      <a class="tab" href="/">Send</a>
+      <a class="tab" href="index.html">Send</a>
       <a class="tab" href="how.html">How it works</a>
     </nav>
   </div>
@@ -223,7 +223,7 @@ function yours() {
   try { mine = JSON.parse(localStorage.getItem("veridis.checks") || "[]"); } catch (e) {}
   if (!Array.isArray(mine) || !mine.length) {
     $("#yours").innerHTML = '<p class="empty">Nothing yet. Every check you run on '
-      + 'the <a href="/">send sheet</a> is kept here, in this browser only.</p>';
+      + 'the <a href="index.html">send sheet</a> is kept here, in this browser only.</p>';
     return;
   }
   $("#yourcount").textContent = mine.length + (mine.length === 1 ? " check" : " checks")
