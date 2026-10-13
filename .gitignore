@@ -88,3 +88,6 @@ dist/
 # time the index is rebuilt, for a file no browser requests.
 site/address_index.json
 .DS_Store
+
+# Usage counts are a local artefact of whatever instance is running.
+data/usage/

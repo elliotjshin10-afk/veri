@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Veridis: before you send</title>
 <meta name="description" content="Connect a wallet, send money, get a warning before it is too late.">
+<!-- Where usage counts go. Empty means count nothing, which is the default
+     for a fork, a local copy and anyone who has not deliberately set it. -->
+<meta name="veridis-tally" content="">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
 <style>
 :root{
@@ -555,6 +558,42 @@ function notable(f) {
                   : "what arrives usually leaves within the hour"];
 }
 
+/* Count that a check happened. Not what was checked.
+
+   The page recorded nothing at all until now, which is the right default and
+   also meant there was no way to answer "is anyone using this". The payload is
+   four fields: the verdict band, the chain, whether a wallet was connected, and
+   a random browser id so that four hundred checks by one person do not read as
+   four hundred people. No address, no amount, no identity, because none of
+   those are in the object below.
+
+   TALLY is empty by default, so a fork or a local copy sends nothing anywhere
+   until somebody sets an endpoint. Failures are swallowed: a counter must never
+   be the reason a warning does not appear. */
+const TALLY = (document.querySelector('meta[name="veridis-tally"]') || {})
+  .content || "";
+function browserId() {
+  try {
+    let u = localStorage.getItem("veridis.u");
+    if (!u) {
+      u = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      localStorage.setItem("veridis.u", u);
+    }
+    return u;
+  } catch (e) { return null; }   // private window: counted, just not deduped
+}
+function tally(ev) {
+  if (!TALLY) return;
+  try {
+    const u = browserId();
+    const body = JSON.stringify(u ? Object.assign({u: u}, ev) : ev);
+    // keepalive so the count survives the page being closed right after.
+    fetch(TALLY + "/t", {method: "POST", keepalive: true,
+      headers: {"content-type": "application/json"}, body: body}).catch(() => {});
+  } catch (e) {}
+}
+tally({e: "view"});
+
 /* Keep the check where the person can find it again. A warning you have
    already clicked past is still the only record that it was ever shown, and it
    lives in this browser alone - nothing about what anyone checks leaves it. */
@@ -587,6 +626,8 @@ function verdict(to, amount, b, f, both, read, split) {
         + "transfer is how most of these start"
       : "this transfer on its own looks unremarkable; the address receiving it does not");
   }
+  tally({e: "check", b: b, c: chainOf(to) === "Ethereum" ? "ethereum" : "tron",
+         w: both ? 1 : 0});
   remember({t: Date.now(), to: to, chain: chainOf(to), band: b,
             amt: isFinite(amount) && amount > 0 ? amount : 0,
             why: why.length ? why[0].charAt(0).toUpperCase() + why[0].slice(1) : ""});

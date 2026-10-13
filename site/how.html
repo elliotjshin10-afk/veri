@@ -435,8 +435,13 @@ ul.plain li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
   <p>The trees ship to the page as JSON and are walked in JavaScript, so the
     scoring happens on your machine. The address you type goes to a public block
     explorer, because that is where transaction history lives. It does not come
-    to us. There is no account, no login, and no record of what anyone
-    checked.</p>
+    to us. There is no account and no login.</p>
+  <p>We do count that a check happened: which of the three verdicts it returned,
+    which chain, whether a wallet was connected, and a random id kept in your
+    browser so that four hundred checks by one person are not mistaken for four
+    hundred people. Not the address, not the amount, not you. That is the whole
+    payload, and the code that receives it is in the repository, so it is
+    checkable rather than promised.</p>
   <p>The same trees are run in Python for everything measured here. Every
     build checks the two against each other: same verdicts, and scores matching
     to <span class="mono">2.2e-16</span>, the smallest gap a computer can
