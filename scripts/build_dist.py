@@ -81,6 +81,16 @@ def main() -> None:
         total += src.stat().st_size
         print(f"  {name:22s} {src.stat().st_size/1024:7.0f} KB")
 
+    # A custom domain lives in a CNAME file at the published root, and GitHub
+    # reads it on every deploy. Because `make pages` rebuilds dist/ from
+    # nothing, a CNAME added by hand on the branch is destroyed by the next
+    # publish and the domain silently reverts to the github.io URL. Keeping the
+    # source of truth in site/ means it survives.
+    cname = SITE / "CNAME"
+    if cname.exists():
+        shutil.copy2(cname, DIST / "CNAME")
+        print(f"  {'CNAME':22s} {cname.read_text().strip()}")
+
     # A deploy is a public claim about the ledger's contents, so publish the
     # CHAIN head - the value the page displays and the one a reader can
     # recompute from predictions.jsonl. The first version wrote sha256 of the
