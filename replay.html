@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Veridis: the 83 hours</title>
+<meta name="description" content="One real victim, scored at each transfer as it happened. Every blocklist said the address was clean for another 215 days.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#F9FAF9; --surface:#FFFFFF; --sunk:#F1F3F2;
+  --ink:#16191B; --ink2:#4A5157; --ink3:#727A80;
+  --rule:#E0E4E3; --rule2:#C4CAC9;
+  --crit:#A82A20; --crit-bg:#F9EDEB; --crit-rule:#E4C3BE;
+  --warn:#8A5A08; --warn-bg:#FAF2E2; --warn-rule:#E3D2AC;
+  --ok:#1F6B3E;   --ok-bg:#ECF4EF;   --ok-rule:#BFD8CA;
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+  --s6:32px; --s7:48px; --s8:64px; --s9:88px;
+  --measure:38rem;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  color-scheme: dark;
+  --paper:#0E1112; --surface:#161A1B; --sunk:#121516;
+  --ink:#E9ECEB; --ink2:#A5ADAC; --ink3:#7C8482;
+  --rule:#242A2A; --rule2:#39403F;
+  --crit:#E98275; --crit-bg:#291A17; --crit-rule:#4A2C27;
+  --warn:#D9A03F; --warn-bg:#241D11; --warn-rule:#44351A;
+  --ok:#5CBB83;   --ok-bg:#122119;   --ok-rule:#22402F;
+}}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0E1112; --surface:#161A1B; --sunk:#121516;
+  --ink:#E9ECEB; --ink2:#A5ADAC; --ink3:#7C8482;
+  --rule:#242A2A; --rule2:#39403F;
+  --crit:#E98275; --crit-bg:#291A17; --crit-rule:#4A2C27;
+  --warn:#D9A03F; --warn-bg:#241D11; --warn-rule:#44351A;
+  --ok:#5CBB83;   --ok-bg:#122119;   --ok-rule:#22402F;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:var(--measure);margin:0 auto;padding-inline:var(--s5)}
+
+/* Newsreader for headlines: a measurement report is set in serif. */
+h1,h2,h3{font-family:Newsreader,Georgia,"Times New Roman",serif;font-weight:400;
+  margin:0;letter-spacing:-.011em;text-wrap:balance;line-height:1.14}
+h1{font-size:clamp(34px,6vw,46px)}
+h2{font-size:clamp(23px,3.6vw,27px)}
+h3{font-size:19px}
+
+/* Every figure and every address is monospace - they are data, not prose. */
+.mono,.num{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-variant-numeric:tabular-nums}
+/* Mono eyebrows label a section the way a document labels a field. */
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink3);font-weight:500;margin:0 0 var(--s3)}
+a{color:inherit;text-decoration-color:var(--rule2);text-underline-offset:3px}
+a:hover{text-decoration-color:currentColor}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums}
+.wrap{max-width:46rem;margin:0 auto;padding-inline:var(--s5)}
+h1,h2{font-family:Newsreader,Georgia,"Times New Roman",serif;font-weight:400;margin:0;
+  letter-spacing:-.011em;text-wrap:balance;line-height:1.12}
+h1{font-size:clamp(32px,5.6vw,46px)}
+h2{font-size:clamp(20px,3vw,25px)}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink3);font-weight:500;margin:0 0 var(--s3)}
+a{color:inherit;text-decoration-color:var(--rule2);text-underline-offset:3px}
+
+header{padding-block:var(--s5);border-bottom:1px solid var(--rule);
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s4)}
+.mark{font-family:Newsreader,serif;font-size:19px;text-decoration:none;color:var(--ink)}
+.mark b{font-weight:500}
+.back{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink3);text-decoration:none}
+
+.hero{padding-block:var(--s8) var(--s6)}
+.lede{color:var(--ink2);font-size:17px;margin:var(--s4) 0 0;max-width:34em}
+.lede b{color:var(--ink);font-weight:500}
+
+/* the control strip */
+
+/* the two columns of verdicts */
+
+/* the decision the viewer actually makes */
+.stage{border:1px solid var(--rule2);border-radius:4px;padding:var(--s5);
+  margin-top:var(--s6)}
+.stage .ask{font-size:14px;color:var(--ink2);margin:0 0 var(--s2)}
+.stage .big{font-family:"IBM Plex Mono",monospace;font-size:clamp(28px,5vw,38px);
+  font-weight:500;letter-spacing:-.025em;display:block;line-height:1.1}
+.stage .to{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink3);
+  margin-top:var(--s2);word-break:break-all}
+.stage .to a{color:var(--ink3)}
+.choice{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s4)}
+button.b{font:inherit;font-weight:600;font-size:14px;border-radius:3px;
+  padding:11px 20px;cursor:pointer;border:1px solid var(--rule2);
+  background:transparent;color:var(--ink)}
+button.b:hover{border-color:var(--ink2)}
+button.b.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+button.b.primary:hover{background:var(--ink2)}
+.verdicts{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3);margin-top:var(--s4)}
+@media(max-width:560px){.verdicts{grid-template-columns:1fr}}
+.col{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:5px}
+.outcome{margin-top:var(--s5);border-top:1px solid var(--rule);padding-top:var(--s4)}
+.outcome .big{font-family:"IBM Plex Mono",monospace;font-size:clamp(24px,4vw,31px);
+  font-weight:500;letter-spacing:-.02em;display:block}
+.outcome p{margin:var(--s2) 0 0;color:var(--ink2);max-width:40em}
+.tag{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.11em;
+  text-transform:uppercase;padding:3px 7px;border-radius:2px;border:1px solid}
+.tag.sent{color:var(--crit);border-color:var(--crit-rule);background:var(--crit-bg)}
+.tag.held{color:var(--ok);border-color:var(--ok-rule);background:var(--ok-bg)}
+
+.step{border-top:1px solid var(--rule);padding-block:var(--s3)}
+.step:last-of-type{border-bottom:1px solid var(--rule)}
+.when{display:flex;align-items:baseline;gap:var(--s3);margin-bottom:var(--s3)}
+.when .t{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink3)}
+.when .amt{font-family:"IBM Plex Mono",monospace;font-size:21px;font-weight:500;
+  letter-spacing:-.02em;margin-left:auto}
+.verdicts{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4)}
+@media(max-width:560px){.verdicts{grid-template-columns:1fr}}
+.v{border:1px solid var(--rule);border-radius:3px;padding:11px 13px}
+.v .b{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;font-weight:500}
+.v .s{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink3);margin-top:3px}
+.v.high{border-color:var(--crit-rule);background:var(--crit-bg)}
+.v.high .b{color:var(--crit)}
+.v.elevated{border-color:var(--warn-rule);background:var(--warn-bg)}
+.v.elevated .b{color:var(--warn)}
+.v.ordinary{border-color:var(--ok-rule);background:var(--ok-bg)}
+.v.ordinary .b{color:var(--ok)}
+.why{list-style:none;margin:var(--s3) 0 0;padding:0;display:grid;gap:5px}
+.why li{font-size:12.5px;color:var(--ink2);display:grid;grid-template-columns:auto 1fr;
+  gap:8px;line-height:1.45}
+.why .d{color:var(--ink3);font-family:"IBM Plex Mono",monospace;font-size:11px;line-height:1.7}
+.seen{font-size:11.5px;color:var(--ink3);margin-top:var(--s3);
+  font-family:"IBM Plex Mono",monospace}
+
+
+.how{margin-top:var(--s8);padding-top:var(--s5);border-top:1px solid var(--rule)}
+.how dl{display:grid;grid-template-columns:auto 1fr;gap:10px var(--s4);margin:var(--s4) 0 0}
+.how dt{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink3);white-space:nowrap}
+.how dd{margin:0;font-size:13.5px;color:var(--ink2)}
+.how dd b{color:var(--ink);font-weight:500}
+@media(max-width:560px){.how dl{grid-template-columns:1fr;gap:3px var(--s4)}
+  .how dd{margin-bottom:var(--s3)}}
+footer{padding-block:var(--s6) var(--s8);font-size:12px;color:var(--ink3)}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="mark" href="index.html">Veridis<b>.</b></a>
+    <a class="back" href="index.html">Check an address &rarr;</a>
+  </header>
+
+  <section class="hero">
+    <p class="eyebrow">One relationship, replayed</p>
+    <h1>83 hours, $215,170,<br>and the list arrived in June.</h1>
+    <p class="lede">A real wallet paid a real address five times. The address was on
+      no list we hold, and Tether did not freeze it for another <b>214 days</b>.
+      This is what we would have said, at each transfer, using only what was
+      knowable at that second.</p>
+  </section>
+
+  <div class="stage" id="stage"></div>
+
+  <div id="log"></div>
+
+  <section class="how">
+    <p class="eyebrow">How this was built</p>
+    <h2>The parts that make it worth believing</h2>
+    <dl id="prov"></dl>
+  </section>
+
+  <footer>
+    Every figure is public chain data. The scores come from the models this site
+    serves, run over the transfers that preceded each moment. Nothing here
+    is re-fitted for the demo.
+  </footer>
+</div>
+
+<script type="module">
+const $ = s => document.querySelector(s);
+const usd = n => "$" + Math.round(n).toLocaleString();
+const when = ms => new Date(ms).toISOString().replace("T", " ").slice(0, 16) + "Z";
+const scan = a => "https://tronscan.org/#/address/" + a;
+const short = a => a.slice(0, 6) + "\u2026" + a.slice(-4);
+
+const data = await fetch("replay.json").then(r => r.json());
+const LABEL = {high: "High risk", elevated: "Some risk signals", ordinary: "Nothing unusual"};
+
+/* You are the person being talked out of their money.
+   Every figure is real and checkable on Tronscan; the only thing simulated is
+   that you get the choice, which the actual victim did not. */
+let i = 0, sent = 0, stoppedAt = null;
+
+function verdictCard(v, label) {
+  return '<div><div class="col">' + label + "</div>"
+    + '<div class="v ' + v.band + '"><div class="b">' + LABEL[v.band] + "</div>"
+    + '<div class="s">score ' + v.score.toFixed(3) + "</div></div></div>";
+}
+
+function logRow(s, held) {
+  const el = document.createElement("div");
+  el.className = "step";
+  el.innerHTML = '<div class="when"><span class="t">' + when(s.at) + "</span>"
+    + '<span class="tag ' + (held ? "held" : "sent") + '">'
+    + (held ? "not sent" : "sent") + "</span>"
+    + '<span class="amt">' + usd(s.amount) + "</span></div>";
+  $("#log").appendChild(el);
+}
+
+function ask() {
+  const s = data.steps[i];
+  $("#stage").innerHTML =
+    '<p class="ask">Transfer ' + (i + 1) + " of " + data.steps.length
+    + " &middot; " + when(s.at) + "</p>"
+    + '<span class="big">' + usd(s.amount) + "</span>"
+    + '<div class="to">to <a href="' + scan(data.destination)
+    + '" target="_blank" rel="noopener">' + data.destination + "</a></div>"
+    + '<div class="choice">'
+    +   '<button class="b primary" id="send">Send it</button>'
+    +   '<button class="b" id="check">Check it first</button>'
+    + "</div>";
+  $("#send").onclick = () => doSend();
+  $("#check").onclick = () => reveal();
+}
+
+function reveal() {
+  const s = data.steps[i];
+  $("#stage").innerHTML =
+    '<p class="ask">Transfer ' + (i + 1) + " of " + data.steps.length
+    + " &middot; " + when(s.at) + "</p>"
+    + '<span class="big">' + usd(s.amount) + "</span>"
+    + '<div class="to">to <a href="' + scan(data.destination)
+    + '" target="_blank" rel="noopener">' + data.destination + "</a></div>"
+    + '<div class="verdicts">'
+    +   verdictCard(s.dest, "If you only paste the address")
+    +   verdictCard(s.pair, "With your wallet connected")
+    + "</div>"
+    + (s.why.length
+        ? '<ul class="why">' + s.why.map(w => '<li><span class="d">&#8226;</span><span>'
+            + w + "</span></li>").join("") + "</ul>" : "")
+    + '<div class="seen">read from ' + s.evidence.transfers_known.toLocaleString()
+    + " transfers that existed before this moment &middot; "
+    + s.evidence.payers.toLocaleString() + " wallets had paid it by then</div>"
+    + '<div class="choice">'
+    +   '<button class="b" id="send">Send it anyway</button>'
+    +   '<button class="b primary" id="stop">Don\u2019t send</button>'
+    + "</div>";
+  $("#send").onclick = () => doSend();
+  $("#stop").onclick = () => { stoppedAt = i; logRow(data.steps[i], true); finish(); };
+}
+
+function doSend() {
+  const s = data.steps[i];
+  sent += s.amount;
+  logRow(s, false);
+  i += 1;
+  if (i >= data.steps.length) finish(); else ask();
+}
+
+function finish() {
+  const total = data.total;
+  const saved = total - sent;
+  const lead = Math.floor((data.frozen_at - data.steps.at(-1).at) / 86400000);
+  const headline = stoppedAt === null
+    ? usd(sent) + " gone"
+    : usd(saved) + " never left";
+  const body = stoppedAt === null
+    ? "You sent every transfer, which is what happened. The address was on no "
+      + "list we hold at the time, so a check that waits for a list had nothing "
+      + "to say."
+    : "You stopped at transfer " + (stoppedAt + 1) + ". " + usd(sent)
+      + " had already gone; " + usd(saved) + " stayed where it was. The real "
+      + "victim had no such prompt.";
+  $("#stage").innerHTML =
+    '<p class="ask">What happened</p><span class="big">' + headline + "</span>"
+    + "<p style=\"margin-top:var(--s3);color:var(--ink2)\">" + body + "</p>"
+    + '<div class="outcome"><span class="big">' + lead + " days later</span>"
+    + "<p>Tether froze <a href=\"" + scan(data.destination) + "\" target=\"_blank\" "
+    + "rel=\"noopener\">" + short(data.destination) + "</a> on "
+    + when(data.frozen_at).slice(0, 10) + ". Every transfer above is on-chain and "
+    + "public. Open it and check the dates.</p></div>"
+    + '<div class="choice"><button class="b" id="again">Start again</button></div>';
+  $("#again").onclick = () => { i = 0; sent = 0; stoppedAt = null;
+    $("#log").innerHTML = ""; ask(); };
+}
+
+/* Provenance: the reasons this is worth believing, stated rather than implied. */
+const p = data.provenance;
+$("#prov").innerHTML = [
+  ["Real", "Both addresses are public. <a href='" + scan(data.victim)
+    + "' target='_blank' rel='noopener'>The sender</a> and <a href='" + scan(data.destination)
+    + "' target='_blank' rel='noopener'>the address they paid</a> are on Tronscan "
+    + "with every transfer and every date. Nothing here is simulated except your "
+    + "chance to say no."],
+  ["Held out", "This destination never appeared in training, and the builder exits "
+    + "rather than run if it ever does. The first case considered was a better "
+    + "story (a $10 test transfer, then $181,714 inside two hours), and "
+    + "was discarded on that check."],
+  ["Point in time", "Each score reads only the transfers timestamped before it. The "
+    + "same feature layer runs in training, on this page and in the live product, so "
+    + "there is one definition of every number rather than three."],
+  ["Two models", "The left verdict is the destination model, 17 features from the "
+    + "receiving address alone. The right adds the sender and the amount: 37 "
+    + "features including the relationship between the two wallets."],
+  ["Provenance", "Scored by <b>model_browser " + p.dest_model_sha256_16 + "</b> and "
+    + "<b>model_pair " + p.pair_model_sha256_16 + "</b>. Those hashes are in the "
+    + "prediction ledger, so a reader can check the scores came from these models "
+    + "and not ones fitted afterwards."],
+].map(([k, v]) => "<dt>" + k + "</dt><dd>" + v + "</dd>").join("");
+
+ask();
+</script>
+</body>
+</html>

@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Veridis: before you send</title>
+<meta name="description" content="Connect a wallet, send money, get a warning before it is too late.">
+<!-- Where usage counts go. Empty means count nothing, which is the default
+     for a fork, a local copy and anyone who has not deliberately set it. -->
+<meta name="veridis-tally" content="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#F9FAF9; --surface:#FFFFFF; --sunk:#F1F3F2;
+  --ink:#16191B; --ink2:#4A5157; --ink3:#727A80;
+  --rule:#E0E4E3; --rule2:#C4CAC9;
+  --crit:#A82A20; --crit-bg:#F9EDEB; --crit-rule:#E4C3BE;
+  --warn:#8A5A08; --warn-bg:#FAF2E2; --warn-rule:#E3D2AC;
+  --ok:#1F6B3E;   --ok-bg:#ECF4EF;   --ok-rule:#BFD8CA;
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+  --s6:32px; --s7:48px; --s8:64px; --s9:88px;
+  --measure:38rem;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  color-scheme: dark;
+  --paper:#0E1112; --surface:#161A1B; --sunk:#121516;
+  --ink:#E9ECEB; --ink2:#A5ADAC; --ink3:#7C8482;
+  --rule:#242A2A; --rule2:#39403F;
+  --crit:#E98275; --crit-bg:#291A17; --crit-rule:#4A2C27;
+  --warn:#D9A03F; --warn-bg:#241D11; --warn-rule:#44351A;
+  --ok:#5CBB83;   --ok-bg:#122119;   --ok-rule:#22402F;
+}}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#0E1112; --surface:#161A1B; --sunk:#121516;
+  --ink:#E9ECEB; --ink2:#A5ADAC; --ink3:#7C8482;
+  --rule:#242A2A; --rule2:#39403F;
+  --crit:#E98275; --crit-bg:#291A17; --crit-rule:#4A2C27;
+  --warn:#D9A03F; --warn-bg:#241D11; --warn-rule:#44351A;
+  --ok:#5CBB83;   --ok-bg:#122119;   --ok-rule:#22402F;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:var(--measure);margin:0 auto;padding-inline:var(--s5)}
+
+/* Newsreader for headlines: a measurement report is set in serif. */
+h1,h2,h3{font-family:Newsreader,Georgia,"Times New Roman",serif;font-weight:400;
+  margin:0;letter-spacing:-.011em;text-wrap:balance;line-height:1.14}
+h1{font-size:clamp(34px,6vw,46px)}
+h2{font-size:clamp(23px,3.6vw,27px)}
+h3{font-size:19px}
+
+/* Every figure and every address is monospace - they are data, not prose. */
+.mono,.num{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-variant-numeric:tabular-nums}
+/* Mono eyebrows label a section the way a document labels a field. */
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink3);font-weight:500;margin:0 0 var(--s3)}
+a{color:inherit;text-decoration-color:var(--rule2);text-underline-offset:3px}
+a:hover{text-decoration-color:currentColor}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+  min-height:100%;display:flex;align-items:center;justify-content:center;
+  padding:var(--s5)}
+.sheet{width:100%;max-width:26rem}
+.mark{font-family:Newsreader,Georgia,serif;font-size:19px;color:var(--ink);
+  text-decoration:none;display:block;margin-bottom:var(--s5)}
+.mark b{font-weight:500}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:6px;
+  padding:var(--s5)}
+label{display:block;font-family:"IBM Plex Mono",monospace;font-size:10px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+.row{margin-bottom:var(--s4)}
+input{width:100%;font:inherit;font-size:15px;font-family:"IBM Plex Mono",monospace;
+  color:var(--ink);background:var(--paper);border:1px solid var(--rule2);
+  border-radius:3px;padding:12px}
+input:focus{outline:2px solid var(--ink);outline-offset:-1px;border-color:transparent}
+input::placeholder{font-family:"IBM Plex Sans",sans-serif;color:var(--ink3)}
+.from{display:flex;align-items:center;gap:var(--s2);font-family:"IBM Plex Mono",monospace;
+  font-size:13px;color:var(--ink2);background:var(--paper);border:1px solid var(--rule);
+  border-radius:3px;padding:11px 12px}
+.from .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:0 0 7px}
+button{font:inherit;font-weight:600;font-size:15px;width:100%;border-radius:3px;
+  padding:13px;cursor:pointer;border:1px solid var(--ink);
+  background:var(--ink);color:var(--paper)}
+button:hover{background:var(--ink2);border-color:var(--ink2)}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--rule2)}
+button.ghost:hover{background:var(--sunk);border-color:var(--ink2)}
+button[disabled]{opacity:.5;cursor:default}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2);margin-top:var(--s3)}
+
+/* the warning - the only coloured thing on the page */
+.warn{border-radius:4px;padding:var(--s4);margin-bottom:var(--s4);
+  border:1px solid var(--crit-rule);background:var(--crit-bg)}
+.warn.elevated{border-color:var(--warn-rule);background:var(--warn-bg)}
+.warn.ordinary{border-color:var(--ok-rule);background:var(--ok-bg)}
+.warn .band{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;font-weight:500;color:var(--crit)}
+.warn.elevated .band{color:var(--warn)}
+.warn.ordinary .band{color:var(--ok)}
+.warn h2{font-family:Newsreader,Georgia,serif;font-weight:400;font-size:22px;
+  margin:6px 0 var(--s2);line-height:1.2}
+.warn p{margin:0;font-size:14px;color:var(--ink2)}
+.warn ul{list-style:none;margin:var(--s3) 0 0;padding:0;display:grid;gap:6px}
+.warn li{font-size:13px;color:var(--ink2);display:grid;grid-template-columns:auto 1fr;
+  gap:8px;line-height:1.45}
+.warn li .d{width:4px;height:4px;border-radius:50%;background:var(--rule2);
+  margin-top:9px}
+.sum{font-size:13px;color:var(--ink2);margin:0 0 6px}
+.read{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink3);
+  margin:0 0 var(--s4)}
+.read.partial{margin-top:calc(-1 * var(--s3));color:var(--warn)}
+.warn{animation:rise .32s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+button.wallet{display:flex;align-items:center;gap:10px;justify-content:flex-start;
+  margin-bottom:var(--s2)}
+button.wallet img{width:20px;height:20px;border-radius:4px}
+#msg{font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){.warn{animation:none}}
+.note{font-size:12px;color:var(--ink3);margin:var(--s3) 0 0;text-align:center}
+.note a{color:var(--ink3)}
+.msg{font-size:13px;color:var(--ink3);margin-top:var(--s3);text-align:center;min-height:1.2em}
+
+/* The whole page is the sheet, the three things it needs, and one number.
+   Anything else belongs on a page you reach from here. */
+.top{display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:var(--s5);gap:var(--s4)}
+.mark{margin-bottom:0}
+.tabs{display:flex;gap:var(--s3);flex-wrap:wrap;justify-content:flex-end}
+.tab{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3);text-decoration:none;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+
+/* Addresses to try, offered inside the field that asks for one. */
+.field{position:relative}
+.sugg{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:5;
+  background:var(--surface);border:1px solid var(--rule2);border-radius:3px;
+  box-shadow:0 6px 20px rgba(0,0,0,.10);overflow:hidden}
+.opt{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);
+  width:100%;font:inherit;font-size:13px;font-weight:400;text-align:left;
+  color:var(--ink);background:transparent;border:0;border-radius:0;
+  border-bottom:1px solid var(--rule);padding:9px 12px;cursor:pointer}
+.opt:last-child{border-bottom:0}
+.opt:hover,.opt[aria-selected="true"]{background:var(--sunk)}
+.opt .a{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink3);
+  white-space:nowrap}
+
+.stat{margin:var(--s6) 0 0;padding-top:var(--s4);border-top:1px solid var(--rule);
+  font-size:13px;color:var(--ink3);line-height:1.55}
+.stat b{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink);
+  font-size:15px}
+.stat a{color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="top">
+    <a class="mark" href="index.html">Veridis<b>.</b></a>
+    <nav class="tabs">
+      <a class="tab" href="history.html">Previous checks</a>
+      <a class="tab" href="how.html">How it works</a>
+    </nav>
+  </div>
+  <div class="card" id="card"></div>
+  <p class="stat" id="stat"></p>
+</div>
+
+<script type="module">
+import {fetchTransfers, fetchTransfersEvm, fetchFirstSeen, fetchFirstSeenEvm,
+        computeFeatures, computePairFeatures, score, band,
+        topPayout, payoutFanin} from "./scorer.js";
+
+const $ = s => document.querySelector(s);
+const card = $("#card");
+const usd = n => "$" + Number(n).toLocaleString(undefined, {maximumFractionDigits: 0});
+const short = a => a.slice(0, 6) + "\u2026" + a.slice(-4);
+const chainOf = a => /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a) ? "Tron"
+  : /^0x[0-9a-fA-F]{40}$/.test(a) ? "Ethereum" : null;
+
+let from = null, fromChain = null;
+
+/* window.ethereum is one slot every injected wallet overwrites, so with
+   MetaMask and Rabby installed you get whichever loaded last. EIP-6963 has each
+   announce itself. One wallet connects straight through; several get named
+   buttons, which is the only time this page asks a second question. */
+const WALLETS = [];
+addEventListener("eip6963:announceProvider", e => {
+  const d = e.detail;
+  if (d && d.info && !WALLETS.some(w => w.info.uuid === d.info.uuid)) WALLETS.push(d);
+});
+try { dispatchEvent(new Event("eip6963:requestProvider")); } catch (e) {}
+const models = {};
+async function model(name) {
+  if (!models[name]) models[name] = await fetch(name).then(r => r.json());
+  return models[name];
+}
+
+/* Three real addresses, so nobody has to go and find one before the page can
+   show them anything. The middle one is the point: it is on no public list,
+   and the page still says what it is. */
+const TRY = [
+  ["a scam collection wallet", "TZENLF5GidViNKjULCFF2r1cHYSghu5d6R"],
+  ["one nobody has reported", "TSaRZDiBPD8Rd5vrvX8a4zgunHczM9mj8S"],
+  ["an ordinary wallet", "TD7acTaXrpxvkddXWcBpd1YNEy4q7RLGsw"],
+];
+
+/* The send sheet. Three fields and a button, because that is what a wallet
+   shows you and the product has to live inside one. */
+function sheet(msg) {
+  card.innerHTML =
+    '<div class="row"><label>From</label>'
+    + (from
+        ? '<div class="from"><span class="dot"></span>' + from + "</div>"
+        : '<button class="ghost" id="connect" type="button">Connect wallet</button>')
+    + "</div>"
+    + '<div class="row field"><label>To</label>'
+    + '<input id="to" spellcheck="false" placeholder="T\u2026 or 0x\u2026" '
+    + 'autocomplete="off" role="combobox" aria-expanded="false" '
+    + 'aria-controls="sugg" aria-autocomplete="list" '
+    + 'value="' + (prefill || "") + '">'
+    + '<div class="sugg" id="sugg" role="listbox" aria-label="Addresses to try" hidden>'
+    + TRY.map((t, i) => '<button class="opt" type="button" role="option" '
+        + 'aria-selected="false" data-i="' + i + '"><span>' + t[0] + "</span>"
+        + '<span class="a">' + t[1].slice(0, 6) + "\u2026" + t[1].slice(-4)
+        + "</span></button>").join("")
+    + "</div></div>"
+    + '<div class="row"><label>Amount (USD)</label>'
+    + '<input id="amt" inputmode="decimal" placeholder="5,000" value="' + (amt || "") + '"></div>'
+    + '<button id="send" type="button">Send</button>'
+    + '<div class="msg" id="msg">' + (msg || "") + "</div>";
+  if (!from) $("#connect").onclick = connect;
+  $("#send").onclick = check;
+  suggest();
+  // Money should look like money as it is typed, not after.
+  const a = $("#amt");
+  a.oninput = () => {
+    const raw = a.value.replace(/[^0-9.]/g, "");
+    if (!raw) { a.value = ""; return; }
+    const [w, d] = raw.split(".");
+    a.value = Number(w || 0).toLocaleString() + (d !== undefined ? "." + d : "");
+  };
+  a.onkeydown = e => { if (e.key === "Enter") check(); };
+}
+
+/* Addresses to try, offered where an address is asked for rather than parked
+   in a section of their own. Nobody arrives holding a scam address, and a row
+   of samples beneath the card made the page look like a gallery of them. */
+function suggest() {
+  const to = $("#to"), box = $("#sugg");
+  const opts = [].slice.call(box.querySelectorAll(".opt"));
+  let at = -1;
+
+  const open = on => {
+    box.hidden = !on;
+    to.setAttribute("aria-expanded", String(!!on));
+    if (!on) { at = -1; opts.forEach(o => o.setAttribute("aria-selected", "false")); }
+  };
+  const mark = i => {
+    at = i;
+    opts.forEach((o, k) => o.setAttribute("aria-selected", String(k === i)));
+  };
+  const take = i => {
+    to.value = TRY[i][1];
+    prefill = to.value;
+    if (!$("#amt").value) { $("#amt").value = "5,000"; amt = "5,000"; }
+    open(false);
+    to.focus();
+  };
+
+  // mousedown, not click: blur fires first and would close the list out from
+  // under the pointer, so the click would land on nothing.
+  opts.forEach((o, i) => {
+    o.onmousedown = e => { e.preventDefault(); take(i); };
+    o.onmouseenter = () => mark(i);
+  });
+  to.onfocus = () => { if (!to.value) open(true); };
+  to.oninput = () => open(!to.value);   // their own address wins over ours
+  to.onblur = () => open(false);
+  to.onkeydown = e => {
+    if (e.key === "Escape") return open(false);
+    if (box.hidden) { if (e.key === "Enter") check(); return; }
+    if (e.key === "ArrowDown") { e.preventDefault(); mark((at + 1) % opts.length); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); mark((at - 1 + opts.length) % opts.length); }
+    else if (e.key === "Enter") { e.preventDefault(); at >= 0 ? take(at) : check(); }
+  };
+}
+
+async function useProvider(prov) {
+  const a = await prov.request({method: "eth_requestAccounts"});
+  if (a && a[0]) { from = a[0].toLowerCase(); fromChain = "Ethereum"; sheet(); return true; }
+  return false;
+}
+
+async function connect() {
+  const tron = window.tronLink || window.tronWeb;
+  $("#msg").textContent = "waiting for your wallet\u2026";
+  try {
+    if (WALLETS.length > 1) return pick();
+    if (WALLETS.length === 1 && await useProvider(WALLETS[0].provider)) return;
+    const evm = window.ethereum;
+    if (evm && evm.request && await useProvider(evm)) return;
+    if (tron && tron.request) {
+      await tron.request({method: "tron_requestAccounts"});
+      const a = window.tronWeb && window.tronWeb.defaultAddress
+        && window.tronWeb.defaultAddress.base58;
+      if (a) { from = a; fromChain = "Tron"; return sheet(); }
+    }
+  } catch (e) { /* declined is an answer */ }
+  // No extension, or declined: a pasted address works the same way, and a
+  // hardware or phone wallet has none to ask.
+  const typed = prompt("Paste the address you send from");
+  if (typed && chainOf(typed.trim())) {
+    from = typed.trim(); fromChain = chainOf(from); return sheet();
+  }
+  sheet("No wallet connected. You can still check the address on its own.");
+}
+
+function pick() {
+  card.innerHTML = '<label>Which wallet?</label>'
+    + WALLETS.map((w, i) => '<button class="ghost wallet" data-i="' + i + '">'
+        + (w.info.icon ? '<img src="' + w.info.icon + '" alt="">' : "")
+        + w.info.name + "</button>").join("")
+    + '<button class="ghost" id="cancelpick" style="margin-top:var(--s3)">Back</button>';
+  card.querySelectorAll(".wallet").forEach(b => b.onclick = async () => {
+    await useProvider(WALLETS[+b.dataset.i].provider).catch(() => sheet(""));
+  });
+  $("#cancelpick").onclick = () => sheet("");
+}
+
+let prefill = "", amt = "";
+
+async function check() {
+  const to = $("#to").value.trim();
+  amt = $("#amt").value.trim().replace(/[$,\s]/g, "");
+  prefill = to;
+  const chain = chainOf(to);
+  if (!chain) return sheet("That is not a Tron or Ethereum address.");
+  $("#send").disabled = true;
+  /* A spinner tells you to wait. A count of what is coming off the chain tells
+     you the thing is actually happening, which is the only claim this page
+     needs to make for itself. */
+  let rows = 0, calls = 0;
+  const real = window.fetch;
+  window.fetch = async (u, o) => {
+    const r = await real(u, o);
+    if (/etherscan|trongrid/.test(String(u))) {
+      calls += 1;
+      try {
+        const j = await r.clone().json();
+        const got = Array.isArray(j.result) ? j.result
+          : Array.isArray(j.data) ? j.data : [];
+        rows += got.length;
+        $("#msg").textContent = "reading the chain \u00b7 "
+          + rows.toLocaleString() + " transfers";
+      } catch (e) {}
+    }
+    return r;
+  };
+  $("#msg").textContent = "reading the chain\u2026";
+  try {
+    const evm = chain === "Ethereum";
+    const dest = evm ? to.toLowerCase() : to;
+    /* Depth matters more than it looks. TronGrid pages newest-first, so a
+       capped history is the address's RECENT window while the model was trained
+       on whole ones. A 1,434-day-old collection point with 733 lifetime payers
+       came back as 353 and scored ordinary, against high in the index built
+       from its full history: one model, two answers, decided by where the fetch
+       stopped. Six pages was 1,200 transfers. */
+    const tx = evm ? await fetchTransfersEvm(dest, {maxPages: 14})
+                   : await fetchTransfers(dest, {maxPages: 15});
+    if (!tx.length) return sheet("Nothing has ever been sent to that address.");
+    /* A busy address returns only its most recent pages, and the age taken from
+       that window is the age of the WINDOW, not the address - which made a
+       751-day-old wallet read as 27 days old, and young reads as risky. One
+       extra ascending query gets the real first transfer. */
+    const firstSeen = tx.truncated
+      ? await (evm ? fetchFirstSeenEvm(dest) : fetchFirstSeen(dest))
+      : null;
+
+    const amount = parseFloat(amt);
+    const both = from && chainOf(from) === chain && isFinite(amount) && amount > 0;
+
+    /* Always score the DESTINATION, whatever else we do.
+       "Is this transfer risky" and "is this address a collection point" are
+       different questions, and a $1 send answers the first with "no" while
+       leaving the second untouched. Showing only the first let $1 into an
+       address that had taken $1.6m from 83 strangers come back "nothing
+       unusual" - the exact reassurance a test transfer is sent to get. */
+    const dm = await model(evm ? "model_eth.json" : "model_dest.json");
+    const dfeats = computeFeatures(tx, dest, Date.now(), {firstSeen: firstSeen});
+    /* The second hop. Every other number comes from this address's own history;
+       these two come from the history of the wallet it pays, which is the only
+       thing here that costs another fetch. Low fan-in is the warning: a mule
+       wallet is fed by a handful of addresses, an exchange hot wallet by
+       thousands. Declared by the model, so a model without them skips it. */
+    const hop = dm.features.indexOf("payout_fanin_pit") >= 0
+      ? await secondHop(tx, dest, evm) : null;
+    if (hop) Object.assign(dfeats, hop);
+    const dband = band(score(dm, dfeats), dm.thresholds);
+
+    let feats = dfeats, b = dband, pband = null;
+    if (both) {
+      const m = await model(evm ? "model_pair_eth.json" : "model_pair.json");
+      const src = evm ? from.toLowerCase() : from;
+      const stx = evm ? await fetchTransfersEvm(src, {maxPages: 8})
+                      : await fetchTransfers(src, {maxPages: 6});
+      feats = computePairFeatures({senderTransfers: stx, destTransfers: tx,
+        sender: src, destination: dest, amountUsd: amount, asOfMs: Date.now(),
+        destFirstSeen: firstSeen});
+      /* Reused, not refetched. Both models ask the same question of the same
+         wallet, and the second hop is the one expensive thing on this page. */
+      if (m.features.indexOf("payout_fanin_pit") >= 0) {
+        Object.assign(feats, hop || await secondHop(tx, dest, evm));
+      }
+      pband = band(score(m, feats), m.thresholds);
+      // The destination is a floor. The relationship may raise the verdict and
+      // never lowers it: a needless warning costs a moment, a missed collection
+      // point costs someone their savings.
+      const RANK = {ordinary: 0, elevated: 1, high: 2};
+      b = RANK[dband] > RANK[pband] ? dband : pband;
+    }
+    verdict(to, amount, b, feats, both, {rows, calls, partial: !!tx.truncated},
+            {dband, pband, small: amount < 250});
+  } catch (e) {
+    sheet("Could not read that address just now. Try again in a moment.");
+  } finally {
+    window.fetch = real;
+    const b = $("#send"); if (b) b.disabled = false;
+  }
+}
+
+/* Fetch the wallet this address pays most, and count who else pays it.
+   A failure here is not fatal and must not be silent: payout_fanin_exact of 0
+   is the model's encoding of "we do not know", and it is the same value Python
+   writes when the second hop is missing from training. Returning a confident
+   zero instead would tell the model nobody pays that wallet, which is the
+   reading that makes an exchange look like a mule. */
+async function secondHop(tx, dest, evm) {
+  const none = {payout_fanin_pit: 0, payout_fanin_exact: 0};
+  try {
+    const now = Date.now();
+    const p = topPayout(tx, dest, now);
+    if (!p) return none;
+    /* Depth has to match what training saw, per chain, or the count is over a
+       different window than the model learned on: 15 pages of 200 on Tron,
+       4 of 1,000 on Ethereum. Fetching deeper here would not be "more
+       accurate", it would be a different feature. */
+    const ptx = evm ? await fetchTransfersEvm(p, {maxPages: 4})
+                    : await fetchTransfers(p, {maxPages: 15});
+    return payoutFanin(ptx, p, now, dest, !!ptx.truncated);
+  } catch (e) { return none; }
+}
+
+const COPY = {
+  high: ["Do not send", "Money moves through this address the way it moves through a "
+    + "scam collection point."],
+  elevated: ["Think before you send", "Some of what this address does resembles a "
+    + "collection point, but not decisively."],
+  /* Not "nothing unusual". We looked and did not find enough to stop you, which
+     is a statement about our evidence and not a certificate on the address. */
+  ordinary: ["Nothing we would stop you for",
+    "Nothing in this address's history crosses our line."],
+  /* Ordinary, but the address has the shape of a collection point. Saying it
+     behaves normally here would be contradicted by the next two lines. */
+  /* Same verdict, but the reader can see two things that look alarming, so the
+     page accounts for them instead of listing them under a reassuring headline
+     and leaving them to do their own work on whoever is reading. */
+  ordinaryNotable: ["Nothing we would stop you for",
+    "Many wallets pay this address and it passes most of what it receives "
+    + "straight on. That is the pattern an exchange deposit address makes. "
+    + "Nothing "
+    + "else in its history matches a collection point."],
+};
+
+/* Why we are warning. Only ever shown under a warning - see clearReasons. */
+function reasons(f, both) {
+  const out = [];
+  if (both && f.is_first_send_to_dest) out.push("first time you have paid this address");
+  if (both && (f.escalation_ratio || 0) > 5)
+    out.push(Math.round(f.escalation_ratio).toLocaleString()
+      + "x your previous transfer to it");
+  if ((f.dest_senders_all || 0) >= 5)
+    out.push(f.dest_senders_all.toLocaleString()
+      + " unrelated wallets have paid it");
+  if ((f.dest_forward_ratio || 0) > 0.9)
+    out.push("it forwards almost everything it receives, and keeps nothing");
+  if ((f.dest_age_days || 0) < 30)
+    out.push("the address is " + Math.max(1, Math.round(f.dest_age_days)) + " days old");
+  return out.slice(0, 2);
+}
+
+/* Why we are NOT warning - the mirror, and the whole reason the two exist
+   separately. These bullets used to be the ones above, printed under every
+   verdict including "ordinary", so the page would announce that an address
+   behaved normally and then list 353 unrelated payers and total pass-through
+   as the supporting evidence. That is not weak support for the verdict, it is
+   evidence against it, and a reader was right to stop trusting the page there. */
+function clearReasons(f, both) {
+  const out = [];
+  if (both && (f.sender_prior_sends_to_dest || 0) >= 1)
+    out.push("you have paid this address "
+      + Math.round(f.sender_prior_sends_to_dest).toLocaleString() + " time"
+      + (f.sender_prior_sends_to_dest >= 2 ? "s" : "") + " before");
+  if (f.dest_forward_ratio != null && f.dest_forward_ratio < 0.7)
+    out.push("it keeps most of what it receives rather than passing it straight on");
+  if ((f.dest_median_hold_secs || 0) >= 86400)
+    out.push("money that arrives sits for days, not minutes");
+  if ((f.dest_senders_all || 0) > 0 && f.dest_senders_all <= 25)
+    out.push("only " + f.dest_senders_all.toLocaleString()
+      + " wallets have ever paid it");
+  // The direct counter to "it forwards everything": a collection point sweeps
+  // to one or two addresses, so paying out to many is the opposite shape and
+  // the one piece of positive evidence a busy pass-through address usually has.
+  if ((f.dest_distinct_out || 0) >= 10)
+    out.push("what it pays out goes to "
+      + Math.round(f.dest_distinct_out).toLocaleString()
+      + " different addresses, not swept to one");
+  if ((f.dest_age_days || 0) >= 180)
+    out.push("it has been active for "
+      + Math.round(f.dest_age_days).toLocaleString() + " days");
+  return out.slice(0, 2);
+}
+
+/* The two traits a reader notices for themselves, and which the verdict has to
+   account for rather than ignore.
+   The CONJUNCTION is the shape, not either half. Pass-through alone describes
+   three quarters of ordinary addresses, because a wallet that receives money
+   and then spends it has forwarded everything it received. Many unrelated
+   payers AND pass-through is the collection-point silhouette - and also the
+   exchange deposit address, the payment processor and the OTC desk, which is
+   why the model weighs fifteen other things before deciding.
+   Measured on the shipped index: among addresses the model puts in the ordinary
+   band, the ones with this shape were later frozen LESS often than the ones
+   without it (10% against 33%). So naming it here explains the verdict; it
+   does not hedge it. */
+function notable(f) {
+  const many = (f.dest_senders_all || 0) >= 50;
+  const through = (f.dest_forward_ratio || 0) > 0.9;
+  const fast = f.dest_median_hold_secs != null && f.dest_median_hold_secs < 3600
+    && (f.dest_inbound_count || 0) >= 10;
+  if (!many || !(through || fast)) return [];
+  return [f.dest_senders_all.toLocaleString() + " unrelated wallets have paid it",
+          through ? "it forwards almost everything it receives"
+                  : "what arrives usually leaves within the hour"];
+}
+
+/* Count that a check happened. Not what was checked.
+
+   The page recorded nothing at all until now, which is the right default and
+   also meant there was no way to answer "is anyone using this". The payload is
+   four fields: the verdict band, the chain, whether a wallet was connected, and
+   a random browser id so that four hundred checks by one person do not read as
+   four hundred people. No address, no amount, no identity, because none of
+   those are in the object below.
+
+   TALLY is empty by default, so a fork or a local copy sends nothing anywhere
+   until somebody sets an endpoint. Failures are swallowed: a counter must never
+   be the reason a warning does not appear. */
+const TALLY = (document.querySelector('meta[name="veridis-tally"]') || {})
+  .content || "";
+function browserId() {
+  try {
+    let u = localStorage.getItem("veridis.u");
+    if (!u) {
+      u = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      localStorage.setItem("veridis.u", u);
+    }
+    return u;
+  } catch (e) { return null; }   // private window: counted, just not deduped
+}
+function tally(ev) {
+  if (!TALLY) return;
+  try {
+    const u = browserId();
+    const body = JSON.stringify(u ? Object.assign({u: u}, ev) : ev);
+    // keepalive so the count survives the page being closed right after.
+    fetch(TALLY + "/t", {method: "POST", keepalive: true,
+      headers: {"content-type": "application/json"}, body: body}).catch(() => {});
+  } catch (e) {}
+}
+tally({e: "view"});
+
+/* Keep the check where the person can find it again. A warning you have
+   already clicked past is still the only record that it was ever shown, and it
+   lives in this browser alone - nothing about what anyone checks leaves it. */
+function remember(rec) {
+  try {
+    const key = "veridis.checks";
+    const prev = JSON.parse(localStorage.getItem(key) || "[]");
+    const keep = (Array.isArray(prev) ? prev : []).slice(0, 49);
+    localStorage.setItem(key, JSON.stringify([rec].concat(keep)));
+  } catch (e) { /* private window, or storage declined - not worth a message */ }
+}
+
+function verdict(to, amount, b, f, both, read, split) {
+  // The evidence has to argue for the verdict, not against it. A warning is
+  // justified by what raised it; a clearance by what held it down - or, when
+  // the address carries collection-point traits anyway, by naming them.
+  const traits = b === "ordinary" ? notable(f) : [];
+  const [title, body] = COPY[traits.length ? "ordinaryNotable" : b];
+  // Under a pass, every bullet argues FOR the pass. The collection-point shape
+  // is handled in the body sentence instead of as two stark bullets: a reader
+  // who has just been told it is fine should not have to weigh evidence that it
+  // is not, and if we cannot explain that shape calmly we should not be passing
+  // the address in the first place.
+  const why = b === "ordinary" ? clearReasons(f, both) : reasons(f, both);
+  // If the amount is the only thing making this look acceptable, lead with that.
+  const RANK = {ordinary: 0, elevated: 1, high: 2};
+  if (split && split.pband && RANK[split.dband] > RANK[split.pband]) {
+    why.unshift(split.small
+      ? "the amount is small, but this address is what it is. A small first "
+        + "transfer is how most of these start"
+      : "this transfer on its own looks unremarkable; the address receiving it does not");
+  }
+  tally({e: "check", b: b, c: chainOf(to) === "Ethereum" ? "ethereum" : "tron",
+         w: both ? 1 : 0});
+  remember({t: Date.now(), to: to, chain: chainOf(to), band: b,
+            amt: isFinite(amount) && amount > 0 ? amount : 0,
+            why: why.length ? why[0].charAt(0).toUpperCase() + why[0].slice(1) : ""});
+  card.innerHTML =
+    '<div class="warn ' + b + '"><div class="band">'
+    + (b === "high" ? "High risk" : b === "elevated" ? "Some risk signals"
+       : "Looks ordinary")
+    + "</div><h2>" + title + "</h2><p>" + body + "</p>"
+    + (why.length ? "<ul>" + why.map(w => '<li><span class="d"></span><span>'
+        + w + "</span></li>").join("") + "</ul>" : "")
+    + "</div>"
+    + '<p class="sum">'
+    + (isFinite(amount) && amount > 0 ? usd(amount) + " to " : "To ") + short(to)
+    + (both ? ". Checked against your wallet too." : ". Destination only.")
+    + "</p>"
+    + '<p class="read">read ' + read.rows.toLocaleString() + " transfers off the chain "
+    + "just now \u00b7 " + (f.dest_senders_all || 0).toLocaleString() + " wallets have "
+    + "paid it \u00b7 " + Math.max(1, Math.round(f.dest_age_days || 0)).toLocaleString()
+    + " days old</p>"
+    /* Still capped after fifteen pages means a busy address, and the verdict
+       above was reached on a slice of it. The lookup page has said so for a
+       while; the sheet was quietly confident instead. */
+    + (read.partial
+        ? '<p class="read partial">that is the most recent ' 
+          + read.rows.toLocaleString() + " and not its whole history, so the "
+          + "counts are lower bounds and the reading is of what it has been "
+          + "doing lately.</p>"
+        : "")
+    /* "Send anyway" is the word for overriding a warning, so on a pass it
+       tells the reader we are uneasy about a verdict we just gave. The weight
+       carried the same implication: Cancel was the filled button under every
+       verdict, including the ones where we had nothing against the address.
+       So the primary is always on the right and is always the action the
+       verdict actually recommends. */
+    + '<div class="pair">'
+    + (b === "ordinary"
+        ? '<button class="ghost" id="back">Back</button>'
+          + '<button id="anyway">Send</button>'
+        : '<button class="ghost" id="anyway">Send anyway</button>'
+          + '<button id="back">Cancel</button>')
+    + "</div>";
+  $("#anyway").onclick = () => sheet("Nothing was sent. This is a demo of the check.");
+  $("#back").onclick = () => sheet("");
+}
+
+/* One number, read from the decided-cases log rather than typed in here, so
+   the page cannot go on claiming something that file no longer says.
+
+   It used to be the catch rate: 97% of transfers into an address that was
+   later frozen got a warning. True, held out, and the wrong headline. Recall
+   does not depend on how common fraud is, and the reader silently supplies a
+   prevalence when they interpret it. Measured on the live stream, fewer than
+   0.081% of addresses receiving USDT are on the freeze list, so at the real
+   rate most warnings are false and "97%" invites exactly the wrong conclusion.
+
+   The likelihood ratio is the one figure here that does not move with
+   prevalence. It is true for every reader rather than for a reader whose base
+   rate we guessed. */
+fetch("history.json").then(r => r.json()).then(d => {
+  const s = d.summary;
+  const recall = s.scam_high / s.n_scam;
+  const cost = s.control_high / s.n_control;
+  $("#stat").innerHTML = "A stop makes it <b>" + (recall / cost).toFixed(0)
+    + "x</b> more likely you are paying a collection point. Measured on "
+    + s.n.toLocaleString() + " held-out transfers, at one stop in every "
+    + Math.round(1 / cost) + " ordinary payments. "
+    + '<a href="history.html">See the cases &rarr;</a>';
+}).catch(() => {
+  $("#stat").innerHTML = '<a href="history.html">What we said before, and what '
+    + "happened &rarr;</a>";
+});
+
+sheet("");
+</script>
+</body>
+</html>
