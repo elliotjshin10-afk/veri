@@ -250,9 +250,9 @@ later-frozen address meeting a warning. It is held out and it is real, and
 quoted alone it misleads, because recall does not depend on how common fraud is
 and precision depends on nothing else.
 
-Measured rather than assumed: of **3,699** addresses that received USDT over the
+Measured rather than assumed: of **3,540** addresses that received USDT over the
 past week, **none** were on Tether's freeze list, putting the live rate below
-**0.081%** at 95% confidence (rule of three). The test set is 19.7% scam by
+**0.085%** at 95% confidence (rule of three). The test set is 19.7% scam by
 construction, so it is at least **240x** denser in fraud than the stream the
 product sits in front of. Feeding that through Bayes:
 

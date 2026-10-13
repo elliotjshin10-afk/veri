@@ -682,8 +682,11 @@ _CONTEXT = ["amount_usd", "event_hour", "hour_deviation",
 # First, the signal is real and runs OPPOSITE to the comment above. A scam
 # collection point forwards to a mule wallet fed by a handful of addresses; an
 # ordinary wallet forwards to an exchange, and an exchange hot wallet is fed by
-# thousands. Computed point-in-time from the fetched histories, the median
-# fan-in is 42 for scam destinations and 60 for controls, and adding it to the
+# thousands. Computed point-in-time from the fetched histories, and counted only
+# where the payout wallet was actually fetched so a zero means zero rather than
+# "we did not look", the median fan-in is 4 for scam destinations and 71 for
+# controls. Coverage is higher on the scam arm (79% against 65%), so the gap is
+# not the sampling artefact it would be if it ran the other way. Adding it to the
 # destination model is worth +2.5pp of recall at the shipped 1% false-alarm
 # budget, 24.4% to 26.9%, winning on 7 of 7 seeds.
 #
